@@ -1,0 +1,29 @@
+[project]
+name = "smartvoter"
+version = "0.1.0"
+description = "Evidence-based political match web app for Israeli parties"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "alembic>=1.16.1",
+    "fastapi>=0.115.12",
+    "psycopg[binary]>=3.3.4",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.14.0",
+    "python-dotenv>=1.2.2",
+    "redis>=7.4.0",
+    "sqlalchemy>=2.0.49",
+    "uvicorn[standard]>=0.46.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]
+testpaths = ["backend/app/tests"]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.3.0",
+]
