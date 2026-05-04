@@ -23,22 +23,14 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
-:: ── Check Node ────────────────────────────────────────────────────────────
-where node >nul 2>&1
-if %ERRORLEVEL% neq 0 (
-    echo [ERROR] Node.js not found. Install Node.js 20+ from https://nodejs.org
-    pause
-    exit /b 1
-)
-
 :: ── Copy .env if missing ──────────────────────────────────────────────────
 if not exist ".env" (
     echo [INFO] .env not found -- copying from .env.example
     copy ".env.example" ".env" >nul
 )
 
-:: ── Python dependencies ───────────────────────────────────────────────────
-echo [1/6] Syncing Python dependencies...
+:: ── Python dependencies (for running migrations locally) ──────────────────
+echo [1/5] Syncing Python dependencies...
 uv sync --quiet
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] uv sync failed.
@@ -47,8 +39,8 @@ if %ERRORLEVEL% neq 0 (
 )
 echo       Done.
 
-:: ── Start Docker services (postgres + redis) ────────────────────────────
-echo [2/6] Starting PostgreSQL and Redis via Docker Compose...
+:: ── Start Docker services (postgres + redis) ─────────────────────────────
+echo [2/5] Starting PostgreSQL and Redis via Docker Compose...
 docker compose up -d postgres redis
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] docker compose up failed. Is Docker Desktop running?
@@ -57,7 +49,7 @@ if %ERRORLEVEL% neq 0 (
 )
 
 :: ── Wait for postgres to be ready ────────────────────────────────────────
-echo [3/6] Waiting for PostgreSQL to be ready...
+echo [3/5] Waiting for PostgreSQL to be ready...
 set /a attempts=0
 :wait_loop
 set /a attempts+=1
@@ -74,7 +66,7 @@ if %ERRORLEVEL% neq 0 (
 echo       PostgreSQL is ready.
 
 :: ── Run Alembic migrations ────────────────────────────────────────────────
-echo [4/6] Running database migrations...
+echo [4/5] Running database migrations...
 uv run alembic upgrade head
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] Alembic migration failed.
@@ -84,42 +76,52 @@ if %ERRORLEVEL% neq 0 (
 echo       Migrations applied.
 
 :: ── Seed mock data (idempotent) ──────────────────────────────────────────
-echo [5/6] Seeding mock data (skipped if already seeded)...
+echo       Seeding mock data (skipped if already seeded)...
 uv run python -m backend.app.seed.run_seed
 echo       Done.
 
-:: ── Frontend dependencies ────────────────────────────────────────────────
-echo [6/6] Installing frontend dependencies...
-cd frontend
-npm install --silent
+:: ── Build and start backend + frontend containers ─────────────────────────
+echo [5/5] Building and starting backend and frontend containers...
+docker compose up -d --build backend frontend
 if %ERRORLEVEL% neq 0 (
-    echo [ERROR] npm install failed.
-    cd ..
+    echo [ERROR] docker compose up failed for backend/frontend.
     pause
     exit /b 1
 )
-cd ..
-echo       Done.
+echo       Containers started.
 
-:: ── Launch backend in a new window ──────────────────────────────────────
+:: ── Wait for frontend to be ready, then open browser ─────────────────────
 echo.
-echo  Starting services...
-echo.
-start "SmartVoter Backend (http://localhost:8000)" cmd /k "uv run uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000"
+echo  Waiting for frontend to compile (first startup can take ~30 seconds)...
+set /a fw=0
+:wait_frontend
+set /a fw+=1
+if %fw% gtr 90 goto open_browser
+timeout /t 1 /nobreak >nul
+curl.exe -s -o nul -w "%%{http_code}" http://localhost:3000 2>nul | findstr /r "^200$" >nul 2>&1
+if %ERRORLEVEL% equ 0 goto open_browser
+goto wait_frontend
 
-:: ── Launch frontend in a new window ─────────────────────────────────────
-start "SmartVoter Frontend (http://localhost:3000)" cmd /k "cd frontend && npm run dev"
+:open_browser
+echo  Frontend is ready.
 
 :: ── Done ─────────────────────────────────────────────────────────────────
-echo  [OK] All services started in separate windows:
+echo.
+echo  [OK] All services are running in Docker:
 echo.
 echo        Frontend  -->  http://localhost:3000
 echo        Backend   -->  http://localhost:8000
 echo        API docs  -->  http://localhost:8000/docs
 echo.
-echo  Close those windows (or Ctrl+C inside them) to stop the servers.
-echo  PostgreSQL and Redis continue running in Docker.
-echo  To stop Docker:  docker compose down
+echo  To view live logs:
+echo        docker compose logs -f frontend
+echo        docker compose logs -f backend
+echo.
+echo  To stop all services:
+echo        docker compose down
+echo.
+echo  Opening browser...
+start "" "http://localhost:3000"
 echo.
 pause
 

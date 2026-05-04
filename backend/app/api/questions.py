@@ -145,9 +145,12 @@ def get_next_question(
         id=q.id,
         question_text_en=q.question_text_en,
         question_text_he=q.question_text_he,
+        question_text_ru=q.question_text_ru,
         answer_scale_type=q.answer_scale_type.value,
         policy_item_id=q.policy_item_id,
         topic_slug=topic.slug if topic else "unknown",
+        topic_name_he=topic.name_he if topic else None,
+        topic_name_ru=topic.name_ru if topic else None,
         context_note=None,
         why_selected=why_selected,
     )

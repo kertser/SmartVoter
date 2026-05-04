@@ -4,20 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getOrCreateSessionId } from "@/lib/session";
 import { createSession, getNextQuestion, submitAnswer, Question } from "@/lib/api";
-
-const LIKERT_OPTIONS = [
-  { label: "Strongly oppose", value: -1.0 },
-  { label: "Somewhat oppose", value: -0.5 },
-  { label: "Neutral / unsure", value: 0.0 },
-  { label: "Somewhat support", value: 0.5 },
-  { label: "Strongly support", value: 1.0 },
-];
-
-const SALIENCE_OPTIONS = [
-  { label: "Not important", value: 0.5 },
-  { label: "Important", value: 1.0 },
-  { label: "Very important", value: 2.0 },
-];
+import { useT, useLang } from "@/lib/i18n";
+import { Tooltip } from "@/components/Tooltip";
 
 /**
  * Questionnaire page (AGENTS.MD Sections 13, 14.3).
@@ -25,6 +13,9 @@ const SALIENCE_OPTIONS = [
  */
 export default function QuestionnairePage() {
   const router = useRouter();
+  const t = useT();
+  const lang = useLang().lang;
+  const q = t.questionnaire;
   const [sessionId, setSessionId] = useState<string>("");
   const [question, setQuestion] = useState<Question | null>(null);
   const [answeredCount, setAnsweredCount] = useState(0);
@@ -42,18 +33,18 @@ export default function QuestionnairePage() {
     setShowWhy(false);
     setError(null);
     try {
-      const q = await getNextQuestion(sid);
-      if (!q) {
+      const question = await getNextQuestion(sid);
+      if (!question) {
         router.push(`/results?session_id=${sid}`);
         return;
       }
-      setQuestion(q);
-    } catch (e) {
-      setError("Failed to load next question. Please refresh.");
+      setQuestion(question);
+    } catch {
+      setError(q.errorLoad);
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, q]);
 
   useEffect(() => {
     const init = async () => {
@@ -87,8 +78,8 @@ export default function QuestionnairePage() {
         return;
       }
       await loadNextQuestion(sessionId);
-    } catch (e) {
-      setError("Failed to submit answer. Please try again.");
+    } catch {
+      setError(q.errorSubmit);
     } finally {
       setSubmitting(false);
     }
@@ -102,7 +93,7 @@ export default function QuestionnairePage() {
     return (
       <div className="flex flex-col items-center gap-4 py-20">
         <div className="h-8 w-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
-        <p className="text-slate-500 text-sm">Loading question…</p>
+        <p className="text-slate-500 text-sm">{q.loadingQuestion}</p>
       </div>
     );
   }
@@ -112,24 +103,38 @@ export default function QuestionnairePage() {
       <div className="max-w-xl mx-auto text-center py-20 space-y-4">
         <p className="text-red-600">{error}</p>
         <button onClick={() => loadNextQuestion(sessionId)} className="btn-primary">
-          Try again
+          {q.tryAgain}
         </button>
       </div>
     );
   }
+
+  const LIKERT_OPTIONS = [
+    { label: q.likert.stronglyOppose, value: -1.0 },
+    { label: q.likert.somewhatOppose, value: -0.5 },
+    { label: q.likert.neutral, value: 0.0 },
+    { label: q.likert.somewhatSupport, value: 0.5 },
+    { label: q.likert.stronglySupport, value: 1.0 },
+  ];
+
+  const SALIENCE_OPTIONS = [
+    { label: q.salience.notImportant, value: 0.5 },
+    { label: q.salience.important, value: 1.0 },
+    { label: q.salience.veryImportant, value: 2.0 },
+  ];
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Progress bar */}
       <div className="space-y-1">
         <div className="flex justify-between text-xs text-slate-500">
-          <span>Question {answeredCount + 1} of up to 15</span>
+          <span>{q.progressLabel(answeredCount + 1, 15)}</span>
           {answeredCount >= 8 && (
             <button
               onClick={handleViewResults}
               className="text-brand-600 hover:underline font-medium"
             >
-              Show results now →
+              {q.showResultsNow}
             </button>
           )}
         </div>
@@ -145,19 +150,29 @@ export default function QuestionnairePage() {
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-6 space-y-6">
           {/* Topic badge */}
           <span className="inline-block rounded-full bg-slate-100 px-3 py-0.5 text-xs font-medium text-slate-600 capitalize">
-            {question.topic_slug.replace("_", " ")}
+            {lang === "he" && question.topic_name_he
+              ? question.topic_name_he
+              : lang === "ru" && question.topic_name_ru
+              ? question.topic_name_ru
+              : question.topic_slug.replace("_", " ")}
           </span>
 
-          {/* Question text */}
+          {/* Question text — language-aware (AGENTS.MD Phase 8) */}
           <h2 className="text-xl font-semibold text-slate-900 leading-snug">
-            {question.question_text_en}
+            {lang === "he" && question.question_text_he
+              ? question.question_text_he
+              : lang === "ru" && question.question_text_ru
+              ? question.question_text_ru
+              : question.question_text_en}
           </h2>
 
           {/* Likert scale */}
           <div className="space-y-2">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-              Your position
-            </p>
+            <Tooltip content={q.positionTooltip} position="bottom">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide cursor-help">
+                {q.positionLabel} ⓘ
+              </p>
+            </Tooltip>
             <div className="flex flex-col gap-2">
               {LIKERT_OPTIONS.map((opt) => (
                 <button
@@ -177,9 +192,11 @@ export default function QuestionnairePage() {
 
           {/* Importance selector */}
           <div className="space-y-2">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-              How important is this to you?
-            </p>
+            <Tooltip content={q.importanceTooltip} position="bottom">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide cursor-help">
+                {q.importanceLabel} ⓘ
+              </p>
+            </Tooltip>
             <div className="flex gap-2">
               {SALIENCE_OPTIONS.map((opt) => (
                 <button
@@ -204,8 +221,7 @@ export default function QuestionnairePage() {
                 onClick={() => setShowWhy(!showWhy)}
                 className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
               >
-                <span>{showWhy ? "▲" : "▼"}</span>
-                Why am I being asked this?
+                {showWhy ? q.whyAskedHide : q.whyAskedShow}
               </button>
               {showWhy && (
                 <p className="mt-2 text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
@@ -221,7 +237,7 @@ export default function QuestionnairePage() {
             disabled={selectedAnswer === null || submitting}
             className="w-full rounded-lg bg-brand-600 py-3 text-white font-medium hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            {submitting ? "Saving…" : "Next question →"}
+            {submitting ? q.submitting : q.submitNext}
           </button>
         </div>
       )}

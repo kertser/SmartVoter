@@ -2157,6 +2157,29 @@ Requirements:
 - Hebrew RTL layout must be first-class, not an afterthought.
 ```
 
+#### Implementation status (Phase 8)
+
+The following i18n infrastructure is in place:
+
+```text
+frontend/locales/types.ts          — Translations TypeScript interface (single source of truth for keys)
+frontend/locales/en.ts             — English translations (complete)
+frontend/locales/he.ts             — Hebrew translations (UI shell complete; question/party content pending review)
+frontend/locales/ru.ts             — Russian translations (UI shell complete; question/party content pending review)
+frontend/lib/i18n.tsx              — I18nProvider, useT(), useLang() hooks
+frontend/components/LanguageSwitcher.tsx  — EN / עב / РУ toggle in header
+```
+
+Supported languages and direction:
+
+| Code | Language | Direction | Status |
+|------|----------|-----------|--------|
+| `en` | English  | LTR       | Complete |
+| `he` | Hebrew   | RTL       | UI translated; content needs native review |
+| `ru` | Russian  | LTR       | UI translated; content needs native review |
+
+Outstanding work is tracked in **Phase 8** (Section 18).
+
 ### 14C.3 Accessibility
 
 Visual sophistication must not reduce accessibility.
@@ -2506,6 +2529,62 @@ Deliverable:
 ```text
 MVP is usable by non-technical users.
 ```
+
+### Phase 8 — Internationalisation (i18n): English, Hebrew, Russian
+
+**Status: partially complete — UI shell translated, question/party content still English.**
+
+#### What is done
+
+- `frontend/locales/types.ts` — shared `Translations` TypeScript interface.
+- `frontend/locales/en.ts`, `he.ts`, `ru.ts` — full translations of all static UI strings.
+- `frontend/lib/i18n.tsx` — React Context with `I18nProvider`, `useT()` hook, `useLang()` hook.
+  - Language detected from `localStorage` key `sv_lang`, falling back to browser `navigator.language`.
+  - `<html lang>` and `<html dir>` updated automatically (Hebrew uses `dir="rtl"`).
+- `frontend/components/LanguageSwitcher.tsx` — EN / עב / РУ toggle button in the header.
+- All four pages (`/`, `/questionnaire`, `/results`, `/methodology`) consume `useT()`.
+
+#### What still needs work
+
+1. **Question content**: `question_text_he` and `question_text_ru` fields exist in the DB schema
+   and seed data but the questionnaire page currently always renders `question_text_en`.
+   Update the questionnaire page to select the correct field based on active language:
+   ```ts
+   const questionText =
+     lang === "he" ? question.question_text_he :
+     lang === "ru" ? question.question_text_ru :
+     question.question_text_en;
+   ```
+
+2. **Party names / explanations**: Party mock data has only English names.
+   Add `name_he`, `name_ru`, and `explanation_he`, `explanation_ru` to the `party_instances`
+   and `political_brands` seed data and return the correct language from the results API.
+
+3. **Topic names**: `topics` table already has `name_he` and `name_ru` columns and seed data.
+   The questionnaire `topic_slug` badge should be replaced with the localised topic name
+   (requires the API to return it, or the frontend to look it up from a `/api/topics` cache).
+
+4. **RTL layout refinements**: Hebrew (`dir="rtl"`) flips some CSS flex-row UIs correctly via
+   Tailwind's logical properties, but some explicit `left`/`right` CSS may need adjustment.
+   Use Tailwind's `rtl:` variant or logical properties (`ms-`, `me-`, `ps-`, `pe-`) where needed.
+
+5. **Political/legal term glossary**: Politically sensitive terms should be translated consistently.
+   Create `frontend/locales/glossary.ts` mapping canonical term slugs to translations in all
+   three languages. Reference it from question context notes and methodology explanations.
+
+6. **Missing locales for future pages**: Any new page added after Phase 8 must add its strings
+   to all three locale files and to the `Translations` interface before the page goes live.
+
+#### Implementation rules for future agents
+
+- Never add a hardcoded UI string to a `.tsx` file. Always add it to all three locale files first.
+- Never assume LTR layout. Default to logical Tailwind properties (e.g., `ms-4` not `ml-4`).
+- Hebrew strings must be reviewed by a native speaker before public release.
+- Russian strings must be reviewed by a native speaker before public release.
+- Do not use machine translation for politically sensitive terms (party names, policy axes,
+  legal and constitutional vocabulary). Use a verified glossary instead.
+- Store the user's language preference in `localStorage` key `sv_lang`.
+  Do not send it to the backend or expose it in analytics without consent.
 
 ---
 

@@ -1,6 +1,6 @@
 import uuid
 import datetime
-from sqlalchemy import String, DateTime, func, Text
+from sqlalchemy import String, DateTime, func, Text, ForeignKey, Float, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 from backend.app.db.base import Base
 
@@ -24,7 +24,7 @@ class LlmRun(Base):
     provider: Mapped[str] = mapped_column(String(100), nullable=False)
     model: Mapped[str] = mapped_column(String(100), nullable=False)
     prompt_version_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey_("llm_prompt_versions.id"), nullable=True
+        ForeignKey("llm_prompt_versions.id"), nullable=True
     )
     input_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(
@@ -37,7 +37,7 @@ class LlmOutput(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     llm_run_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey_("llm_runs.id"), nullable=False, index=True
+        ForeignKey("llm_runs.id"), nullable=False, index=True
     )
     output_json: Mapped[dict] = mapped_column(JSON, nullable=False)
     confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -46,4 +46,7 @@ class LlmOutput(Base):
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+
 

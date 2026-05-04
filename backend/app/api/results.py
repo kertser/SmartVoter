@@ -75,6 +75,9 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
             .first()
         )
         party_name = brand.canonical_name if brand else party.official_name
+        names = brand.names_json or {} if brand else {}
+        name_he = names.get("he") or party_name
+        name_ru = names.get("ru") or party_name
 
         # Load party positions
         positions_rows = (
@@ -160,6 +163,8 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
             PartyResult(
                 party_id=party.id,
                 name=party_name,
+                name_he=name_he,
+                name_ru=name_ru,
                 match_score=round(match_score, 4),
                 confidence=round(confidence, 4),
                 evidence_strength=round(avg_evidence_strength, 4),

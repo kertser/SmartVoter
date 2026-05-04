@@ -70,8 +70,10 @@ def select_next_question(
         separation = _party_separation_score(candidate.policy_item_id, top_party_positions)
         topic_count = answered_topic_counts.get(candidate.topic_slug, 0)
         diversity_penalty = 1.0 / (1.0 + topic_count)
+        # Add a small baseline (0.01) so evidence_quality and diversity_penalty
+        # are always factored in even when party separation data is unavailable.
         value = (
-            separation
+            (separation + 0.01)
             * candidate.evidence_quality
             * diversity_penalty
             * fatigue_penalty
@@ -90,4 +92,5 @@ def should_offer_results(answered_count: int, ranking_stability: float) -> bool:
 def force_results(answered_count: int) -> bool:
     """Force results after 15 questions."""
     return answered_count >= 15
+
 

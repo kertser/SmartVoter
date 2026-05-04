@@ -4,7 +4,9 @@ import uuid
 
 class PartyResult(BaseModel):
     party_id: uuid.UUID
-    name: str
+    name: str  # canonical English name
+    name_he: str | None = None
+    name_ru: str | None = None
     match_score: float
     confidence: float
     evidence_strength: float

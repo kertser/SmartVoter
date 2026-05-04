@@ -19,7 +19,25 @@ Evidence-based political match web app for Israeli parties.
 
 ## Quick start — local development
 
-### 1. Backend
+### One-command start (recommended)
+
+```powershell
+.\run.bat
+```
+
+`run.bat` does everything automatically:
+1. Checks prerequisites (uv, Docker, Node.js)
+2. Copies `.env.example → .env` if missing
+3. Runs `uv sync`
+4. Starts PostgreSQL + Redis via Docker Compose
+5. Runs Alembic migrations
+6. Seeds mock data (idempotent)
+7. Installs frontend npm packages
+8. Opens backend and frontend in separate terminal windows
+
+Requires: **Docker Desktop running**, uv, Node.js 20+.
+
+### Manual start
 
 ```powershell
 # Copy environment config

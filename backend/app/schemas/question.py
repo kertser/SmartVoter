@@ -7,9 +7,12 @@ class QuestionOut(BaseModel):
     id: uuid.UUID
     question_text_en: str
     question_text_he: str
+    question_text_ru: str | None = None
     answer_scale_type: str
     policy_item_id: uuid.UUID
     topic_slug: str
+    topic_name_he: str | None = None
+    topic_name_ru: str | None = None
     context_note: str | None = None
     why_selected: str | None = None
 

@@ -1,0 +1,183 @@
+import type { Translations } from "./types";
+
+const en: Translations = {
+  lang: "en",
+  dir: "ltr",
+
+  layout: {
+    siteTitle: "SmartVoter",
+    navMethodology: "Methodology",
+    footerDisclaimer:
+      "SmartVoter does not tell you whom to vote for. It shows similarity, disagreement, evidence, and uncertainty.",
+  },
+
+  langSwitcher: {
+    label: "Language",
+    en: "EN",
+    he: "HE",
+    ru: "RU",
+    enTooltip: "English",
+    heTooltip: "Hebrew — עברית",
+    ruTooltip: "Russian — Русский",
+  },
+
+  home: {
+    badge: "Evidence-based \u00b7 Transparent \u00b7 Non-partisan",
+    headline1: "How closely do parties match",
+    headline2: "your",
+    headlineEmphasis: "policy preferences",
+    headlineEnd: "?",
+    subtext:
+      "This tool compares your policy preferences with parties\u2019 observed parliamentary behavior and declared positions.",
+    subtextStrong: "It does not tell you whom to vote for.",
+    subtextEnd: " It shows similarity, disagreement, evidence, and uncertainty.",
+    beforeYouBegin: "Before you begin",
+    disclaimer: [
+      "Your answers are anonymous. No login is required.",
+      "Results show similarity scores, not recommendations.",
+      "Confidence is lower for new parties without parliamentary voting records.",
+      "Evidence sources and confidence levels are shown for every result.",
+    ],
+    ctaStart: "Start quick test",
+    ctaMethodology: "View methodology",
+    trust1: "Evidence-first scoring",
+    trust2: "Explicit uncertainty",
+    trust3: "No voting advice",
+    trust4: "Open methodology",
+    trust1Tooltip: "Match scores are derived from parliamentary votes, sponsored bills, and other observable evidence — not just party slogans.",
+    trust2Tooltip: "Every result includes a separate confidence score. Low confidence means sparse evidence or a new party with no voting history.",
+    trust3Tooltip: "SmartVoter shows similarity only. It does not recommend a party or tell you how to vote.",
+    trust4Tooltip: "Our scoring formula, evidence weights, and confidence model are fully documented on the Methodology page.",
+  },
+
+  questionnaire: {
+    progressLabel: (current, max) => `Question ${current} of up to ${max}`,
+    showResultsNow: "Show results now \u2192",
+    positionLabel: "Your position",
+    positionTooltip: "Select the option that best reflects your view. Strongly oppose = \u22121, Strongly support = +1. Your answer is weighted by the importance you select below.",
+    importanceLabel: "How important is this to you?",
+    importanceTooltip: "Higher importance makes this issue count more in your final match score. Use 'Very important' only for issues you genuinely prioritise.",
+    whyAsked: "Why am I being asked this?",
+    whyAskedHide: "\u25b2 Why am I being asked this?",
+    whyAskedShow: "\u25bc Why am I being asked this?",
+    submitNext: "Next question \u2192",
+    submitting: "Saving\u2026",
+    loadingQuestion: "Loading question\u2026",
+    errorLoad: "Failed to load next question. Please refresh.",
+    errorSubmit: "Failed to submit answer. Please try again.",
+    tryAgain: "Try again",
+    likert: {
+      stronglyOppose: "Strongly oppose",
+      somewhatOppose: "Somewhat oppose",
+      neutral: "Neutral / unsure",
+      somewhatSupport: "Somewhat support",
+      stronglySupport: "Strongly support",
+    },
+    salience: {
+      notImportant: "Not important",
+      important: "Important",
+      veryImportant: "Very important",
+    },
+  },
+
+  results: {
+    basedOnEvidence: "Based on available evidence",
+    heading: "Your results",
+    description:
+      "These scores reflect similarity between your stated preferences and each party\u2019s observed parliamentary behavior and declared positions.",
+    howCalculated: "How are scores calculated?",
+    loadingResults: "Computing your results\u2026",
+    errorLoad: "Failed to load results. Please try again.",
+    backToStart: "Back to start",
+    partyMatchesHeading: "Party matches",
+    representationHeading: "Representation picture",
+    bestPartyByTopic: "Best party by topic",
+    viewMethodology: "View methodology",
+    startOver: "Start over",
+    matchLabel: "match",
+    confidenceLabel: (level) => `${level} confidence`,
+    evidenceLabel: (pct) => `Evidence: ${pct}`,
+    coverageLabel: (pct) => `Coverage: ${pct}`,
+    newParty: "New party \u2014 limited evidence",
+    highVolatility: "High volatility",
+    showDetails: "\u25bc Show agreements & disagreements",
+    hideDetails: "\u25b2 Hide details",
+    agreements: "Agreements",
+    disagreements: "Disagreements",
+    noAgreements: "No strong agreements",
+    noDisagreements: "No strong disagreements",
+    confidenceLow: "low",
+    confidenceMedium: "medium",
+    confidenceHigh: "high",
+    // Tooltips
+    tooltipMatchScore: "How similar your answers are to this party's positions (0–100%). Weighted by your importance ratings and the quality of evidence.",
+    tooltipConfidence: "How reliable this match score is. High confidence = strong voting history. Low confidence = new party or sparse data.",
+    tooltipEvidence: "Average reliability of the sources used for this party's positions. Votes > bills > platform > statements.",
+    tooltipCoverage: "What fraction of the topics you rated as important actually have evidence for this party.",
+    tooltipVolatility: "This party has changed significantly in leadership, membership, or platform. Treat its match score with extra caution.",
+    tooltipNewParty: "This party has no Knesset voting history. Its score is inferred from candidate backgrounds, lineage, and declared platform.",
+    tooltipScoreBar: "Visual representation of the match percentage.",
+  },
+
+  methodology: {
+    backHome: "\u2190 Back to home",
+    heading: "Methodology",
+    subtext:
+      "How SmartVoter scores are computed, what they mean, and what they cannot tell you.",
+    corePrincipleHeading: "Core principle",
+    corePrinciple:
+      "SmartVoter compares your stated preferences with parties\u2019 observed behavior, not just their stated promises. Observed votes carry more weight than platform declarations. This is not voting advice \u2014 it is a similarity analysis.",
+    matchScoreHeading: "Match score",
+    matchScoreDescription:
+      "For each question you answer, we compute a similarity score between your position and the party\u2019s inferred position:",
+    notePositions:
+      "Positions range from \u22121 (one pole) to +1 (opposite pole). The axis direction is defined per policy item.",
+    confidenceScoreHeading: "Confidence score",
+    confidenceScoreDescription:
+      "Confidence is computed separately from the match score and reflects how reliable the match score is:",
+    coverageLabel: "Coverage",
+    coverageDescription:
+      "Fraction of your important issues that have evidence for this party",
+    stabilityLabel: "Stability",
+    stabilityDescription:
+      "Whether your ranking changes significantly when one answer is removed",
+    volatilityLabel: "Volatility penalty",
+    volatilityDescription:
+      "Parties that change frequently have higher uncertainty",
+    evidenceStrengthLabel: "Evidence strength",
+    evidenceStrengthDescription:
+      "Average reliability of sources used for this party\u2019s positions",
+    evidencePriorityHeading: "Evidence priority",
+    evidencePriorityDescription:
+      "Not all sources are equally reliable. We weight evidence by type:",
+    tableEvidenceType: "Evidence type",
+    tableWeight: "Weight",
+    tableNote: "Note",
+    evidenceRows: [
+      { type: "Parliamentary vote", weight: "1.00", description: "Most reliable \u2014 direct observable behavior" },
+      { type: "Sponsored bill", weight: "0.80", description: "Legislative initiative, slightly less definitive" },
+      { type: "Committee behavior", weight: "0.70", description: "Committee participation and statements" },
+      { type: "Candidate past votes", weight: "0.55", description: "Historical votes of current party members" },
+      { type: "Party lineage", weight: "0.50", description: "Predecessor party behavior" },
+      { type: "Coalition agreement", weight: "0.45", description: "Signed coalition deals" },
+      { type: "Party platform", weight: "0.35", description: "Official declared platform" },
+      { type: "Public statement", weight: "0.25", description: "Statements to press or public" },
+      { type: "Media interview", weight: "0.20", description: "Least reliable \u2014 context-dependent" },
+    ],
+    newPartyHeading: "New party handling",
+    newPartyWarningTitle: "New parties are not excluded \u2014 but confidence is lower.",
+    newPartyWarningBody:
+      "If a party has no parliamentary voting record, its position is inferred from candidate history (45%), lineage (25%), platform (20%), and statements (10%). These scores carry higher uncertainty and are shown with a warning.",
+    limitationsHeading: "Limitations",
+    limitations: [
+      "This tool does not tell you whom to vote for.",
+      "Party positions may change over time; data has a cutoff date.",
+      "Absence from a vote is treated as low-information, not opposition.",
+      "Phase 1 uses mock data. Real Knesset data ingestion is planned for Phase 6.",
+      "LLM-generated content is reviewed by humans before it appears publicly.",
+    ],
+  },
+};
+
+export default en;
+

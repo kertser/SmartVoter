@@ -19,9 +19,12 @@ export interface Question {
   id: string;
   question_text_en: string;
   question_text_he: string;
+  question_text_ru?: string;
   answer_scale_type: string;
   policy_item_id: string;
   topic_slug: string;
+  topic_name_he?: string;
+  topic_name_ru?: string;
   context_note?: string;
   why_selected?: string;
 }
@@ -43,6 +46,8 @@ export interface AnswerOut {
 export interface PartyResult {
   party_id: string;
   name: string;
+  name_he?: string;
+  name_ru?: string;
   match_score: number;
   confidence: number;
   evidence_strength: number;
@@ -119,5 +124,87 @@ export async function getResults(sessionId: string): Promise<ResultsOut> {
 
 export async function getMethodology(): Promise<object> {
   return apiFetch<object>("/api/methodology");
+}
+
+// ── Admin API ─────────────────────────────────────────────────────────────────
+
+export interface AdminQuestion {
+  id: string;
+  policy_item_id: string;
+  question_text_en: string;
+  question_text_he: string;
+  question_text_ru?: string;
+  status: string;
+  answer_scale_type: string;
+  neutrality_score?: number;
+  complexity_score?: number;
+  llm_prompt_version?: string;
+}
+
+export interface PolicyItemAdmin {
+  id: string;
+  title: string;
+  description?: string;
+  directional_axis?: string;
+  source_type: string;
+  llm_confidence?: number;
+  human_review_status: string;
+}
+
+export interface LlmOutputRecord {
+  id: string;
+  run_id: string;
+  provider: string;
+  model: string;
+  entity_type?: string;
+  entity_id?: string;
+  confidence?: number;
+  output_summary: string;
+  created_at?: string;
+}
+
+export async function adminGetReviewItems(status?: string): Promise<AdminQuestion[]> {
+  const qs = status ? `?status=${status}` : "";
+  return apiFetch<AdminQuestion[]>(`/api/admin/review/items${qs}`);
+}
+
+export async function adminApprove(id: string): Promise<{ status: string }> {
+  return apiFetch(`/api/admin/review/${id}/approve`, { method: "POST" });
+}
+
+export async function adminReject(id: string): Promise<{ status: string }> {
+  return apiFetch(`/api/admin/review/${id}/reject`, { method: "POST" });
+}
+
+export async function adminEditQuestion(
+  id: string,
+  body: { question_text_en?: string; question_text_he?: string; question_text_ru?: string; neutrality_score?: number }
+): Promise<{ status: string }> {
+  return apiFetch(`/api/admin/review/${id}/edit`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function adminGetPolicyItems(): Promise<PolicyItemAdmin[]> {
+  return apiFetch<PolicyItemAdmin[]>("/api/admin/policy-items");
+}
+
+export async function adminGenerateQuestions(policy_item_ids: string[]): Promise<object> {
+  return apiFetch("/api/admin/llm/generate-questions", {
+    method: "POST",
+    body: JSON.stringify({ policy_item_ids }),
+  });
+}
+
+export async function adminClassifyPolicy(policy_item_id: string): Promise<object> {
+  return apiFetch("/api/admin/llm/classify", {
+    method: "POST",
+    body: JSON.stringify({ policy_item_id }),
+  });
+}
+
+export async function adminGetLlmOutputs(limit = 50): Promise<LlmOutputRecord[]> {
+  return apiFetch<LlmOutputRecord[]>(`/api/admin/llm/outputs?limit=${limit}`);
 }
 
