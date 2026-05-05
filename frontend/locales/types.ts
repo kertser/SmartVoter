@@ -14,6 +14,18 @@ export interface Translations {
     siteTitle: string;
     navMethodology: string;
     navSimulation: string;
+    navParties: string;
+    navVotes: string;
+    navBills: string;
+    navPersons: string;
+    navAdmin: string;
+    navPartiesTitle: string;
+    navVotesTitle: string;
+    navBillsTitle: string;
+    navPersonsTitle: string;
+    navAdminTitle: string;
+    navSimulationTitle: string;
+    navMethodologyTitle: string;
     footerDisclaimer: string;
   };
 

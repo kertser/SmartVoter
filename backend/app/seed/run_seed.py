@@ -54,6 +54,99 @@ from backend.app.seed.seed_data import (
 )
 
 
+def seed_simulation_only() -> None:
+    """Seed only the simulation tables (pollsters, polls, historical election, coalition constraints).
+    Safe to run even if core data is already seeded.
+    """
+    db = SessionLocal()
+    try:
+        if db.query(Pollster).first():
+            print("Simulation data already seeded. Skipping.")
+            return
+
+        print("Seeding simulation data...")
+
+        # Pollsters
+        for po in POLLSTERS:
+            db.add(Pollster(**po))
+        db.flush()
+        print(f"  ✓ {len(POLLSTERS)} pollsters")
+
+        party_name_to_id: dict[str, uuid.UUID] = {}
+        from backend.app.models.party_instance import PartyInstance as _PI
+        for pi_row in db.query(_PI).all():
+            party_name_to_id[pi_row.official_name] = pi_row.id
+
+        for poll_data in POLLS:
+            poll = Poll(
+                id=poll_data["id"],
+                pollster_id=poll_data["pollster_id"],
+                field_end_date=poll_data["field_end_date"],
+                sample_size=poll_data["sample_size"],
+                quality_score=poll_data["quality_score"],
+            )
+            db.add(poll)
+            db.flush()
+            for party_name, share in poll_data["results"]:
+                db.add(PollPartyResult(
+                    poll_id=poll.id,
+                    party_instance_id=party_name_to_id.get(party_name),
+                    reported_name=party_name,
+                    vote_share_mean=share,
+                    seats_mean=round(share / (1 / 120), 1),
+                ))
+        db.flush()
+        print(f"  ✓ {len(POLLS)} polls")
+
+        hist = HistoricalElectionResult(
+            id=HISTORICAL_ELECTION["id"],
+            election_cycle=HISTORICAL_ELECTION["election_cycle"],
+            election_date=HISTORICAL_ELECTION["election_date"],
+            turnout=HISTORICAL_ELECTION["turnout"],
+            threshold_percent=HISTORICAL_ELECTION["threshold_percent"],
+            total_valid_votes=HISTORICAL_ELECTION["total_valid_votes"],
+        )
+        db.add(hist)
+        db.flush()
+        for party_name, share, seats, passed in HISTORICAL_ELECTION["results"]:
+            db.add(HistoricalPartyResult(
+                historical_election_result_id=hist.id,
+                party_instance_id=party_name_to_id.get(party_name),
+                reported_name=party_name,
+                vote_share=share,
+                seats=seats,
+                passed_threshold=passed,
+            ))
+        db.flush()
+        print(f"  ✓ 1 historical election")
+
+        for src_name, tgt_name, c_type, strength, explanation in COALITION_CONSTRAINTS_RAW:
+            src_id = party_name_to_id.get(src_name)
+            tgt_id = party_name_to_id.get(tgt_name)
+            if not src_id or not tgt_id:
+                continue
+            db.add(CoalitionConstraint(
+                source_party_instance_id=src_id,
+                target_party_instance_id=tgt_id,
+                constraint_type=c_type,
+                strength=strength,
+                llm_explanation=explanation,
+                confidence=0.90,
+                human_review_status="approved",
+            ))
+        db.flush()
+        print(f"  ✓ {len(COALITION_CONSTRAINTS_RAW)} coalition constraints")
+
+        db.commit()
+        print("Simulation seeding complete ✓")
+    except Exception as e:
+        db.rollback()
+        print(f"Simulation seeding failed: {e}", file=sys.stderr)
+        raise
+    finally:
+        db.close()
+
+
 def run_seed() -> None:
     db = SessionLocal()
     try:
@@ -296,5 +389,13 @@ def run_seed() -> None:
 
 
 if __name__ == "__main__":
-    run_seed()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--simulation-only", action="store_true", help="Seed only simulation data")
+    args = parser.parse_args()
+    if args.simulation_only:
+        seed_simulation_only()
+    else:
+        run_seed()
+        seed_simulation_only()
 

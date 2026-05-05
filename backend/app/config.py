@@ -21,7 +21,11 @@ class Settings(BaseSettings):
     llm_max_retries: int = 2
 
     # Knesset ingestion
+    # Bills/persons endpoint (ParliamentInfo service — still active for KNS_Bill, KNS_Person, etc.)
     knesset_api_base_url: str = "https://knesset.gov.il/Odata/ParliamentInfo.svc"
+    # Votes endpoint — moved to a separate service in 2024
+    # Entity: View_vote_rslts_hdr_Approved (headers), vote_rslts_kmmbr_shadow (per-MK results)
+    knesset_votes_api_base_url: str = "https://knesset.gov.il/Odata/Votes.svc"
     oknesset_api_base_url: str = "https://oknesset.org/api/v2"
 
     @property
