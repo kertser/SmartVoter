@@ -399,4 +399,3 @@ def list_ingestion_jobs() -> list[dict]:
     """List all ingestion jobs (current process only, not persisted)."""
     return list(_ingestion_jobs.values())
 
-
