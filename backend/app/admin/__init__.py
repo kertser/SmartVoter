@@ -8,19 +8,37 @@ No question is ever surfaced to users until human_review_status = 'approved'.
 """
 
 import uuid
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from typing import Annotated
 
 from backend.app.db import get_db
-from backend.app.config import get_settings
+from backend.app.config import get_settings, Settings
 from backend.app.models.question import Question, AnswerScaleType
 from backend.app.models.policy_item import PolicyItem, ReviewStatus
 from backend.app.models.llm_audit import LlmRun, LlmOutput
 from backend.app.services.llm import get_llm_provider
 from backend.app.services.llm.audit_service import AuditedLLMService
 
-admin_router = APIRouter(prefix="/api/admin", tags=["admin"])
+
+def verify_admin(
+    x_admin_password: Annotated[str | None, Header()] = None,
+    settings: Settings = Depends(get_settings),
+) -> None:
+    """Dependency: reject requests missing or with wrong admin password."""
+    if not x_admin_password or x_admin_password != settings.admin_password:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing admin password (X-Admin-Password header).",
+        )
+
+
+admin_router = APIRouter(
+    prefix="/api/admin",
+    tags=["admin"],
+    dependencies=[Depends(verify_admin)],
+)
 
 
 # ── Review endpoints ──────────────────────────────────────────────────────────

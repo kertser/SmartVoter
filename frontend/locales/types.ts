@@ -107,6 +107,21 @@ export interface Translations {
     confidenceLow: string;
     confidenceMedium: string;
     confidenceHigh: string;
+    // Sections
+    topicComparisonHeading: string;
+    evidenceQualityHeading: string;
+    partyLineageHeading: string;
+    noTopicData: string;
+    evidenceDrawerTitle: string;
+    evidenceDrawerClose: string;
+    evidenceTypeLabel: string;
+    positionLabel: string;
+    uncertaintyLabel: string;
+    sourceRefsLabel: string;
+    noSources: string;
+    humanReviewLabel: string;
+    lineageRelationLabel: string;
+    continuityWeightLabel: string;
     // Tooltips
     tooltipMatchScore: string;
     tooltipConfidence: string;
@@ -147,6 +162,53 @@ export interface Translations {
     newPartyWarningBody: string;
     limitationsHeading: string;
     limitations: [string, string, string, string, string];
+  };
+
+  admin: {
+    passwordGateHeading: string;
+    passwordGateSubtext: string;
+    passwordLabel: string;
+    passwordPlaceholder: string;
+    passwordSubmit: string;
+    passwordError: string;
+    passwordLogout: string;
+    heading: string;
+    subtext: string;
+    tabReview: string;
+    tabGenerate: string;
+    tabAudit: string;
+    reviewNoItems: string;
+    reviewSelectFilter: string;
+    reviewFilterAll: string;
+    reviewFilterNeedsReview: string;
+    reviewFilterDraft: string;
+    reviewFilterLlmGenerated: string;
+    reviewFilterRejected: string;
+    reviewRefresh: string;
+    reviewApprove: string;
+    reviewEdit: string;
+    reviewReject: string;
+    reviewSave: string;
+    reviewCancel: string;
+    reviewEnLabel: string;
+    reviewHeLabel: string;
+    reviewRuLabel: string;
+    reviewNeutrality: string;
+    reviewPrompt: string;
+    generateHeading: string;
+    generateSelectAll: string;
+    generateClearAll: string;
+    generateBtn: (n: number) => string;
+    generateGenerating: string;
+    generateSuccessMsg: (n: number) => string;
+    auditHeading: string;
+    auditNoData: string;
+    auditColWhen: string;
+    auditColProvider: string;
+    auditColType: string;
+    auditColConfidence: string;
+    auditColSummary: string;
+    onlyApprovedNote: string;
   };
 }
 

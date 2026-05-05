@@ -11,9 +11,12 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-in-production"
     cors_origins: str = "http://localhost:3000"
 
+    # Admin panel password — must be changed before any deployment
+    admin_password: str = "admin"
+
     # LLM provider configuration
     openai_api_key: str = ""
-    openai_model: str = "gpt-4o-mini"
+    openai_model: str = "gpt-5-nano"
 
     @property
     def cors_origins_list(self) -> list[str]:

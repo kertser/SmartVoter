@@ -9,6 +9,7 @@
  *  3. LLM Audit     — browse stored LLM outputs
  *
  * No question goes public until status = approved.
+ * Requires admin password (X-Admin-Password header, configured in backend config.py).
  */
 
 import { useEffect, useState, useCallback } from "react";
@@ -23,38 +24,127 @@ import {
   AdminQuestion,
   PolicyItemAdmin,
   LlmOutputRecord,
+  getStoredAdminPassword,
+  storeAdminPassword,
+  clearAdminPassword,
 } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 
 type Tab = "review" | "generate" | "audit";
 
+// ── Password Gate ─────────────────────────────────────────────────────────────
+
+function PasswordGate({ onAuth }: { onAuth: () => void }) {
+  const t = useT();
+  const a = t.admin;
+  const [pw, setPw] = useState("");
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(false);
+    // Probe the backend with a lightweight request
+    try {
+      storeAdminPassword(pw);
+      await adminGetReviewItems("approved"); // uses the stored password
+      onAuth();
+    } catch {
+      clearAdminPassword();
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-lg p-8 space-y-6">
+        <div className="space-y-1">
+          <h1 className="text-xl font-bold text-slate-900">{a.passwordGateHeading}</h1>
+          <p className="text-sm text-slate-500">{a.passwordGateSubtext}</p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-slate-700">{a.passwordLabel}</label>
+            <input
+              type="password"
+              value={pw}
+              onChange={(e) => setPw(e.target.value)}
+              placeholder={a.passwordPlaceholder}
+              autoFocus
+              required
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+            />
+          </div>
+          {error && (
+            <p className="text-xs text-red-600 bg-red-50 rounded px-2 py-1">{a.passwordError}</p>
+          )}
+          <button
+            type="submit"
+            disabled={loading || !pw}
+            className="w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {loading ? "…" : a.passwordSubmit}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Main admin page ───────────────────────────────────────────────────────────
+
 export default function AdminPage() {
+  const t = useT();
+  const a = t.admin;
+  const [authed, setAuthed] = useState(false);
   const [tab, setTab] = useState<Tab>("review");
+
+  // Restore existing session on mount
+  useEffect(() => {
+    if (getStoredAdminPassword()) setAuthed(true);
+  }, []);
+
+  const handleLogout = () => {
+    clearAdminPassword();
+    setAuthed(false);
+  };
+
+  if (!authed) return <PasswordGate onAuth={() => setAuthed(true)} />;
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-slate-900">Admin Panel</h1>
-        <p className="text-sm text-slate-500">
-          Review LLM-generated questions · Generate new questions · Audit LLM outputs.{" "}
-          <span className="text-orange-600 font-medium">
-            Questions are only shown to users after approval.
-          </span>
-        </p>
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold text-slate-900">{a.heading}</h1>
+          <p className="text-sm text-slate-500">
+            {a.subtext}{" "}
+            <span className="text-orange-600 font-medium">{a.onlyApprovedNote}</span>
+          </p>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-50"
+        >
+          {a.passwordLogout}
+        </button>
       </div>
 
       {/* Tab bar */}
       <div className="flex gap-1 border-b border-slate-200">
-        {(["review", "generate", "audit"] as Tab[]).map((t) => (
+        {(["review", "generate", "audit"] as Tab[]).map((tabKey) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={tabKey}
+            onClick={() => setTab(tabKey)}
             className={`px-4 py-2 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
-              tab === t
+              tab === tabKey
                 ? "border-brand-600 text-brand-700"
                 : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
-            {t === "review" ? "Review Queue" : t === "generate" ? "Generate Questions" : "LLM Audit"}
+            {tabKey === "review" ? a.tabReview : tabKey === "generate" ? a.tabGenerate : a.tabAudit}
           </button>
         ))}
       </div>
@@ -69,6 +159,7 @@ export default function AdminPage() {
 // ── Review Tab ────────────────────────────────────────────────────────────────
 
 function ReviewTab() {
+  const a = useT().admin;
   const [questions, setQuestions] = useState<AdminQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -89,22 +180,10 @@ function ReviewTab() {
 
   useEffect(() => { reload(); }, [reload]);
 
-  const handleApprove = async (id: string) => {
-    await adminApprove(id);
-    reload();
-  };
-
-  const handleReject = async (id: string) => {
-    await adminReject(id);
-    reload();
-  };
-
+  const handleApprove = async (id: string) => { await adminApprove(id); reload(); };
+  const handleReject = async (id: string) => { await adminReject(id); reload(); };
   const handleEditSave = async (id: string) => {
-    await adminEditQuestion(id, {
-      question_text_en: editText,
-      question_text_he: editHe,
-      question_text_ru: editRu,
-    });
+    await adminEditQuestion(id, { question_text_en: editText, question_text_he: editHe, question_text_ru: editRu });
     setEditingId(null);
     reload();
   };
@@ -124,14 +203,15 @@ function ReviewTab() {
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700"
+          aria-label={a.reviewSelectFilter}
         >
-          <option value="">All pending</option>
-          <option value="needs_review">Needs review</option>
-          <option value="draft">Draft</option>
-          <option value="llm_generated">LLM generated</option>
-          <option value="rejected">Rejected</option>
+          <option value="">{a.reviewFilterAll}</option>
+          <option value="needs_review">{a.reviewFilterNeedsReview}</option>
+          <option value="draft">{a.reviewFilterDraft}</option>
+          <option value="llm_generated">{a.reviewFilterLlmGenerated}</option>
+          <option value="rejected">{a.reviewFilterRejected}</option>
         </select>
-        <button onClick={reload} className="text-xs text-brand-600 hover:underline">↻ Refresh</button>
+        <button onClick={reload} className="text-xs text-brand-600 hover:underline">{a.reviewRefresh}</button>
         <span className="text-xs text-slate-400">{questions.length} items</span>
       </div>
 
@@ -139,111 +219,56 @@ function ReviewTab() {
         <p className="text-slate-400 text-sm py-10 text-center">Loading…</p>
       ) : questions.length === 0 ? (
         <div className="rounded-xl border border-slate-100 bg-slate-50 p-8 text-center text-slate-400 text-sm">
-          No items pending review.
+          {a.reviewNoItems}
         </div>
       ) : (
         <div className="space-y-3">
           {questions.map((q) => (
             <div key={q.id} className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-3">
-              {/* Status + neutrality */}
               <div className="flex items-center gap-2 flex-wrap">
                 <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${statusColors[q.status] ?? "bg-slate-100"}`}>
                   {q.status.replace("_", " ")}
                 </span>
                 {q.neutrality_score != null && (
                   <span className={`rounded-full px-2 py-0.5 text-xs ${
-                    q.neutrality_score >= 0.75
-                      ? "bg-green-50 text-green-700"
-                      : q.neutrality_score >= 0.5
-                      ? "bg-yellow-50 text-yellow-700"
-                      : "bg-red-50 text-red-600"
+                    q.neutrality_score >= 0.75 ? "bg-green-50 text-green-700"
+                    : q.neutrality_score >= 0.5 ? "bg-yellow-50 text-yellow-700"
+                    : "bg-red-50 text-red-600"
                   }`}>
-                    Neutrality: {(q.neutrality_score * 100).toFixed(0)}%
+                    {a.reviewNeutrality}: {(q.neutrality_score * 100).toFixed(0)}%
                   </span>
                 )}
                 {q.llm_prompt_version && (
-                  <span className="text-xs text-slate-400">prompt {q.llm_prompt_version}</span>
+                  <span className="text-xs text-slate-400">{a.reviewPrompt} {q.llm_prompt_version}</span>
                 )}
               </div>
 
               {editingId === q.id ? (
-                /* Edit mode */
                 <div className="space-y-2">
-                  <label className="block text-xs font-medium text-slate-500">English</label>
-                  <textarea
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                    rows={3}
-                    value={editText}
-                    onChange={(e) => setEditText(e.target.value)}
-                  />
-                  <label className="block text-xs font-medium text-slate-500">Hebrew (עברית)</label>
-                  <textarea
-                    dir="rtl"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                    rows={2}
-                    value={editHe}
-                    onChange={(e) => setEditHe(e.target.value)}
-                  />
-                  <label className="block text-xs font-medium text-slate-500">Russian (Русский)</label>
-                  <textarea
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                    rows={2}
-                    value={editRu}
-                    onChange={(e) => setEditRu(e.target.value)}
-                  />
+                  <label className="block text-xs font-medium text-slate-500">{a.reviewEnLabel}</label>
+                  <textarea className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" rows={3} value={editText} onChange={(e) => setEditText(e.target.value)} />
+                  <label className="block text-xs font-medium text-slate-500">{a.reviewHeLabel}</label>
+                  <textarea dir="rtl" className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" rows={2} value={editHe} onChange={(e) => setEditHe(e.target.value)} />
+                  <label className="block text-xs font-medium text-slate-500">{a.reviewRuLabel}</label>
+                  <textarea className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" rows={2} value={editRu} onChange={(e) => setEditRu(e.target.value)} />
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEditSave(q.id)}
-                      className="rounded-lg bg-brand-600 px-4 py-1.5 text-xs text-white font-medium hover:bg-brand-700"
-                    >
-                      Save & mark needs-review
-                    </button>
-                    <button
-                      onClick={() => setEditingId(null)}
-                      className="rounded-lg border border-slate-200 px-4 py-1.5 text-xs text-slate-600"
-                    >
-                      Cancel
-                    </button>
+                    <button onClick={() => handleEditSave(q.id)} className="rounded-lg bg-brand-600 px-4 py-1.5 text-xs text-white font-medium hover:bg-brand-700">{a.reviewSave}</button>
+                    <button onClick={() => setEditingId(null)} className="rounded-lg border border-slate-200 px-4 py-1.5 text-xs text-slate-600">{a.reviewCancel}</button>
                   </div>
                 </div>
               ) : (
-                /* View mode */
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-slate-800">{q.question_text_en}</p>
-                  {q.question_text_he && (
-                    <p dir="rtl" className="text-sm text-slate-500">{q.question_text_he}</p>
-                  )}
-                  {q.question_text_ru && (
-                    <p className="text-sm text-slate-400">{q.question_text_ru}</p>
-                  )}
+                  {q.question_text_he && <p dir="rtl" className="text-sm text-slate-500">{q.question_text_he}</p>}
+                  {q.question_text_ru && <p className="text-sm text-slate-400">{q.question_text_ru}</p>}
                 </div>
               )}
 
               {editingId !== q.id && (
                 <div className="flex flex-wrap gap-2 pt-1">
-                  <button
-                    onClick={() => handleApprove(q.id)}
-                    className="rounded-lg bg-green-600 px-3 py-1.5 text-xs text-white font-medium hover:bg-green-700"
-                  >
-                    ✓ Approve
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditingId(q.id);
-                      setEditText(q.question_text_en);
-                      setEditHe(q.question_text_he ?? "");
-                      setEditRu(q.question_text_ru ?? "");
-                    }}
-                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
-                  >
-                    ✎ Edit
-                  </button>
-                  <button
-                    onClick={() => handleReject(q.id)}
-                    className="rounded-lg border border-red-200 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
-                  >
-                    ✗ Reject
-                  </button>
+                  <button onClick={() => handleApprove(q.id)} className="rounded-lg bg-green-600 px-3 py-1.5 text-xs text-white font-medium hover:bg-green-700">{a.reviewApprove}</button>
+                  <button onClick={() => { setEditingId(q.id); setEditText(q.question_text_en); setEditHe(q.question_text_he ?? ""); setEditRu(q.question_text_ru ?? ""); }} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50">{a.reviewEdit}</button>
+                  <button onClick={() => handleReject(q.id)} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50">{a.reviewReject}</button>
                 </div>
               )}
             </div>
@@ -257,30 +282,23 @@ function ReviewTab() {
 // ── Generate Tab ──────────────────────────────────────────────────────────────
 
 function GenerateTab() {
+  const a = useT().admin;
   const [policyItems, setPolicyItems] = useState<PolicyItemAdmin[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<{ generated: { question_en?: string; question_id?: string; error?: string; policy_item_id: string; neutrality_score?: number; is_loaded?: boolean; provider?: string }[] } | null>(null);
 
-  useEffect(() => {
-    adminGetPolicyItems().then(setPolicyItems).finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { adminGetPolicyItems().then(setPolicyItems).finally(() => setLoading(false)); }, []);
 
-  const toggle = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
+  const toggle = (id: string) => setSelected((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
 
   const handleGenerate = async () => {
     if (selected.size === 0) return;
     setGenerating(true);
     setResult(null);
     try {
-      const res = await adminGenerateQuestions([...selected]) as { generated: { question_en?: string; question_id?: string; error?: string; policy_item_id: string; neutrality_score?: number; is_loaded?: boolean; provider?: string }[] };
+      const res = await adminGenerateQuestions([...selected]) as typeof result;
       setResult(res);
     } finally {
       setGenerating(false);
@@ -298,82 +316,42 @@ function GenerateTab() {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <p className="text-sm text-slate-600 flex-1">
-          Select policy items and click Generate. The LLM will produce questions in EN/HE/RU.
-          All outputs are stored for audit and placed in <em>needs_review</em> status.
-        </p>
-        <button
-          onClick={handleGenerate}
-          disabled={selected.size === 0 || generating}
-          className="rounded-lg bg-brand-600 px-5 py-2 text-sm text-white font-medium hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
-        >
-          {generating ? "Generating…" : `Generate (${selected.size} selected)`}
+        <p className="text-sm text-slate-600 flex-1">{a.generateHeading}</p>
+        <button onClick={handleGenerate} disabled={selected.size === 0 || generating} className="rounded-lg bg-brand-600 px-5 py-2 text-sm text-white font-medium hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
+          {generating ? a.generateGenerating : a.generateBtn(selected.size)}
         </button>
       </div>
 
       {result && (
         <div className="rounded-xl border border-brand-100 bg-brand-50 p-4 space-y-2">
-          <p className="text-sm font-medium text-brand-700">
-            Generated {result.generated.length} question(s). Go to Review Queue to approve them.
-          </p>
+          <p className="text-sm font-medium text-brand-700">{a.generateSuccessMsg(result.generated.length)}</p>
           {result.generated.map((r, i) => (
             <div key={i} className="text-xs text-slate-600">
-              {r.error ? (
-                <span className="text-red-600">✗ {r.policy_item_id}: {r.error}</span>
-              ) : (
-                <span>
-                  ✓ [{r.provider}] neutrality={((r.neutrality_score ?? 0) * 100).toFixed(0)}%
-                  {r.is_loaded ? " ⚠ loaded" : ""} — {r.question_en?.slice(0, 80)}…
-                </span>
+              {r.error ? <span className="text-red-600">✗ {r.policy_item_id}: {r.error}</span> : (
+                <span>✓ [{r.provider}] neutrality={(((r.neutrality_score ?? 0) * 100).toFixed(0))}%{r.is_loaded ? " ⚠ loaded" : ""} — {r.question_en?.slice(0, 80)}…</span>
               )}
             </div>
           ))}
         </div>
       )}
 
-      {loading ? (
-        <p className="text-slate-400 text-sm py-10 text-center">Loading policy items…</p>
-      ) : (
+      {loading ? <p className="text-slate-400 text-sm py-10 text-center">Loading…</p> : (
         <div className="space-y-2">
           <div className="flex gap-2 text-xs text-slate-500">
-            <button onClick={() => setSelected(new Set(policyItems.map((p) => p.id)))} className="hover:underline">
-              Select all
-            </button>
+            <button onClick={() => setSelected(new Set(policyItems.map((p) => p.id)))} className="hover:underline">{a.generateSelectAll}</button>
             <span>·</span>
-            <button onClick={() => setSelected(new Set())} className="hover:underline">
-              Clear
-            </button>
+            <button onClick={() => setSelected(new Set())} className="hover:underline">{a.generateClearAll}</button>
           </div>
           {policyItems.map((pi) => (
-            <label
-              key={pi.id}
-              className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
-                selected.has(pi.id) ? "border-brand-400 bg-brand-50" : "border-slate-200 bg-white hover:bg-slate-50"
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={selected.has(pi.id)}
-                onChange={() => toggle(pi.id)}
-                className="mt-0.5 accent-brand-600"
-              />
+            <label key={pi.id} className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${selected.has(pi.id) ? "border-brand-400 bg-brand-50" : "border-slate-200 bg-white hover:bg-slate-50"}`}>
+              <input type="checkbox" checked={selected.has(pi.id)} onChange={() => toggle(pi.id)} className="mt-0.5 accent-brand-600" />
               <div className="flex-1 space-y-0.5">
                 <p className="text-sm font-medium text-slate-800">{pi.title}</p>
-                {pi.directional_axis && (
-                  <p className="text-xs text-slate-400">{pi.directional_axis}</p>
-                )}
+                {pi.directional_axis && <p className="text-xs text-slate-400">{pi.directional_axis}</p>}
                 <div className="flex gap-2 flex-wrap">
-                  <span className={`rounded-full px-2 py-0.5 text-xs ${sourceColors[pi.source_type] ?? "bg-slate-100 text-slate-600"}`}>
-                    {pi.source_type}
-                  </span>
-                  {pi.llm_confidence != null && (
-                    <span className="text-xs text-slate-400">
-                      conf {(pi.llm_confidence * 100).toFixed(0)}%
-                    </span>
-                  )}
-                  <span className={`text-xs ${pi.human_review_status === "approved" ? "text-green-600" : "text-slate-400"}`}>
-                    {pi.human_review_status}
-                  </span>
+                  <span className={`rounded-full px-2 py-0.5 text-xs ${sourceColors[pi.source_type] ?? "bg-slate-100 text-slate-600"}`}>{pi.source_type}</span>
+                  {pi.llm_confidence != null && <span className="text-xs text-slate-400">conf {(pi.llm_confidence * 100).toFixed(0)}%</span>}
+                  <span className={`text-xs ${pi.human_review_status === "approved" ? "text-green-600" : "text-slate-400"}`}>{pi.human_review_status}</span>
                 </div>
               </div>
             </label>
@@ -387,12 +365,11 @@ function GenerateTab() {
 // ── Audit Tab ─────────────────────────────────────────────────────────────────
 
 function AuditTab() {
+  const a = useT().admin;
   const [outputs, setOutputs] = useState<LlmOutputRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    adminGetLlmOutputs(50).then(setOutputs).finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { adminGetLlmOutputs(50).then(setOutputs).finally(() => setLoading(false)); }, []);
 
   const entityColors: Record<string, string> = {
     question: "bg-blue-50 text-blue-700",
@@ -403,49 +380,32 @@ function AuditTab() {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-slate-500">
-        Every LLM call is stored here with provider, model, input hash, and confidence.
-        Double-click a row to see full output (coming soon).
-      </p>
+      <p className="text-sm text-slate-500">{a.auditHeading}</p>
       {loading ? (
         <p className="text-slate-400 text-sm py-10 text-center">Loading…</p>
       ) : outputs.length === 0 ? (
-        <div className="rounded-xl border border-slate-100 bg-slate-50 p-8 text-center text-slate-400 text-sm">
-          No LLM outputs recorded yet. Generate questions to see audit entries here.
-        </div>
+        <div className="rounded-xl border border-slate-100 bg-slate-50 p-8 text-center text-slate-400 text-sm">{a.auditNoData}</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
-                <th className="py-2 pr-4">When</th>
-                <th className="py-2 pr-4">Provider / Model</th>
-                <th className="py-2 pr-4">Type</th>
-                <th className="py-2 pr-4">Confidence</th>
-                <th className="py-2">Summary</th>
+                <th className="py-2 pe-4">{a.auditColWhen}</th>
+                <th className="py-2 pe-4">{a.auditColProvider}</th>
+                <th className="py-2 pe-4">{a.auditColType}</th>
+                <th className="py-2 pe-4">{a.auditColConfidence}</th>
+                <th className="py-2">{a.auditColSummary}</th>
               </tr>
             </thead>
             <tbody>
               {outputs.map((row) => (
                 <tr key={row.id} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className="py-2 pr-4 text-slate-400 whitespace-nowrap">
-                    {row.created_at ? new Date(row.created_at).toLocaleString() : "—"}
+                  <td className="py-2 pe-4 text-slate-400 whitespace-nowrap">{row.created_at ? new Date(row.created_at).toLocaleString() : "—"}</td>
+                  <td className="py-2 pe-4 text-slate-600 whitespace-nowrap"><span className="font-medium">{row.provider}</span><br /><span className="text-slate-400">{row.model}</span></td>
+                  <td className="py-2 pe-4">
+                    {row.entity_type ? <span className={`rounded-full px-2 py-0.5 ${entityColors[row.entity_type] ?? "bg-slate-100 text-slate-600"}`}>{row.entity_type}</span> : "—"}
                   </td>
-                  <td className="py-2 pr-4 text-slate-600 whitespace-nowrap">
-                    <span className="font-medium">{row.provider}</span>
-                    <br />
-                    <span className="text-slate-400">{row.model}</span>
-                  </td>
-                  <td className="py-2 pr-4">
-                    {row.entity_type ? (
-                      <span className={`rounded-full px-2 py-0.5 ${entityColors[row.entity_type] ?? "bg-slate-100 text-slate-600"}`}>
-                        {row.entity_type}
-                      </span>
-                    ) : "—"}
-                  </td>
-                  <td className="py-2 pr-4 text-slate-500">
-                    {row.confidence != null ? `${(row.confidence * 100).toFixed(0)}%` : "—"}
-                  </td>
+                  <td className="py-2 pe-4 text-slate-500">{row.confidence != null ? `${(row.confidence * 100).toFixed(0)}%` : "—"}</td>
                   <td className="py-2 text-slate-600 max-w-sm truncate">{row.output_summary}</td>
                 </tr>
               ))}

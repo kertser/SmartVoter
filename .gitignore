@@ -1,10 +1,89 @@
-# Python-generated files
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
-*.py[oc]
-build/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
 dist/
+build/
 wheels/
-*.egg-info
-
+*.spec
 # Virtual environments
-.venv
+.venv/
+venv/
+env/
+ENV/
+# uv.lock is intentionally committed — do NOT ignore it
+
+# ── Environment & secrets ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+# .env.example is intentionally tracked
+
+# ── Node / Frontend ───────────────────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/.turbo/
+frontend/out/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+frontend/next-env.d.ts
+
+# ── IDE / Editor ──────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# ── OS artifacts ──────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# ── Testing & coverage ────────────────────────────────────────────────────────
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+*.test-results/
+coverage.xml
+nosetests.xml
+
+# ── Logs / runtime ────────────────────────────────────────────────────────────
+*.log
+*.pid
+*.pid.lock
+logs/
+
+# ── Database ──────────────────────────────────────────────────────────────────
+*.db
+*.sqlite3
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+# docker-compose.yml is tracked; override files are local
+docker-compose.override.yml
+
+# ── Alembic ───────────────────────────────────────────────────────────────────
+# alembic/versions/ is intentionally tracked
+
+# ── Misc build artefacts ──────────────────────────────────────────────────────
+*.tar.gz
+*.zip
+*.whl
+tmp/
+temp/
+.tmp/
+/backend/alembic/versions/0c562b9360f6_initial_schema.py

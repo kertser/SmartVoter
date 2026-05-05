@@ -134,6 +134,14 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
         topic_avg = {t: sum(v) / len(v) for t, v in topic_scores.items()}
         sorted_topics = sorted(topic_avg.items(), key=lambda x: -x[1])
 
+        # Evidence-by-type breakdown
+        evidence_counts: dict[str, float] = {}
+        for p in positions_rows:
+            etype = p.evidence_type or "party_platform"
+            evidence_counts[etype] = evidence_counts.get(etype, 0) + p.evidence_strength
+        total_evidence = sum(evidence_counts.values()) or 1.0
+        evidence_by_type = {k: round(v / total_evidence, 3) for k, v in sorted(evidence_counts.items(), key=lambda x: -x[1])}
+
         top_agreements = [t for t, s in sorted_topics if s >= 0.65][:3]
         top_disagreements = [t for t, s in sorted_topics if s < 0.5][:3]
         weak_evidence = [
@@ -170,11 +178,14 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
                 evidence_strength=round(avg_evidence_strength, 4),
                 volatility=round(volatility, 4),
                 coverage=round(coverage, 4),
+                answer_stability=round(answer_stability, 4),
                 is_new_party=is_new_party,
                 explanation=explanation,
                 top_agreements=top_agreements,
                 top_disagreements=top_disagreements,
                 weak_evidence_topics=weak_evidence_topic_names,
+                topic_scores={t: round(s, 3) for t, s in topic_avg.items()},
+                evidence_by_type=evidence_by_type,
             )
         )
 

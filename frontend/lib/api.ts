@@ -6,6 +6,25 @@
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// ── Admin password (stored in sessionStorage, never sent to analytics) ────────
+
+const ADMIN_PW_KEY = "sv_admin_pw";
+
+export function getStoredAdminPassword(): string {
+  if (typeof window === "undefined") return "";
+  return sessionStorage.getItem(ADMIN_PW_KEY) ?? "";
+}
+
+export function storeAdminPassword(pw: string): void {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(ADMIN_PW_KEY, pw);
+}
+
+export function clearAdminPassword(): void {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(ADMIN_PW_KEY);
+}
+
 export interface Topic {
   id: string;
   slug: string;
@@ -53,11 +72,16 @@ export interface PartyResult {
   evidence_strength: number;
   volatility: number;
   coverage: number;
+  answer_stability: number;
   is_new_party: boolean;
   explanation: string;
   top_agreements: string[];
   top_disagreements: string[];
   weak_evidence_topics: string[];
+  /** topic_name_en → 0..1 similarity */
+  topic_scores: Record<string, number>;
+  /** evidence_type → proportion 0..1 */
+  evidence_by_type: Record<string, number>;
 }
 
 export interface BestPartyByTopic {
@@ -90,6 +114,20 @@ async function apiFetch<T>(
     throw new Error(`API error ${response.status}: ${await response.text()}`);
   }
   return response.json() as Promise<T>;
+}
+
+/** Like apiFetch but automatically attaches the stored admin password header. */
+async function adminApiFetch<T>(
+  path: string,
+  options?: RequestInit
+): Promise<T> {
+  const pw = getStoredAdminPassword();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options?.headers as Record<string, string>),
+  };
+  if (pw) headers["X-Admin-Password"] = pw;
+  return apiFetch<T>(path, { ...options, headers });
 }
 
 export async function getTopics(): Promise<Topic[]> {
@@ -165,46 +203,103 @@ export interface LlmOutputRecord {
 
 export async function adminGetReviewItems(status?: string): Promise<AdminQuestion[]> {
   const qs = status ? `?status=${status}` : "";
-  return apiFetch<AdminQuestion[]>(`/api/admin/review/items${qs}`);
+  return adminApiFetch<AdminQuestion[]>(`/api/admin/review/items${qs}`);
 }
 
 export async function adminApprove(id: string): Promise<{ status: string }> {
-  return apiFetch(`/api/admin/review/${id}/approve`, { method: "POST" });
+  return adminApiFetch(`/api/admin/review/${id}/approve`, { method: "POST" });
 }
 
 export async function adminReject(id: string): Promise<{ status: string }> {
-  return apiFetch(`/api/admin/review/${id}/reject`, { method: "POST" });
+  return adminApiFetch(`/api/admin/review/${id}/reject`, { method: "POST" });
 }
 
 export async function adminEditQuestion(
   id: string,
   body: { question_text_en?: string; question_text_he?: string; question_text_ru?: string; neutrality_score?: number }
 ): Promise<{ status: string }> {
-  return apiFetch(`/api/admin/review/${id}/edit`, {
+  return adminApiFetch(`/api/admin/review/${id}/edit`, {
     method: "PATCH",
     body: JSON.stringify(body),
   });
 }
 
 export async function adminGetPolicyItems(): Promise<PolicyItemAdmin[]> {
-  return apiFetch<PolicyItemAdmin[]>("/api/admin/policy-items");
+  return adminApiFetch<PolicyItemAdmin[]>("/api/admin/policy-items");
 }
 
 export async function adminGenerateQuestions(policy_item_ids: string[]): Promise<object> {
-  return apiFetch("/api/admin/llm/generate-questions", {
+  return adminApiFetch("/api/admin/llm/generate-questions", {
     method: "POST",
     body: JSON.stringify({ policy_item_ids }),
   });
 }
 
 export async function adminClassifyPolicy(policy_item_id: string): Promise<object> {
-  return apiFetch("/api/admin/llm/classify", {
+  return adminApiFetch("/api/admin/llm/classify", {
     method: "POST",
     body: JSON.stringify({ policy_item_id }),
   });
 }
 
 export async function adminGetLlmOutputs(limit = 50): Promise<LlmOutputRecord[]> {
-  return apiFetch<LlmOutputRecord[]>(`/api/admin/llm/outputs?limit=${limit}`);
+  return adminApiFetch<LlmOutputRecord[]>(`/api/admin/llm/outputs?limit=${limit}`);
+}
+
+// ── Lineage & Evidence ────────────────────────────────────────────────────────
+
+export interface LineageNode {
+  id: string;
+  name: string;
+  name_he?: string;
+  name_ru?: string;
+  official_name: string;
+  election_cycle?: string;
+  knesset_number?: number;
+  status: string;
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface LineageEdge {
+  id: string;
+  from_id: string;
+  to_id: string;
+  relation_type: string;
+  continuity_weight: number;
+  llm_explanation?: string;
+  human_review_status: string;
+  source_url?: string;
+}
+
+export interface LineageGraph {
+  nodes: LineageNode[];
+  edges: LineageEdge[];
+}
+
+export interface PartyEvidenceItem {
+  position_id: string;
+  policy_item_id: string;
+  policy_item_title: string;
+  policy_item_description?: string;
+  directional_axis?: string;
+  topic_slug?: string;
+  topic_name_en?: string;
+  topic_name_he?: string;
+  topic_name_ru?: string;
+  position_mean: number;
+  position_uncertainty: number;
+  evidence_strength: number;
+  evidence_type: string;
+  source_refs_json: unknown[];
+  llm_explanation?: string;
+}
+
+export async function getLineage(): Promise<LineageGraph> {
+  return apiFetch<LineageGraph>("/api/lineage");
+}
+
+export async function getPartyEvidence(partyId: string): Promise<PartyEvidenceItem[]> {
+  return apiFetch<PartyEvidenceItem[]>(`/api/parties/${partyId}/evidence`);
 }
 

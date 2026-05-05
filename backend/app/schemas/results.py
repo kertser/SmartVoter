@@ -12,11 +12,16 @@ class PartyResult(BaseModel):
     evidence_strength: float
     volatility: float
     coverage: float
+    answer_stability: float = 1.0
     is_new_party: bool
     explanation: str
     top_agreements: list[str]
     top_disagreements: list[str]
     weak_evidence_topics: list[str]
+    # Per-topic similarity breakdown (topic_name_en → 0..1 similarity)
+    topic_scores: dict[str, float] = {}
+    # Evidence source composition (evidence_type → proportion 0..1)
+    evidence_by_type: dict[str, float] = {}
 
 
 class BestPartyByTopic(BaseModel):

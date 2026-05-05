@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 /**
  * Lightweight CSS-only tooltip.
  * Wraps any element; shows `content` above it on hover/focus.
@@ -12,7 +14,7 @@
 
 interface TooltipProps {
   content: string;
-  children: React.ReactNode;
+  children: ReactNode;
   /** Position relative to trigger. Default: "top" */
   position?: "top" | "bottom";
   className?: string;
@@ -40,7 +42,7 @@ export function Tooltip({
           px-2.5 py-1.5
           bg-slate-800 text-white text-xs leading-snug rounded-lg
           whitespace-nowrap max-w-[220px] text-center
-          opacity-0 group-hover:opacity-100
+          opacity-0 group-hover:opacity-100 group-focus-within:opacity-100
           transition-opacity duration-150
           shadow-lg
         `}
