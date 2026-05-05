@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     # LLM provider configuration
     openai_api_key: str = ""
     openai_model: str = "gpt-5-nano"
+    llm_timeout_seconds: int = 30
+    llm_max_retries: int = 2
+
+    # Knesset ingestion
+    knesset_api_base_url: str = "https://knesset.gov.il/Odata/ParliamentInfo.svc"
+    oknesset_api_base_url: str = "https://oknesset.org/api/v2"
 
     @property
     def cors_origins_list(self) -> list[str]:
@@ -30,4 +36,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

@@ -15,8 +15,14 @@ class PartyResult(BaseModel):
     answer_stability: float = 1.0
     is_new_party: bool
     explanation: str
+    explanation_he: str | None = None
+    explanation_ru: str | None = None
     top_agreements: list[str]
+    top_agreements_he: list[str] = []
+    top_agreements_ru: list[str] = []
     top_disagreements: list[str]
+    top_disagreements_he: list[str] = []
+    top_disagreements_ru: list[str] = []
     weak_evidence_topics: list[str]
     # Per-topic similarity breakdown (topic_name_en → 0..1 similarity)
     topic_scores: dict[str, float] = {}

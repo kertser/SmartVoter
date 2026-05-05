@@ -1,5 +1,5 @@
 """
-Seed runner: populates the database with mock data for Phase 1.
+Seed runner: populates the database with mock data for Phase 1 + Phase 14B.
 Run with: uv run python -m backend.app.seed.run_seed
 
 Idempotent: checks if topics already exist before inserting.
@@ -26,6 +26,11 @@ from backend.app.models.topic import Topic
 from backend.app.models.policy_item import PolicyItem, PolicySourceType, ReviewStatus
 from backend.app.models.party_position import PartyPosition
 from backend.app.models.question import Question, AnswerScaleType
+from backend.app.models.simulation import (
+    Pollster, Poll, PollPartyResult,
+    HistoricalElectionResult, HistoricalPartyResult,
+    CoalitionConstraint,
+)
 from backend.app.services.volatility import register_mock_volatility
 
 from backend.app.seed.seed_data import (
@@ -39,6 +44,13 @@ from backend.app.seed.seed_data import (
     PERSONS,
     MEMBERSHIPS,
     QUESTIONS_DATA,
+    # Phase 14B
+    POLLSTERS,
+    POLLS,
+    HISTORICAL_ELECTION,
+    COALITION_CONSTRAINTS_RAW,
+    # Party UUIDs needed for coalition constraints
+    PARTY_LIKUD, PARTY_LABOR, PARTY_UTJ, PARTY_YESH_ATID, PARTY_NEW_HOPE,
 )
 
 
@@ -164,7 +176,9 @@ def run_seed() -> None:
 
         # 9. Questions (40 total — 2 per policy item)
         q_count = 0
-        for item_slug, text_en, text_he in QUESTIONS_DATA:
+        for q_tuple in QUESTIONS_DATA:
+            item_slug, text_en, text_he = q_tuple[0], q_tuple[1], q_tuple[2]
+            text_ru = q_tuple[3] if len(q_tuple) > 3 else None
             policy_item_id = pi_slug_to_id.get(item_slug)
             if not policy_item_id:
                 continue
@@ -173,6 +187,7 @@ def run_seed() -> None:
                     policy_item_id=policy_item_id,
                     question_text_en=text_en,
                     question_text_he=text_he,
+                    question_text_ru=text_ru,
                     answer_scale_type=AnswerScaleType.likert_5,
                     neutrality_score=0.82,
                     complexity_score=0.45,
@@ -184,6 +199,82 @@ def run_seed() -> None:
         db.flush()
         print(f"  ✓ {q_count} questions")
 
+        # ── Phase 14B: Simulation seed data ──────────────────────────────────
+
+        # 10. Pollsters
+        for po in POLLSTERS:
+            db.add(Pollster(**po))
+        db.flush()
+        print(f"  ✓ {len(POLLSTERS)} pollsters")
+
+        # 11. Polls + PollPartyResults
+        # Build party_name → party_instance_id map
+        party_name_to_id: dict[str, uuid.UUID] = {}
+        for pi_row in PARTY_INSTANCES:
+            party_name_to_id[pi_row["official_name"]] = pi_row["id"]
+
+        for poll_data in POLLS:
+            poll = Poll(
+                id=poll_data["id"],
+                pollster_id=poll_data["pollster_id"],
+                field_end_date=poll_data["field_end_date"],
+                sample_size=poll_data["sample_size"],
+                quality_score=poll_data["quality_score"],
+            )
+            db.add(poll)
+            db.flush()
+            for party_name, share in poll_data["results"]:
+                db.add(PollPartyResult(
+                    poll_id=poll.id,
+                    party_instance_id=party_name_to_id.get(party_name),
+                    reported_name=party_name,
+                    vote_share_mean=share,
+                    seats_mean=round(share / (1 / 120), 1),  # rough estimate
+                ))
+        db.flush()
+        print(f"  ✓ {len(POLLS)} polls with party results")
+
+        # 12. Historical election
+        hist = HistoricalElectionResult(
+            id=HISTORICAL_ELECTION["id"],
+            election_cycle=HISTORICAL_ELECTION["election_cycle"],
+            election_date=HISTORICAL_ELECTION["election_date"],
+            turnout=HISTORICAL_ELECTION["turnout"],
+            threshold_percent=HISTORICAL_ELECTION["threshold_percent"],
+            total_valid_votes=HISTORICAL_ELECTION["total_valid_votes"],
+        )
+        db.add(hist)
+        db.flush()
+        for party_name, share, seats, passed in HISTORICAL_ELECTION["results"]:
+            db.add(HistoricalPartyResult(
+                historical_election_result_id=hist.id,
+                party_instance_id=party_name_to_id.get(party_name),
+                reported_name=party_name,
+                vote_share=share,
+                seats=seats,
+                passed_threshold=passed,
+            ))
+        db.flush()
+        print(f"  ✓ 1 historical election ({HISTORICAL_ELECTION['election_cycle']})")
+
+        # 13. Coalition constraints
+        for src_name, tgt_name, c_type, strength, explanation in COALITION_CONSTRAINTS_RAW:
+            src_id = party_name_to_id.get(src_name)
+            tgt_id = party_name_to_id.get(tgt_name)
+            if not src_id or not tgt_id:
+                continue
+            db.add(CoalitionConstraint(
+                source_party_instance_id=src_id,
+                target_party_instance_id=tgt_id,
+                constraint_type=c_type,
+                strength=strength,
+                llm_explanation=explanation,
+                confidence=0.90,
+                human_review_status="approved",
+            ))
+        db.flush()
+        print(f"  ✓ {len(COALITION_CONSTRAINTS_RAW)} coalition constraints")
+
         db.commit()
 
         # Register mock volatility for volatility service
@@ -193,7 +284,8 @@ def run_seed() -> None:
         print("\nSeeding complete ✓")
         print(f"  Brands: {len(POLITICAL_BRANDS)}, Instances: {len(PARTY_INSTANCES)}, "
               f"Topics: {len(TOPICS)}, Policy Items: {len(POLICY_ITEMS)}, "
-              f"Questions: {q_count}, Persons: {len(PERSONS)}")
+              f"Questions: {q_count}, Persons: {len(PERSONS)}, "
+              f"Polls: {len(POLLS)}")
 
     except Exception as e:
         db.rollback()

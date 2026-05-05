@@ -112,6 +112,8 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
 
         # Find agreements and disagreements (top 3 topics each)
         topic_scores: dict[str, list[float]] = {}
+        # Maps topic name_en → (name_he, name_ru)
+        topic_names_i18n: dict[str, tuple[str | None, str | None]] = {}
         answered_item_ids = {a.policy_item_id for a in user_answers}
         for pos in positions:
             if pos.policy_item_id not in answered_item_ids:
@@ -130,6 +132,7 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
             distance = abs(user_ans.answer_value - pos.position_mean)
             similarity = 1.0 - distance / 2.0
             topic_scores.setdefault(topic.name_en, []).append(similarity)
+            topic_names_i18n.setdefault(topic.name_en, (topic.name_he, topic.name_ru))
 
         topic_avg = {t: sum(v) / len(v) for t, v in topic_scores.items()}
         sorted_topics = sorted(topic_avg.items(), key=lambda x: -x[1])
@@ -144,6 +147,20 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
 
         top_agreements = [t for t, s in sorted_topics if s >= 0.65][:3]
         top_disagreements = [t for t, s in sorted_topics if s < 0.5][:3]
+
+        # Localized agreement/disagreement lists
+        top_agreements_he = [
+            topic_names_i18n.get(t, (None, None))[0] or t for t in top_agreements
+        ]
+        top_agreements_ru = [
+            topic_names_i18n.get(t, (None, None))[1] or t for t in top_agreements
+        ]
+        top_disagreements_he = [
+            topic_names_i18n.get(t, (None, None))[0] or t for t in top_disagreements
+        ]
+        top_disagreements_ru = [
+            topic_names_i18n.get(t, (None, None))[1] or t for t in top_disagreements
+        ]
         weak_evidence = [
             t for t in (
                 db.query(Topic).join(PolicyItem, PolicyItem.topic_id == Topic.id)
@@ -161,10 +178,26 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
             f"Based on available evidence, your preferences align with {party_name} "
             f"on {len(top_agreements)} key topics."
         )
+        explanation_he = (
+            f"בהתבסס על הראיות הזמינות, העדפותיך מתאימות ל{name_he} "
+            f"ב-{len(top_agreements)} נושאים מרכזיים."
+        )
+        explanation_ru = (
+            f"На основе имеющихся данных ваши предпочтения совпадают с позицией {name_ru} "
+            f"по {len(top_agreements)} ключевым темам."
+        )
         if is_new_party:
             explanation += (
                 " Note: this party has limited parliamentary history. "
                 "Match score is based on candidate history and declared positions."
+            )
+            explanation_he += (
+                " שים לב: למפלגה זו היסטוריה פרלמנטרית מוגבלת. "
+                "ציון ההתאמה מבוסס על היסטוריית המועמדים ועמדות מוצהרות."
+            )
+            explanation_ru += (
+                " Примечание: у этой партии ограниченная парламентская история. "
+                "Оценка совпадения основана на истории кандидатов и задекларированных позициях."
             )
 
         party_results.append(
@@ -181,8 +214,14 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
                 answer_stability=round(answer_stability, 4),
                 is_new_party=is_new_party,
                 explanation=explanation,
+                explanation_he=explanation_he,
+                explanation_ru=explanation_ru,
                 top_agreements=top_agreements,
+                top_agreements_he=top_agreements_he,
+                top_agreements_ru=top_agreements_ru,
                 top_disagreements=top_disagreements,
+                top_disagreements_he=top_disagreements_he,
+                top_disagreements_ru=top_disagreements_ru,
                 weak_evidence_topics=weak_evidence_topic_names,
                 topic_scores={t: round(s, 3) for t, s in topic_avg.items()},
                 evidence_by_type=evidence_by_type,

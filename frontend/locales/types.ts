@@ -13,6 +13,7 @@ export interface Translations {
   layout: {
     siteTitle: string;
     navMethodology: string;
+    navSimulation: string;
     footerDisclaimer: string;
   };
 
@@ -177,6 +178,7 @@ export interface Translations {
     tabReview: string;
     tabGenerate: string;
     tabAudit: string;
+    tabIngestion: string;
     reviewNoItems: string;
     reviewSelectFilter: string;
     reviewFilterAll: string;
@@ -209,6 +211,62 @@ export interface Translations {
     auditColConfidence: string;
     auditColSummary: string;
     onlyApprovedNote: string;
+    // Ingestion tab
+    ingestHeading: string;
+    ingestSubtext: string;
+    ingestKnessetLabel: string;
+    ingestLimitLabel: string;
+    ingestNoLlmLabel: string;
+    ingestVotesOnlyLabel: string;
+    ingestBillsOnlyLabel: string;
+    ingestRunBtn: string;
+    ingestRunning: string;
+    ingestQueued: string;
+    ingestDone: string;
+    ingestError: string;
+    ingestJobId: string;
+    ingestPollBtn: string;
+    ingestResultVotes: (inserted: number, updated: number, skipped: number) => string;
+    ingestResultBills: (inserted: number, skipped: number) => string;
+  };
+
+  simulation: {
+    heading: string;
+    subheading: string;
+    disclaimer: string;
+    loadingSimulation: string;
+    errorLoad: string;
+    runNewSimulation: string;
+    running: string;
+    semicircleHeading: string;
+    semicircleDesc: string;
+    seatDistributionHeading: string;
+    seatDistributionDesc: string;
+    thresholdRiskHeading: string;
+    thresholdRiskDesc: string;
+    coalitionScenariosHeading: string;
+    coalitionScenariosDesc: string;
+    assumptionsHeading: string;
+    assumptionsShow: string;
+    assumptionsHide: string;
+    seatsLabel: string;
+    seatsMedianLabel: string;
+    intervalLabel: string;
+    thresholdProbLabel: string;
+    feasibilityLabel: string;
+    stabilityLabel: string;
+    probabilityLabel: string;
+    membersLabel: string;
+    noScenarios: string;
+    dataCutoff: (date: string) => string;
+    modelVersionLabel: string;
+    iterationsLabel: string;
+    totalSeatsLabel: string;
+    dataNote: string;
+    notPrediction: string;
+    coalSeats: (mean: number, p10: number, p90: number) => string;
+    coalFeasibility: (score: number) => string;
+    coalStability: (score: number) => string;
   };
 }
 

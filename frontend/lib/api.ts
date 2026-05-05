@@ -75,8 +75,14 @@ export interface PartyResult {
   answer_stability: number;
   is_new_party: boolean;
   explanation: string;
+  explanation_he?: string;
+  explanation_ru?: string;
   top_agreements: string[];
+  top_agreements_he?: string[];
+  top_agreements_ru?: string[];
   top_disagreements: string[];
+  top_disagreements_he?: string[];
+  top_disagreements_ru?: string[];
   weak_evidence_topics: string[];
   /** topic_name_en → 0..1 similarity */
   topic_scores: Record<string, number>;
@@ -301,5 +307,250 @@ export async function getLineage(): Promise<LineageGraph> {
 
 export async function getPartyEvidence(partyId: string): Promise<PartyEvidenceItem[]> {
   return apiFetch<PartyEvidenceItem[]>(`/api/parties/${partyId}/evidence`);
+}
+
+// ── Simulation API (Phase 14B) ────────────────────────────────────────────────
+
+export interface SimulationPartyResult {
+  party_name: string;
+  party_instance_id: string | null;
+  seats_mean: number;
+  seats_median: number;
+  seats_p10: number;
+  seats_p25: number;
+  seats_p75: number;
+  seats_p90: number;
+  threshold_pass_probability: number;
+  vote_share_mean: number;
+}
+
+export interface CoalitionScenarioMember {
+  party_name: string;
+  expected_seats: number;
+  role?: string;
+}
+
+export interface CoalitionScenario {
+  scenario_id: string;
+  scenario_name: string;
+  probability_estimate: number;
+  seat_mean: number;
+  seat_p10: number;
+  seat_p90: number;
+  feasibility_score: number;
+  stability_score: number;
+  ideological_coherence_score: number;
+  explanation: string;
+  members: CoalitionScenarioMember[];
+}
+
+export interface SimulationRun {
+  run_id: string;
+  created_at: string | null;
+  model_version: string;
+  data_cutoff_date: string | null;
+  n_iterations: number;
+  assumptions: Record<string, string>;
+  parties: SimulationPartyResult[];
+  coalitions: CoalitionScenario[];
+}
+
+export async function getLatestSimulation(): Promise<SimulationRun> {
+  return apiFetch<SimulationRun>("/api/simulation/latest");
+}
+
+export async function triggerSimulation(n_iterations = 5000): Promise<SimulationRun> {
+  return apiFetch<SimulationRun>(`/api/simulation/run?n_iterations=${n_iterations}`, {
+    method: "POST",
+  });
+}
+
+// ── Privacy ───────────────────────────────────────────────────────────────────
+
+export async function deleteSession(sessionId: string): Promise<{ deleted: boolean }> {
+  return apiFetch<{ deleted: boolean }>(`/api/sessions/${sessionId}`, { method: "DELETE" });
+}
+
+// ── Public evidence browser ───────────────────────────────────────────────────
+
+export interface PartyListItem {
+  id: string;
+  name: string;
+  name_he?: string;
+  name_ru?: string;
+  official_name: string;
+  election_cycle?: string;
+  knesset_number?: number;
+  status: string;
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface PartyPositionRecord {
+  policy_item_id: string;
+  policy_item_title: string;
+  directional_axis?: string;
+  topic_slug?: string;
+  topic_name_en?: string;
+  topic_name_he?: string;
+  topic_name_ru?: string;
+  position_mean: number;
+  position_uncertainty: number;
+  evidence_strength: number;
+  evidence_type: string;
+  llm_explanation?: string;
+}
+
+export interface MemberRecord {
+  person_id: string;
+  name_en?: string;
+  name_he?: string;
+  role: string;
+  start_date?: string;
+  end_date?: string;
+  confidence?: number;
+}
+
+export interface PartyDetail extends PartyListItem {
+  positions: PartyPositionRecord[];
+  members: MemberRecord[];
+  lineage: LineageEdge[];
+}
+
+export interface PersonDetail {
+  id: string;
+  name_en: string;
+  name_he: string;
+  birth_year?: number;
+  public_profile_url?: string;
+  memberships: Array<{
+    party_instance_id: string;
+    party_name: string;
+    party_name_he?: string;
+    party_name_ru?: string;
+    role: string;
+    start_date?: string;
+    end_date?: string;
+    confidence?: number;
+    is_current: boolean;
+  }>;
+}
+
+export interface VoteDetail {
+  id: string;
+  external_id?: string;
+  title_he: string;
+  title_en?: string;
+  date?: string;
+  knesset_number?: number;
+  vote_type?: string;
+  is_procedural_estimate: boolean;
+  importance_score?: number;
+  source_url?: string;
+  results: Array<{
+    person_id: string;
+    name_en?: string;
+    name_he?: string;
+    vote_value: string;
+    party_instance_id_at_time?: string;
+  }>;
+}
+
+export interface VoteListItem {
+  id: string;
+  external_id?: string;
+  title_he: string;
+  title_en?: string;
+  date?: string;
+  knesset_number?: number;
+  importance_score?: number;
+  source_url?: string;
+}
+
+export interface BillDetail {
+  id: string;
+  external_id?: string;
+  title_he: string;
+  title_en?: string;
+  summary_he?: string;
+  summary_en?: string;
+  full_text_url?: string;
+  date_submitted?: string;
+  status?: string;
+  source_url?: string;
+}
+
+export interface PersonListItem {
+  id: string;
+  name_en: string;
+  name_he: string;
+  birth_year?: number;
+}
+
+export async function getParties(): Promise<PartyListItem[]> {
+  return apiFetch<PartyListItem[]>("/api/parties");
+}
+
+export async function getParty(id: string): Promise<PartyDetail> {
+  return apiFetch<PartyDetail>(`/api/parties/${id}`);
+}
+
+export async function getPerson(id: string): Promise<PersonDetail> {
+  return apiFetch<PersonDetail>(`/api/persons/${id}`);
+}
+
+export async function getPersons(): Promise<PersonListItem[]> {
+  return apiFetch<PersonListItem[]>("/api/persons");
+}
+
+export async function getVote(id: string): Promise<VoteDetail> {
+  return apiFetch<VoteDetail>(`/api/votes/${id}`);
+}
+
+export async function getVotes(knessetNumber?: number): Promise<VoteListItem[]> {
+  const qs = knessetNumber ? `?knesset_number=${knessetNumber}` : "";
+  return apiFetch<VoteListItem[]>(`/api/votes${qs}`);
+}
+
+export async function getBill(id: string): Promise<BillDetail> {
+  return apiFetch<BillDetail>(`/api/bills/${id}`);
+}
+
+export async function getBills(): Promise<BillDetail[]> {
+  return apiFetch<BillDetail[]>("/api/bills");
+}
+
+// ── Admin Knesset Ingestion (Phase 6) ─────────────────────────────────────────
+
+export interface IngestionJobStatus {
+  job_id: string;
+  status: "queued" | "running" | "done" | "error";
+  knesset_number?: number;
+  limit?: number;
+  no_llm?: boolean;
+  votes?: { inserted: number; updated: number; skipped: number };
+  bills?: { inserted: number; skipped: number };
+  error?: string;
+}
+
+export async function adminTriggerIngestion(params: {
+  knesset_number: number;
+  limit: number;
+  votes_only: boolean;
+  bills_only: boolean;
+  no_llm: boolean;
+}): Promise<{ job_id: string; status: string; message: string }> {
+  return adminApiFetch("/api/admin/ingest/knesset", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+export async function adminGetIngestionStatus(jobId: string): Promise<IngestionJobStatus> {
+  return adminApiFetch<IngestionJobStatus>(`/api/admin/ingest/status/${jobId}`);
+}
+
+export async function adminListIngestionJobs(): Promise<IngestionJobStatus[]> {
+  return adminApiFetch<IngestionJobStatus[]>("/api/admin/ingest/jobs");
 }
 

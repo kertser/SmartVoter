@@ -21,16 +21,20 @@ import {
   adminGetPolicyItems,
   adminGenerateQuestions,
   adminGetLlmOutputs,
+  adminTriggerIngestion,
+  adminGetIngestionStatus,
+  adminListIngestionJobs,
   AdminQuestion,
   PolicyItemAdmin,
   LlmOutputRecord,
+  IngestionJobStatus,
   getStoredAdminPassword,
   storeAdminPassword,
   clearAdminPassword,
 } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 
-type Tab = "review" | "generate" | "audit";
+type Tab = "review" | "generate" | "audit" | "ingestion";
 
 // ── Password Gate ─────────────────────────────────────────────────────────────
 
@@ -134,7 +138,7 @@ export default function AdminPage() {
 
       {/* Tab bar */}
       <div className="flex gap-1 border-b border-slate-200">
-        {(["review", "generate", "audit"] as Tab[]).map((tabKey) => (
+        {(["review", "generate", "audit", "ingestion"] as Tab[]).map((tabKey) => (
           <button
             key={tabKey}
             onClick={() => setTab(tabKey)}
@@ -144,7 +148,10 @@ export default function AdminPage() {
                 : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
-            {tabKey === "review" ? a.tabReview : tabKey === "generate" ? a.tabGenerate : a.tabAudit}
+            {tabKey === "review" ? a.tabReview
+              : tabKey === "generate" ? a.tabGenerate
+              : tabKey === "audit" ? a.tabAudit
+              : a.tabIngestion}
           </button>
         ))}
       </div>
@@ -152,6 +159,7 @@ export default function AdminPage() {
       {tab === "review" && <ReviewTab />}
       {tab === "generate" && <GenerateTab />}
       {tab === "audit" && <AuditTab />}
+      {tab === "ingestion" && <IngestionTab />}
     </div>
   );
 }
@@ -351,11 +359,159 @@ function GenerateTab() {
                 <div className="flex gap-2 flex-wrap">
                   <span className={`rounded-full px-2 py-0.5 text-xs ${sourceColors[pi.source_type] ?? "bg-slate-100 text-slate-600"}`}>{pi.source_type}</span>
                   {pi.llm_confidence != null && <span className="text-xs text-slate-400">conf {(pi.llm_confidence * 100).toFixed(0)}%</span>}
-                  <span className={`text-xs ${pi.human_review_status === "approved" ? "text-green-600" : "text-slate-400"}`}>{pi.human_review_status}</span>
+                   <span className={`text-xs ${pi.human_review_status === "approved" ? "text-green-600" : "text-slate-400"}`}>{pi.human_review_status}</span>
                 </div>
               </div>
             </label>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Ingestion Tab ─────────────────────────────────────────────────────────────
+
+function IngestionTab() {
+  const a = useT().admin;
+  const [knessetNum, setKnessetNum] = useState(25);
+  const [limit, setLimit] = useState(200);
+  const [noLlm, setNoLlm] = useState(false);
+  const [votesOnly, setVotesOnly] = useState(false);
+  const [billsOnly, setBillsOnly] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [activeJob, setActiveJob] = useState<IngestionJobStatus | null>(null);
+  const [jobs, setJobs] = useState<IngestionJobStatus[]>([]);
+  const [loadingJobs, setLoadingJobs] = useState(true);
+  const [pollInterval, setPollInterval] = useState<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    adminListIngestionJobs().then(setJobs).finally(() => setLoadingJobs(false));
+  }, []);
+
+  const stopPolling = useCallback(() => {
+    if (pollInterval) { clearInterval(pollInterval); setPollInterval(null); }
+  }, [pollInterval]);
+
+  const startPolling = useCallback((jobId: string) => {
+    stopPolling();
+    const iv = setInterval(async () => {
+      try {
+        const status = await adminGetIngestionStatus(jobId);
+        setActiveJob(status);
+        if (status.status === "done" || status.status === "error") {
+          clearInterval(iv);
+          setPollInterval(null);
+          adminListIngestionJobs().then(setJobs);
+        }
+      } catch { clearInterval(iv); setPollInterval(null); }
+    }, 2000);
+    setPollInterval(iv);
+  }, [stopPolling]);
+
+  useEffect(() => () => { if (pollInterval) clearInterval(pollInterval); }, [pollInterval]);
+
+  const handleStart = async () => {
+    setSubmitting(true);
+    setActiveJob(null);
+    try {
+      const res = await adminTriggerIngestion({ knesset_number: knessetNum, limit, no_llm: noLlm, votes_only: votesOnly, bills_only: billsOnly });
+      const job: IngestionJobStatus = { job_id: res.job_id, status: "queued", knesset_number: knessetNum, limit, no_llm: noLlm };
+      setActiveJob(job);
+      startPolling(res.job_id);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const statusColors: Record<string, string> = {
+    queued: "bg-slate-100 text-slate-600",
+    running: "bg-blue-50 text-blue-700",
+    done: "bg-green-50 text-green-700",
+    error: "bg-red-50 text-red-600",
+  };
+
+  const statusLabel = (s: string) =>
+    s === "queued" ? a.ingestQueued
+    : s === "running" ? a.ingestRunning
+    : s === "done" ? a.ingestDone
+    : a.ingestError;
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-slate-700">{a.ingestHeading}</p>
+        <p className="text-xs text-slate-400">{a.ingestSubtext}</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 max-w-sm">
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-slate-600">{a.ingestKnessetLabel}</label>
+          <input
+            type="number" min={1} max={30} value={knessetNum}
+            onChange={(e) => setKnessetNum(Number(e.target.value))}
+            className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-slate-600">{a.ingestLimitLabel}</label>
+          <input
+            type="number" min={10} max={5000} step={50} value={limit}
+            onChange={(e) => setLimit(Number(e.target.value))}
+            className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm"
+          />
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-4 text-sm">
+        {([
+          [noLlm, setNoLlm, a.ingestNoLlmLabel],
+          [votesOnly, setVotesOnly, a.ingestVotesOnlyLabel],
+          [billsOnly, setBillsOnly, a.ingestBillsOnlyLabel],
+        ] as [boolean, (v: boolean) => void, string][]).map(([val, setter, label], i) => (
+          <label key={i} className="flex items-center gap-2 cursor-pointer text-slate-600">
+            <input type="checkbox" checked={val} onChange={(e) => setter(e.target.checked)} className="accent-brand-600" />
+            {label}
+          </label>
+        ))}
+      </div>
+
+      <button
+        onClick={handleStart}
+        disabled={submitting || activeJob?.status === "running" || activeJob?.status === "queued"}
+        className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        {submitting ? a.ingestRunning : a.ingestRunBtn}
+      </button>
+
+      {activeJob && (
+        <div className={`rounded-xl border p-4 space-y-2 text-sm ${statusColors[activeJob.status] ?? "bg-slate-50"}`}>
+          <div className="flex items-center gap-3">
+            <span className="font-medium">{statusLabel(activeJob.status)}</span>
+            <span className="text-xs opacity-60">{a.ingestJobId}: {activeJob.job_id}</span>
+            {(activeJob.status === "done" || activeJob.status === "error") && (
+              <button onClick={() => adminGetIngestionStatus(activeJob.job_id).then(setActiveJob)} className="text-xs underline opacity-70 hover:opacity-100">{a.ingestPollBtn}</button>
+            )}
+          </div>
+          {activeJob.votes && <p className="text-xs">{a.ingestResultVotes(activeJob.votes.inserted, activeJob.votes.updated, activeJob.votes.skipped)}</p>}
+          {activeJob.bills && <p className="text-xs">{a.ingestResultBills(activeJob.bills.inserted, activeJob.bills.skipped)}</p>}
+          {activeJob.error && <p className="text-xs text-red-600">{activeJob.error}</p>}
+        </div>
+      )}
+
+      {!loadingJobs && jobs.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Previous jobs (this session)</p>
+          <div className="space-y-1">
+            {jobs.slice().reverse().map((job) => (
+              <div key={job.job_id} className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs text-slate-600">
+                <span className={`rounded-full px-2 py-0.5 ${statusColors[job.status]}`}>{statusLabel(job.status)}</span>
+                <span>Knesset {job.knesset_number} · limit {job.limit}</span>
+                <span className="text-slate-400">{job.job_id}</span>
+                {job.votes && <span className="text-green-600">{a.ingestResultVotes(job.votes.inserted, job.votes.updated, job.votes.skipped)}</span>}
+                {job.bills && <span className="text-blue-600">{a.ingestResultBills(job.bills.inserted, job.bills.skipped)}</span>}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

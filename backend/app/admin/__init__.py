@@ -8,7 +8,8 @@ No question is ever surfaced to users until human_review_status = 'approved'.
 """
 
 import uuid
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+import logging
+from fastapi import APIRouter, Depends, Header, HTTPException, status, BackgroundTasks
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Annotated
@@ -20,6 +21,8 @@ from backend.app.models.policy_item import PolicyItem, ReviewStatus
 from backend.app.models.llm_audit import LlmRun, LlmOutput
 from backend.app.services.llm import get_llm_provider
 from backend.app.services.llm.audit_service import AuditedLLMService
+
+logger = logging.getLogger(__name__)
 
 
 def verify_admin(
@@ -304,4 +307,96 @@ def _summarize_output(output: dict) -> str:
     if "plain_summary" in output:
         return output["plain_summary"][:120]
     return str(output)[:120]
+
+
+# ── Real Knesset data ingestion endpoint ──────────────────────────────────────
+
+class IngestKnessetBody(BaseModel):
+    knesset_number: int = 25
+    limit: int = 200
+    votes_only: bool = False
+    bills_only: bool = False
+    no_llm: bool = False
+
+
+# Track running ingestion jobs in memory (MVP: single-process)
+_ingestion_jobs: dict[str, dict] = {}
+
+
+def _run_ingestion(job_id: str, body: IngestKnessetBody, settings: Settings) -> None:
+    """Background task: fetch → upsert → LLM enrich."""
+    from backend.app.db.session import SessionLocal
+    from backend.app.services.ingestion.importers import import_votes, import_bills
+
+    db = SessionLocal()
+    _ingestion_jobs[job_id]["status"] = "running"
+    try:
+        results: dict[str, dict] = {}
+        if not body.bills_only:
+            stats = import_votes(
+                db, body.knesset_number, settings,
+                limit=body.limit, enrich_with_llm=not body.no_llm,
+            )
+            results["votes"] = stats
+            _ingestion_jobs[job_id]["votes"] = stats
+
+        if not body.votes_only:
+            stats = import_bills(
+                db, body.knesset_number, settings,
+                limit=body.limit, enrich_with_llm=not body.no_llm,
+            )
+            results["bills"] = stats
+            _ingestion_jobs[job_id]["bills"] = stats
+
+        _ingestion_jobs[job_id]["status"] = "done"
+        _ingestion_jobs[job_id]["results"] = results
+        logger.info("Ingestion job %s complete: %s", job_id, results)
+    except Exception as exc:
+        logger.error("Ingestion job %s failed: %s", job_id, exc, exc_info=True)
+        _ingestion_jobs[job_id]["status"] = "error"
+        _ingestion_jobs[job_id]["error"] = str(exc)
+    finally:
+        db.close()
+
+
+@admin_router.post("/ingest/knesset")
+def trigger_knesset_ingestion(
+    body: IngestKnessetBody,
+    background_tasks: BackgroundTasks,
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    """
+    Trigger real Knesset data ingestion.
+    Fetches votes and/or bills from the official Knesset OData API,
+    upserts into the database, and optionally enriches with LLM summaries.
+    Runs as a background task. Poll /api/admin/ingest/status/{job_id} for progress.
+    Per AGENTS.MD Section 16.
+    """
+    import uuid as _uuid
+    job_id = str(_uuid.uuid4())[:8]
+    _ingestion_jobs[job_id] = {
+        "job_id": job_id,
+        "status": "queued",
+        "knesset_number": body.knesset_number,
+        "limit": body.limit,
+        "no_llm": body.no_llm,
+    }
+    background_tasks.add_task(_run_ingestion, job_id, body, settings)
+    return {"job_id": job_id, "status": "queued", "message": f"Ingestion started for Knesset {body.knesset_number}."}
+
+
+@admin_router.get("/ingest/status/{job_id}")
+def get_ingestion_status(job_id: str) -> dict:
+    """Poll the status of a background ingestion job."""
+    job = _ingestion_jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+
+@admin_router.get("/ingest/jobs")
+def list_ingestion_jobs() -> list[dict]:
+    """List all ingestion jobs (current process only, not persisted)."""
+    return list(_ingestion_jobs.values())
+
 

@@ -15,6 +15,18 @@ export function NavHeader() {
           {t.layout.siteTitle}
         </a>
         <nav className="flex items-center gap-6 text-sm text-slate-500">
+          <a href="/parties" className="hover:text-slate-800 transition-colors">
+            Parties
+          </a>
+          <a href="/votes" className="hover:text-slate-800 transition-colors">
+            Votes
+          </a>
+          <a href="/bills" className="hover:text-slate-800 transition-colors">
+            Bills
+          </a>
+          <a href="/simulation" className="hover:text-slate-800 transition-colors">
+            {t.layout.navSimulation}
+          </a>
           <a href="/methodology" className="hover:text-slate-800 transition-colors">
             {t.layout.navMethodology}
           </a>

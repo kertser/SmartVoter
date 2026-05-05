@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { getResults, ResultsOut, PartyResult } from "@/lib/api";
+import { getResults, ResultsOut, PartyResult, deleteSession } from "@/lib/api";
 import { clearSession } from "@/lib/session";
 import { formatPercent, confidenceLabel, confidenceColor } from "@/lib/utils";
 import Link from "next/link";
@@ -39,7 +39,13 @@ function ResultsContent() {
       .finally(() => setLoading(false));
   }, [sessionId, router, r]);
 
-  const handleStartOver = () => { clearSession(); router.push("/"); };
+  const handleStartOver = async () => {
+    if (sessionId) {
+      try { await deleteSession(sessionId); } catch { /* non-blocking */ }
+    }
+    clearSession();
+    router.push("/");
+  };
 
   if (loading) {
     return (
@@ -294,7 +300,11 @@ function PartyMatchCard({
         </Tooltip>
 
         {/* Explanation */}
-        <p className="text-sm text-slate-500">{party.explanation}</p>
+        <p className="text-sm text-slate-500">
+          {lang === "he" ? (party.explanation_he ?? party.explanation)
+           : lang === "ru" ? (party.explanation_ru ?? party.explanation)
+           : party.explanation}
+        </p>
 
         {/* Expand for details */}
         <button onClick={() => setExpanded(!expanded)} className="text-xs text-slate-400 hover:text-slate-600">
@@ -307,8 +317,10 @@ function PartyMatchCard({
               <p className="text-xs font-medium text-green-700 mb-1">{r.agreements}</p>
               {party.top_agreements.length > 0 ? (
                 <ul className="space-y-1">
-                  {party.top_agreements.map((topic) => (
-                    <li key={topic} className="text-xs text-slate-600 flex items-center gap-1">
+                  {(lang === "he" ? (party.top_agreements_he ?? party.top_agreements)
+                    : lang === "ru" ? (party.top_agreements_ru ?? party.top_agreements)
+                    : party.top_agreements).map((topic, i) => (
+                    <li key={i} className="text-xs text-slate-600 flex items-center gap-1">
                       <span className="text-green-500">✓</span> {topic}
                     </li>
                   ))}
@@ -319,8 +331,10 @@ function PartyMatchCard({
               <p className="text-xs font-medium text-red-700 mb-1">{r.disagreements}</p>
               {party.top_disagreements.length > 0 ? (
                 <ul className="space-y-1">
-                  {party.top_disagreements.map((topic) => (
-                    <li key={topic} className="text-xs text-slate-600 flex items-center gap-1">
+                  {(lang === "he" ? (party.top_disagreements_he ?? party.top_disagreements)
+                    : lang === "ru" ? (party.top_disagreements_ru ?? party.top_disagreements)
+                    : party.top_disagreements).map((topic, i) => (
+                    <li key={i} className="text-xs text-slate-600 flex items-center gap-1">
                       <span className="text-red-400">✗</span> {topic}
                     </li>
                   ))}
