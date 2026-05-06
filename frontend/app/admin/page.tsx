@@ -38,7 +38,7 @@ import {
   storeAdminPassword,
   clearAdminPassword,
 } from "@/lib/api";
-import { useT } from "@/lib/i18n";
+import { useT, useLang } from "@/lib/i18n";
 
 type Tab = "ingestion" | "generate" | "review" | "audit" | "backup";
 
@@ -299,6 +299,7 @@ function ReviewTab() {
 
 function GenerateTab() {
   const a = useT().admin;
+  const { lang } = useLang();
   const [topics, setTopics] = useState<TopicWithRootQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
@@ -314,11 +315,13 @@ function GenerateTab() {
 
   useEffect(() => { reload(); }, [reload]);
 
-  const handleGenerate = async (topicId: string) => {
+  const handleGenerate = async (topicId: string, isUpdate: boolean) => {
     setGeneratingId(topicId);
     setError(null);
     try {
-      await adminGenerateRootQuestion(topicId);
+      // Pass force_regenerate=true when updating an existing question so the
+      // LLM cache is bypassed and a genuinely new question is generated.
+      await adminGenerateRootQuestion(topicId, isUpdate);
       reload();
     } catch (e) {
       setError(String(e));
@@ -354,6 +357,11 @@ function GenerateTab() {
           {topics.map((topic) => {
             const rq = topic.root_question;
             const isGenerating = generatingId === topic.topic_id;
+            // Show localized topic name
+            const topicName =
+              lang === "he" && topic.name_he ? topic.name_he
+              : lang === "ru" && topic.name_ru ? topic.name_ru
+              : topic.name_en;
             return (
               <div
                 key={topic.topic_id}
@@ -362,7 +370,12 @@ function GenerateTab() {
                 {/* Topic header */}
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div className="space-y-0.5 flex-1">
-                    <p className="text-sm font-semibold text-slate-800">{topic.name_en}</p>
+                    <p className="text-sm font-semibold text-slate-800">
+                      {topicName}
+                      {topicName !== topic.name_en && (
+                        <span className="ms-2 text-xs text-slate-400 font-normal">{topic.name_en}</span>
+                      )}
+                    </p>
                     <div className="flex gap-2 text-xs text-slate-400 flex-wrap">
                       <span>{a.generatePolicyItemCount(topic.policy_item_count)}</span>
                       <span>·</span>
@@ -370,7 +383,7 @@ function GenerateTab() {
                     </div>
                   </div>
                   <button
-                    onClick={() => handleGenerate(topic.topic_id)}
+                    onClick={() => handleGenerate(topic.topic_id, !!rq)}
                     disabled={isGenerating}
                     className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
                   >
@@ -402,9 +415,17 @@ function GenerateTab() {
                         </span>
                       )}
                     </div>
+                    {/* English */}
                     <p className="text-sm text-slate-800">{rq.question_text_en}</p>
+                    {/* Hebrew */}
                     {rq.question_text_he && (
                       <p dir="rtl" className="text-xs text-slate-500">{rq.question_text_he}</p>
+                    )}
+                    {/* Russian */}
+                    {rq.question_text_ru ? (
+                      <p className="text-xs text-slate-500">{rq.question_text_ru}</p>
+                    ) : (
+                      <p className="text-xs text-amber-600 italic">⚠ Russian translation missing — regenerate to fix</p>
                     )}
                   </div>
                 ) : (

@@ -1,0 +1,263 @@
+[
+  {
+    "_comment": "jud_01 — Judicial Review Scope",
+    "policy_slug": "jud_01",
+    "question_text_en": "Should the Supreme Court have the authority to strike down Basic Laws passed by the Knesset?",
+    "question_text_he": "האם בית המשפט העליון צריך להיות מוסמך לפסול חוקי יסוד שהתקבלו בכנסת?",
+    "question_text_ru": "Должен ли Верховный суд иметь право признавать недействительными Основные законы, принятые Кнессетом?"
+  },
+  {
+    "policy_slug": "jud_01",
+    "question_text_en": "Should a simple majority of Knesset members be able to override any Supreme Court ruling?",
+    "question_text_he": "האם רוב פשוט של חברי הכנסת צריך להיות מסוגל לבטל כל פסיקה של בית המשפט העליון?",
+    "question_text_ru": "Должно ли простое большинство членов Кнессета иметь возможность отменить любое решение Верховного суда?"
+  },
+  {
+    "_comment": "jud_02 — Judicial Appointments",
+    "policy_slug": "jud_02",
+    "question_text_en": "Should the Judicial Appointments Committee include more elected politicians and fewer sitting judges?",
+    "question_text_he": "האם ועדת מינויים לשפיטה צריכה לכלול יותר פוליטיקאים נבחרים ופחות שופטים?",
+    "question_text_ru": "Должен ли Комитет по судебным назначениям включать больше избранных политиков и меньше действующих судей?"
+  },
+  {
+    "policy_slug": "jud_02",
+    "question_text_en": "Should the government coalition have veto power over Supreme Court justice appointments?",
+    "question_text_he": "האם לקואליציה הממשלתית צריך להיות כוח וטו על מינויי שופטי בית המשפט העליון?",
+    "question_text_ru": "Должна ли правительственная коалиция иметь право вето на назначение судей Верховного суда?"
+  },
+  {
+    "_comment": "jud_03 — Override Clause",
+    "policy_slug": "jud_03",
+    "question_text_en": "Should the Knesset be able to reinstate a law that the Supreme Court declared unconstitutional?",
+    "question_text_he": "האם הכנסת צריכה להיות מסוגלת לאשרר חוק שבית המשפט העליון פסל כלא חוקתי?",
+    "question_text_ru": "Должен ли Кнессет иметь возможность восстановить закон, признанный Верховным судом неконституционным?"
+  },
+  {
+    "policy_slug": "jud_03",
+    "question_text_en": "Should an override clause require a special supermajority (e.g. 80 MKs) or is a simple majority sufficient?",
+    "question_text_he": "האם סעיף התגברות צריך לדרוש רוב מיוחד (למשל 80 ח\"כים) או שדי ברוב רגיל?",
+    "question_text_ru": "Должна ли преодолевающая оговорка требовать квалифицированного большинства (например, 80 депутатов) или достаточно простого большинства?"
+  },
+  {
+    "_comment": "jud_04 — Attorney General Independence",
+    "policy_slug": "jud_04",
+    "question_text_en": "Should the Attorney General be directly accountable to the elected government?",
+    "question_text_he": "האם היועץ המשפטי לממשלה צריך להיות כפוף ישירות לממשלה הנבחרת?",
+    "question_text_ru": "Должен ли генеральный прокурор быть подотчётен непосредственно избранному правительству?"
+  },
+  {
+    "policy_slug": "jud_04",
+    "question_text_en": "Should the government be able to appoint and dismiss the Attorney General without external review?",
+    "question_text_he": "האם הממשלה צריכה להיות מסוגלת למנות ולפטר את היועמ''ש ללא בקרה חיצונית?",
+    "question_text_ru": "Должно ли правительство иметь возможность назначать и увольнять генерального прокурора без внешнего контроля?"
+  },
+  {
+    "_comment": "eco_01 — Income Tax Progressivity",
+    "policy_slug": "eco_01",
+    "question_text_en": "Should the top income tax bracket be raised to fund public services?",
+    "question_text_he": "האם יש להעלות את שיעור מס ההכנסה הגבוה ביותר למימון שירותים ציבוריים?",
+    "question_text_ru": "Следует ли повысить максимальную ставку подоходного налога для финансирования общественных услуг?"
+  },
+  {
+    "policy_slug": "eco_01",
+    "question_text_en": "Should capital gains taxes be reduced to encourage investment?",
+    "question_text_he": "האם יש להפחית את מס רווחי הון כדי לעודד השקעות?",
+    "question_text_ru": "Следует ли снизить налог на прирост капитала для стимулирования инвестиций?"
+  },
+  {
+    "_comment": "eco_02 — State Welfare Spending",
+    "policy_slug": "eco_02",
+    "question_text_en": "Should the state expand child benefits and social assistance programs?",
+    "question_text_he": "האם המדינה צריכה להרחיב גמלאות ילדים ותוכניות סיוע סוציאלי?",
+    "question_text_ru": "Должно ли государство расширить детские пособия и программы социальной помощи?"
+  },
+  {
+    "policy_slug": "eco_02",
+    "question_text_en": "Should essential utilities (electricity, water) remain fully state-owned?",
+    "question_text_he": "האם שירותים חיוניים (חשמל, מים) צריכים להישאר בבעלות מדינה מלאה?",
+    "question_text_ru": "Должны ли основные коммунальные услуги (электричество, вода) оставаться полностью в государственной собственности?"
+  },
+  {
+    "_comment": "eco_03 — Housing Market Regulation",
+    "policy_slug": "eco_03",
+    "question_text_en": "Should the government intervene to cap residential rental prices?",
+    "question_text_he": "האם הממשלה צריכה להתערב לצורך הגבלת שכר דירה למגורים?",
+    "question_text_ru": "Должно ли правительство вмешиваться и ограничивать цены на аренду жилья?"
+  },
+  {
+    "policy_slug": "eco_03",
+    "question_text_en": "Should the state build and rent public ('social') housing at subsidized rates?",
+    "question_text_he": "האם המדינה צריכה לבנות ולהשכיר דיור ציבורי במחירים מסובסדים?",
+    "question_text_ru": "Должно ли государство строить и сдавать в аренду муниципальное жильё по субсидированным ценам?"
+  },
+  {
+    "_comment": "eco_04 — Religious Institution Funding",
+    "policy_slug": "eco_04",
+    "question_text_en": "Should state funding for yeshivas (religious seminaries) be reduced?",
+    "question_text_he": "האם יש להפחית את מימון המדינה לישיבות?",
+    "question_text_ru": "Следует ли сократить государственное финансирование иешив (религиозных семинарий)?"
+  },
+  {
+    "policy_slug": "eco_04",
+    "question_text_en": "Should religious councils receive the same per-capita state funding as secular municipalities?",
+    "question_text_he": "האם מועצות דתיות צריכות לקבל מימון מדינה שווה לנפש כמו רשויות חילוניות?",
+    "question_text_ru": "Должны ли религиозные советы получать такое же душевое государственное финансирование, как светские муниципалитеты?"
+  },
+  {
+    "_comment": "rel_01 — Civil Marriage",
+    "policy_slug": "rel_01",
+    "question_text_en": "Should civil marriage (without a rabbi or religious authority) be legally recognized in Israel?",
+    "question_text_he": "האם נישואים אזרחיים (ללא רב או סמכות דתית) צריכים להיות מוכרים חוקית בישראל?",
+    "question_text_ru": "Должны ли гражданские браки (без раввина или религиозного органа) быть юридически признаны в Израиле?"
+  },
+  {
+    "policy_slug": "rel_01",
+    "question_text_en": "Should Jewish Israelis who marry abroad in civil ceremonies be recognized as married by the state upon their return?",
+    "question_text_he": "האם יהודים ישראלים שנישאו בחו''ל בנישואים אזרחיים צריכים להיות מוכרים כנשואים על ידי המדינה עם שובם?",
+    "question_text_ru": "Должны ли израильтяне-евреи, заключившие гражданский брак за рубежом, быть признаны состоящими в браке государством по возвращении?"
+  },
+  {
+    "_comment": "rel_02 — Shabbat Commerce",
+    "policy_slug": "rel_02",
+    "question_text_en": "Should supermarkets and shopping centers be permitted to open on Shabbat?",
+    "question_text_he": "האם יש לאפשר לסופרמרקטים ולמרכזי קניות לפתוח בשבת?",
+    "question_text_ru": "Следует ли разрешить супермаркетам и торговым центрам работать в Шаббат?"
+  },
+  {
+    "policy_slug": "rel_02",
+    "question_text_en": "Should local city councils have the authority to decide independently whether businesses may operate on Shabbat?",
+    "question_text_he": "האם מועצות עיריות מקומיות צריכות להיות מוסמכות להחליט באופן עצמאי האם עסקים רשאים לפעול בשבת?",
+    "question_text_ru": "Должны ли местные городские советы иметь право самостоятельно решать, могут ли предприятия работать в Шаббат?"
+  },
+  {
+    "_comment": "rel_03 — Haredi Military Service",
+    "policy_slug": "rel_03",
+    "question_text_en": "Should ultra-Orthodox (Haredi) men be required to serve in the Israeli military?",
+    "question_text_he": "האם גברים חרדים צריכים להתגייס לצבא הישראלי?",
+    "question_text_ru": "Должны ли ультраортодоксальные (харедим) мужчины проходить военную службу в израильской армии?"
+  },
+  {
+    "policy_slug": "rel_03",
+    "question_text_en": "Should Haredi men who study full-time in yeshivas receive a formal exemption from military service?",
+    "question_text_he": "האם גברים חרדים הלומדים במשרה מלאה בישיבות צריכים לקבל פטור רשמי משירות צבאי?",
+    "question_text_ru": "Должны ли мужчины-харедим, обучающиеся в иешивах на полную ставку, получить официальное освобождение от военной службы?"
+  },
+  {
+    "_comment": "rel_04 — Kashrut Law",
+    "policy_slug": "rel_04",
+    "question_text_en": "Should the state's exclusive kashrut (kosher certification) monopoly be abolished and opened to private supervision?",
+    "question_text_he": "האם המונופול הממלכתי על כשרות צריך להתבטל ולהיפתח לפיקוח פרטי?",
+    "question_text_ru": "Должна ли государственная монополия на кашрут (кошерную сертификацию) быть упразднена и открыта для частного надзора?"
+  },
+  {
+    "policy_slug": "rel_04",
+    "question_text_en": "Should restaurants be required to display only state-approved kashrut certification?",
+    "question_text_he": "האם מסעדות צריכות להידרש להציג רק תעודת כשרות שאושרה על ידי המדינה?",
+    "question_text_ru": "Должны ли рестораны быть обязаны представлять только государственный сертификат кошерности?"
+  },
+  {
+    "_comment": "sec_01 — Two-State Solution",
+    "policy_slug": "sec_01",
+    "question_text_en": "Do you support the establishment of an independent Palestinian state alongside Israel?",
+    "question_text_he": "האם אתה תומך בהקמת מדינה פלסטינית עצמאית לצד ישראל?",
+    "question_text_ru": "Поддерживаете ли вы создание независимого палестинского государства рядом с Израилем?"
+  },
+  {
+    "policy_slug": "sec_01",
+    "question_text_en": "Should Israel negotiate a final-status peace agreement with Palestinian leadership?",
+    "question_text_he": "האם ישראל צריכה לנהל משא ומתן על הסכם מעמד סופי עם ההנהגה הפלסטינית?",
+    "question_text_ru": "Должен ли Израиль вести переговоры об окончательном мирном соглашении с палестинским руководством?"
+  },
+  {
+    "_comment": "sec_02 — Settlement Expansion",
+    "policy_slug": "sec_02",
+    "question_text_en": "Should Israel continue to expand Jewish settlements in the West Bank?",
+    "question_text_he": "האם ישראל צריכה להמשיך להרחיב את ההתנחלויות היהודיות בגדה המערבית?",
+    "question_text_ru": "Должен ли Израиль продолжать расширять еврейские поселения на Западном берегу?"
+  },
+  {
+    "policy_slug": "sec_02",
+    "question_text_en": "Should Israel remove any existing settlements as part of a peace agreement?",
+    "question_text_he": "האם ישראל צריכה לפנות התנחלויות קיימות כחלק מהסכם שלום?",
+    "question_text_ru": "Должен ли Израиль ликвидировать часть существующих поселений в рамках мирного соглашения?"
+  },
+  {
+    "_comment": "sec_03 — Defense Budget",
+    "policy_slug": "sec_03",
+    "question_text_en": "Should Israel increase its defense budget as a share of GDP?",
+    "question_text_he": "האם ישראל צריכה להגדיל את תקציב הביטחון כחלק מהתמ''ג?",
+    "question_text_ru": "Должен ли Израиль увеличить оборонный бюджет как долю ВВП?"
+  },
+  {
+    "policy_slug": "sec_03",
+    "question_text_en": "Should defense spending be reduced in order to fund social programs?",
+    "question_text_he": "האם יש להפחית הוצאות ביטחון כדי לממן תוכניות חברתיות?",
+    "question_text_ru": "Следует ли сократить расходы на оборону в целях финансирования социальных программ?"
+  },
+  {
+    "_comment": "sec_04 — Gaza Ceasefire Terms",
+    "policy_slug": "sec_04",
+    "question_text_en": "Should Israel accept a temporary ceasefire in Gaza without achieving all military objectives first?",
+    "question_text_he": "האם ישראל צריכה לקבל הפסקת אש זמנית בעזה מבלי להשיג תחילה את כל המטרות הצבאיות?",
+    "question_text_ru": "Должен ли Израиль принять временное прекращение огня в Газе, не достигнув всех военных целей?"
+  },
+  {
+    "policy_slug": "sec_04",
+    "question_text_en": "Should hostage return be prioritized over military objectives in Gaza negotiations?",
+    "question_text_he": "האם יש לתעדף החזרת החטופים על פני מטרות צבאיות במשא ומתן עזה?",
+    "question_text_ru": "Следует ли отдать приоритет возвращению заложников над военными целями в переговорах по Газе?"
+  },
+  {
+    "_comment": "civ_01 — LGBTQ+ Rights",
+    "policy_slug": "civ_01",
+    "question_text_en": "Should same-sex couples have the same legal rights as different-sex married couples in Israel?",
+    "question_text_he": "האם לזוגות חד-מיניים צריכות להיות אותן זכויות חוקיות כמו לזוגות נשואים מסוגים שונים בישראל?",
+    "question_text_ru": "Должны ли однополые пары иметь те же юридические права, что и разнополые супружеские пары в Израиле?"
+  },
+  {
+    "policy_slug": "civ_01",
+    "question_text_en": "Should same-sex couples have the right to adopt children in Israel?",
+    "question_text_he": "האם לזוגות חד-מיניים צריכה להיות הזכות לאמץ ילדים בישראל?",
+    "question_text_ru": "Должны ли однополые пары иметь право усыновлять детей в Израиле?"
+  },
+  {
+    "_comment": "civ_02 — Arab Minority Rights",
+    "policy_slug": "civ_02",
+    "question_text_en": "Should Arabic be maintained as an official state language with full government services available in Arabic?",
+    "question_text_he": "האם יש לשמור על ערבית כשפת מדינה רשמית עם שירותי ממשל מלאים בערבית?",
+    "question_text_ru": "Должен ли арабский язык сохраняться как официальный государственный язык с полным обеспечением государственных услуг на арабском?"
+  },
+  {
+    "policy_slug": "civ_02",
+    "question_text_en": "Should Arab citizens of Israel receive equal per-capita budget allocations from the state?",
+    "question_text_he": "האם לאזרחים ערבים של ישראל צריכה להיות הקצאת תקציב שווה לנפש מהמדינה?",
+    "question_text_ru": "Должны ли арабские граждане Израиля получать равное душевое финансирование от государства?"
+  },
+  {
+    "_comment": "civ_03 — Freedom of Press",
+    "policy_slug": "civ_03",
+    "question_text_en": "Should public broadcasting be fully independent from government influence?",
+    "question_text_he": "האם השידור הציבורי צריך להיות בלתי תלוי לחלוטין מהשפעת הממשלה?",
+    "question_text_ru": "Должно ли общественное вещание быть полностью независимым от влияния правительства?"
+  },
+  {
+    "policy_slug": "civ_03",
+    "question_text_en": "Should the government have the power to appoint the majority of public broadcaster board members?",
+    "question_text_he": "האם לממשלה צריכה להיות הסמכות למנות את רוב חברי דירקטוריון השידור הציבורי?",
+    "question_text_ru": "Должно ли правительство иметь право назначать большинство членов совета директоров общественного вещателя?"
+  },
+  {
+    "_comment": "civ_04 — Anti-Discrimination Law",
+    "policy_slug": "civ_04",
+    "question_text_en": "Should anti-discrimination laws protect LGBTQ+ individuals in employment and services?",
+    "question_text_he": "האם חוקי אי-אפליה צריכים להגן על אנשים להט''בים בתעסוקה ובשירותים?",
+    "question_text_ru": "Должны ли законы против дискриминации защищать представителей ЛГБТК+ в сфере занятости и услуг?"
+  },
+  {
+    "policy_slug": "civ_04",
+    "question_text_en": "Should religious institutions be exempt from anti-discrimination requirements when hiring staff?",
+    "question_text_he": "האם למוסדות דתיים צריך להיות פטור מדרישות אי-אפליה בעת גיוס עובדים?",
+    "question_text_ru": "Должны ли религиозные организации быть освобождены от требований о недискриминации при найме персонала?"
+  }
+]
+

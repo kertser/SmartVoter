@@ -1,0 +1,64 @@
+[
+  {
+    "id": "20000000-0000-0000-0000-000000000001",
+    "brand_canonical_name": "Likud",
+    "official_name": "Likud",
+    "election_cycle": "2022",
+    "knesset_number": 25,
+    "start_date": "2022-11-01",
+    "end_date": null,
+    "status": "active"
+  },
+  {
+    "id": "20000000-0000-0000-0000-000000000002",
+    "brand_canonical_name": "Labor",
+    "official_name": "HaAvoda",
+    "election_cycle": "2022",
+    "knesset_number": 25,
+    "start_date": "2022-11-01",
+    "end_date": null,
+    "status": "active"
+  },
+  {
+    "id": "20000000-0000-0000-0000-000000000003",
+    "brand_canonical_name": "United Torah Judaism",
+    "official_name": "Yahadut HaTorah",
+    "election_cycle": "2022",
+    "knesset_number": 25,
+    "start_date": "2022-11-01",
+    "end_date": null,
+    "status": "active"
+  },
+  {
+    "id": "20000000-0000-0000-0000-000000000004",
+    "brand_canonical_name": "Yesh Atid",
+    "official_name": "Yesh Atid",
+    "election_cycle": "2022",
+    "knesset_number": 25,
+    "start_date": "2022-11-01",
+    "end_date": null,
+    "status": "active"
+  },
+  {
+    "id": "20000000-0000-0000-0000-000000000005",
+    "brand_canonical_name": "New Hope",
+    "official_name": "Tikva Hadasha",
+    "election_cycle": "2022",
+    "knesset_number": 25,
+    "start_date": "2022-11-01",
+    "end_date": null,
+    "status": "active"
+  },
+  {
+    "_comment": "Dissolved predecessor for lineage demo",
+    "id": "20000000-0000-0000-0000-000000000010",
+    "brand_canonical_name": "Likud",
+    "official_name": "Kadima (19th Knesset)",
+    "election_cycle": "2013",
+    "knesset_number": 19,
+    "start_date": "2013-01-01",
+    "end_date": "2015-03-17",
+    "status": "dissolved"
+  }
+]
+

@@ -191,6 +191,17 @@ export interface Translations {
     filterAll: string;
     knessetLabel: (n: number) => string;
     electionCycleLabel: (cycle: string) => string;
+    // Party status badge tooltips
+    statusActiveTooltip: string;
+    statusDissolvedTooltip: string;
+    statusMergedTooltip: string;
+    statusSplitTooltip: string;
+    statusRenamedTooltip: string;
+    // Party detail tooltips
+    positionBarTooltip: string;
+    evidenceStrengthTooltip: string;
+    evidenceTypeTooltip: string;
+    continuityWeightTooltip: string;
 
     // Votes page
     votesHeading: string;
@@ -377,6 +388,12 @@ export interface Translations {
     coalSeats: (mean: number, p10: number, p90: number) => string;
     coalFeasibility: (score: number) => string;
     coalStability: (score: number) => string;
+    // Tooltips
+    feasibilityTooltip: string;
+    stabilityTooltip: string;
+    coalProbabilityTooltip: string;
+    thresholdProbTooltip: string;
+    runNewSimulationTooltip: string;
   };
 }
 

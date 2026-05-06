@@ -1,0 +1,9 @@
+{
+  "_comment": "Volatility scores in range 0..1. 0=stable, 1=highly volatile. Keys are party official_name.",
+  "Likud": 0.15,
+  "HaAvoda": 0.10,
+  "Yahadut HaTorah": 0.08,
+  "Yesh Atid": 0.12,
+  "Tikva Hadasha": 0.55
+}
+

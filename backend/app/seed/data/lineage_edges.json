@@ -1,0 +1,30 @@
+[
+  {
+    "_comment": "Rename: Kadima dissolved → some members became part of Likud",
+    "from_party_official_name": "Kadima (19th Knesset)",
+    "to_party_official_name": "Likud",
+    "relation_type": "successor",
+    "continuity_weight": 0.35,
+    "llm_explanation": "Some Kadima MKs joined Likud following dissolution.",
+    "human_review_status": "approved"
+  },
+  {
+    "_comment": "Alliance: Labor ↔ Yesh Atid in 25th Knesset opposition",
+    "from_party_official_name": "HaAvoda",
+    "to_party_official_name": "Yesh Atid",
+    "relation_type": "alliance",
+    "continuity_weight": 0.20,
+    "llm_explanation": "Both parties formed opposition bloc in 25th Knesset.",
+    "human_review_status": "approved"
+  },
+  {
+    "_comment": "Split: New Hope was founded by former Likud members",
+    "from_party_official_name": "Likud",
+    "to_party_official_name": "Tikva Hadasha",
+    "relation_type": "split",
+    "continuity_weight": 0.30,
+    "llm_explanation": "New Hope was founded by former Likud members who left over leadership disputes.",
+    "human_review_status": "approved"
+  }
+]
+

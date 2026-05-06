@@ -1,0 +1,123 @@
+[
+  {
+    "id": "30000000-0000-0000-0000-000000000001",
+    "slug": "judiciary",
+    "name_en": "Judiciary",
+    "name_he": "מערכת המשפט",
+    "name_ru": "Судебная власть",
+    "description": "Judicial review, Supreme Court, legal reform."
+  },
+  {
+    "id": "30000000-0000-0000-0000-000000000002",
+    "slug": "economy_taxes",
+    "name_en": "Economy & Taxes",
+    "name_he": "כלכלה ומיסים",
+    "name_ru": "Экономика и налоги",
+    "description": "Tax policy, social spending, economic regulation."
+  },
+  {
+    "id": "30000000-0000-0000-0000-000000000003",
+    "slug": "religion_state",
+    "name_en": "Religion & State",
+    "name_he": "דת ומדינה",
+    "name_ru": "Религия и государство",
+    "description": "Separation of religion and state, religious law, civil marriage."
+  },
+  {
+    "id": "30000000-0000-0000-0000-000000000004",
+    "slug": "security",
+    "name_en": "Security",
+    "name_he": "ביטחון",
+    "name_ru": "Безопасность",
+    "description": "Defense policy, military, settlements, peace negotiations."
+  },
+  {
+    "id": "30000000-0000-0000-0000-000000000005",
+    "slug": "civil_rights",
+    "name_en": "Civil Rights",
+    "name_he": "זכויות אזרח",
+    "name_ru": "Гражданские права",
+    "description": "Individual freedoms, minority rights, LGBTQ+, discrimination law."
+  },
+  {
+    "id": "30000000-0000-0000-0000-000000000006",
+    "slug": "settlements",
+    "name_en": "Settlements",
+    "name_he": "התנחלויות",
+    "name_ru": "Поселения",
+    "description": "West Bank and Gaza settlement policy, land use, Palestinian territories."
+  },
+  {
+    "id": "30000000-0000-0000-0000-000000000007",
+    "slug": "healthcare",
+    "name_en": "Healthcare",
+    "name_he": "בריאות",
+    "name_ru": "Здравоохранение",
+    "description": "Public health system, insurance, hospital funding, medicine costs."
+  },
+  {
+    "id": "30000000-0000-0000-0000-000000000008",
+    "slug": "education",
+    "name_en": "Education",
+    "name_he": "חינוך",
+    "name_ru": "Образование",
+    "description": "Public vs. private schooling, religious education, curriculum, funding."
+  },
+  {
+    "id": "30000000-0000-0000-0000-000000000009",
+    "slug": "housing",
+    "name_en": "Housing",
+    "name_he": "דיור",
+    "name_ru": "Жильё",
+    "description": "Housing prices, tenant rights, construction policy, rental market."
+  },
+  {
+    "id": "30000000-0000-0000-0000-000000000010",
+    "slug": "welfare",
+    "name_en": "Welfare",
+    "name_he": "רווחה",
+    "name_ru": "Социальное обеспечение",
+    "description": "Social benefits, income support, disability, poverty reduction."
+  },
+  {
+    "id": "30000000-0000-0000-0000-000000000011",
+    "slug": "military_service",
+    "name_en": "Military Service",
+    "name_he": "שירות צבאי",
+    "name_ru": "Военная служба",
+    "description": "Compulsory service, exemptions for Haredim and Arabs, length of service."
+  },
+  {
+    "id": "30000000-0000-0000-0000-000000000012",
+    "slug": "governance_corruption",
+    "name_en": "Governance & Corruption",
+    "name_he": "שלטון ושחיתות",
+    "name_ru": "Управление и коррупция",
+    "description": "Anti-corruption, electoral reform, government accountability."
+  },
+  {
+    "id": "30000000-0000-0000-0000-000000000013",
+    "slug": "environment",
+    "name_en": "Environment",
+    "name_he": "סביבה",
+    "name_ru": "Экология",
+    "description": "Climate policy, renewable energy, environmental regulation."
+  },
+  {
+    "id": "30000000-0000-0000-0000-000000000014",
+    "slug": "transport",
+    "name_en": "Transport",
+    "name_he": "תחבורה",
+    "name_ru": "Транспорт",
+    "description": "Public transport, roads, rail, infrastructure investment."
+  },
+  {
+    "id": "30000000-0000-0000-0000-000000000015",
+    "slug": "cost_of_living",
+    "name_en": "Cost of Living",
+    "name_he": "יוקר המחיה",
+    "name_ru": "Стоимость жизни",
+    "description": "Food prices, energy costs, consumer protections, purchasing power."
+  }
+]
+

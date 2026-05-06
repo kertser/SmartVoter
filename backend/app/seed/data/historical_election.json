@@ -1,0 +1,17 @@
+{
+  "id": "70000000-0000-0000-0000-000000000001",
+  "election_cycle": "2022",
+  "election_date": "2022-11-01",
+  "turnout": 0.709,
+  "threshold_percent": 3.25,
+  "total_valid_votes": 4584000,
+  "_comment": "Simplified mock — not 100% accurate to real results.",
+  "results": [
+    { "party_official_name": "Likud",           "vote_share": 0.234, "seats": 32, "passed_threshold": true  },
+    { "party_official_name": "Yesh Atid",       "vote_share": 0.178, "seats": 24, "passed_threshold": true  },
+    { "party_official_name": "Yahadut HaTorah", "vote_share": 0.059, "seats":  7, "passed_threshold": true  },
+    { "party_official_name": "HaAvoda",         "vote_share": 0.037, "seats":  4, "passed_threshold": true  },
+    { "party_official_name": "Tikva Hadasha",   "vote_share": 0.028, "seats":  0, "passed_threshold": false }
+  ]
+}
+

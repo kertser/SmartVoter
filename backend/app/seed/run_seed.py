@@ -147,12 +147,41 @@ def seed_simulation_only() -> None:
         db.close()
 
 
+def seed_missing_topics() -> None:
+    """
+    Insert any topic from TOPICS that does not yet exist in the database (matched by slug).
+    Safe to run on an already-seeded DB — existing topics are untouched.
+    Call this to add the 10 new topics without wiping existing data.
+    """
+    db = SessionLocal()
+    try:
+        existing_slugs = {t.slug for t in db.query(Topic).all()}
+        added = 0
+        for t in TOPICS:
+            if t["slug"] not in existing_slugs:
+                db.add(Topic(**t))
+                added += 1
+        db.commit()
+        if added:
+            print(f"  ✓ Added {added} missing topics")
+        else:
+            print("  All topics already present.")
+    except Exception as e:
+        db.rollback()
+        print(f"seed_missing_topics failed: {e}", file=sys.stderr)
+        raise
+    finally:
+        db.close()
+
+
 def run_seed() -> None:
     db = SessionLocal()
     try:
         # Idempotency check
         if db.query(Topic).first():
-            print("Database already seeded. Skipping.")
+            print("Database already seeded. Checking for missing topics...")
+            db.close()
+            seed_missing_topics()
             return
 
         print("Seeding database...")
@@ -392,9 +421,12 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--simulation-only", action="store_true", help="Seed only simulation data")
+    parser.add_argument("--topics-only", action="store_true", help="Add missing topics (safe on existing DB)")
     args = parser.parse_args()
     if args.simulation_only:
         seed_simulation_only()
+    elif args.topics_only:
+        seed_missing_topics()
     else:
         run_seed()
         seed_simulation_only()

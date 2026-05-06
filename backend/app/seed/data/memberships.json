@@ -1,0 +1,89 @@
+[
+  {
+    "person_name_en": "Benjamin Netanyahu",
+    "party_official_name": "Likud",
+    "role": "leader",
+    "start_date": "2022-11-01",
+    "end_date": null
+  },
+  {
+    "person_name_en": "Itzhak Herzog",
+    "party_official_name": "HaAvoda",
+    "role": "mk",
+    "start_date": "2022-11-01",
+    "end_date": null
+  },
+  {
+    "person_name_en": "Yair Lapid",
+    "party_official_name": "Yesh Atid",
+    "role": "leader",
+    "start_date": "2022-11-01",
+    "end_date": null
+  },
+  {
+    "person_name_en": "Moshe Gafni",
+    "party_official_name": "Yahadut HaTorah",
+    "role": "leader",
+    "start_date": "2022-11-01",
+    "end_date": null
+  },
+  {
+    "person_name_en": "Gideon Sa'ar",
+    "party_official_name": "Tikva Hadasha",
+    "role": "leader",
+    "start_date": "2022-11-01",
+    "end_date": null
+  },
+  {
+    "person_name_en": "Merav Michaeli",
+    "party_official_name": "HaAvoda",
+    "role": "mk",
+    "start_date": "2022-11-01",
+    "end_date": null
+  },
+  {
+    "person_name_en": "Ayelet Shaked",
+    "party_official_name": "Tikva Hadasha",
+    "role": "mk",
+    "start_date": "2022-11-01",
+    "end_date": null
+  },
+  {
+    "person_name_en": "Amir Ohana",
+    "party_official_name": "Likud",
+    "role": "mk",
+    "start_date": "2022-11-01",
+    "end_date": null
+  },
+  {
+    "_comment": "Cross-party mover A — was in Likud, now in New Hope",
+    "person_name_en": "MK Changer A",
+    "party_official_name": "Likud",
+    "role": "mk",
+    "start_date": "2019-04-09",
+    "end_date": "2022-01-01"
+  },
+  {
+    "person_name_en": "MK Changer A",
+    "party_official_name": "Tikva Hadasha",
+    "role": "candidate",
+    "start_date": "2022-11-01",
+    "end_date": null
+  },
+  {
+    "_comment": "Cross-party mover B — was in Yesh Atid, now in New Hope",
+    "person_name_en": "MK Changer B",
+    "party_official_name": "Yesh Atid",
+    "role": "mk",
+    "start_date": "2021-03-23",
+    "end_date": "2022-06-01"
+  },
+  {
+    "person_name_en": "MK Changer B",
+    "party_official_name": "Tikva Hadasha",
+    "role": "candidate",
+    "start_date": "2022-11-01",
+    "end_date": null
+  }
+]
+

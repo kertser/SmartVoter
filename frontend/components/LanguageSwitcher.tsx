@@ -23,7 +23,7 @@ export function LanguageSwitcher() {
   return (
     <div className="flex items-center gap-1" aria-label={ls.label}>
       {options.map(({ code, label, tooltip }) => (
-        <Tooltip key={code} content={tooltip}>
+        <Tooltip key={code} content={tooltip} position="bottom">
           <button
             onClick={() => setLang(code)}
             aria-pressed={activeLang === code}

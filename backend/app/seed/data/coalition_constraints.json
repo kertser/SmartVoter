@@ -1,0 +1,35 @@
+[
+  {
+    "_comment": "UTJ refuses to sit with Labor — declared hard refusal",
+    "source_party_official_name": "Yahadut HaTorah",
+    "target_party_official_name": "HaAvoda",
+    "constraint_type": "refuses",
+    "strength": "hard",
+    "explanation": "UTJ has declared it will not sit in any coalition with Labor."
+  },
+  {
+    "_comment": "UTJ refuses to sit with Yesh Atid — declared hard refusal",
+    "source_party_official_name": "Yahadut HaTorah",
+    "target_party_official_name": "Yesh Atid",
+    "constraint_type": "refuses",
+    "strength": "hard",
+    "explanation": "UTJ has declared it will not sit in any coalition with Yesh Atid."
+  },
+  {
+    "_comment": "Labor soft against joining Likud-led coalition",
+    "source_party_official_name": "HaAvoda",
+    "target_party_official_name": "Likud",
+    "constraint_type": "refuses",
+    "strength": "soft",
+    "explanation": "Labor leadership has stated preference against joining a Likud-led coalition."
+  },
+  {
+    "_comment": "New Hope soft preference for right-center bloc",
+    "source_party_official_name": "Tikva Hadasha",
+    "target_party_official_name": "HaAvoda",
+    "constraint_type": "refuses",
+    "strength": "soft",
+    "explanation": "New Hope founder stated preference for right-center bloc."
+  }
+]
+

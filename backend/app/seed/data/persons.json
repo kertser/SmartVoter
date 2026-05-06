@@ -1,0 +1,65 @@
+[
+  {
+    "id": "40000000-0000-0000-0000-000000000001",
+    "name_en": "Benjamin Netanyahu",
+    "name_he": "בנימין נתניהו",
+    "birth_year": 1949
+  },
+  {
+    "id": "40000000-0000-0000-0000-000000000002",
+    "name_en": "Itzhak Herzog",
+    "name_he": "יצחק הרצוג",
+    "birth_year": 1960
+  },
+  {
+    "id": "40000000-0000-0000-0000-000000000003",
+    "name_en": "Yair Lapid",
+    "name_he": "יאיר לפיד",
+    "birth_year": 1963
+  },
+  {
+    "id": "40000000-0000-0000-0000-000000000004",
+    "name_en": "Moshe Gafni",
+    "name_he": "משה גפני",
+    "birth_year": 1952
+  },
+  {
+    "id": "40000000-0000-0000-0000-000000000005",
+    "name_en": "Gideon Sa'ar",
+    "name_he": "גדעון סער",
+    "birth_year": 1966
+  },
+  {
+    "id": "40000000-0000-0000-0000-000000000006",
+    "name_en": "Merav Michaeli",
+    "name_he": "מרב מיכאלי",
+    "birth_year": 1975
+  },
+  {
+    "id": "40000000-0000-0000-0000-000000000007",
+    "name_en": "Ayelet Shaked",
+    "name_he": "אילת שקד",
+    "birth_year": 1976
+  },
+  {
+    "id": "40000000-0000-0000-0000-000000000008",
+    "name_en": "Amir Ohana",
+    "name_he": "אמיר אוחנה",
+    "birth_year": 1972
+  },
+  {
+    "_comment": "Cross-party mover: demonstrates candidate volatility",
+    "id": "40000000-0000-0000-0000-000000000009",
+    "name_en": "MK Changer A",
+    "name_he": "ח''כ שינוי א",
+    "birth_year": 1970
+  },
+  {
+    "_comment": "Cross-party mover: demonstrates candidate volatility",
+    "id": "40000000-0000-0000-0000-000000000010",
+    "name_en": "MK Changer B",
+    "name_he": "ח''כ שינוי ב",
+    "birth_year": 1968
+  }
+]
+

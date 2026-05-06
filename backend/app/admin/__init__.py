@@ -827,6 +827,7 @@ def trigger_volatility_pipeline(
 
 class GenerateRootQuestionBody(BaseModel):
     topic_id: str
+    force_regenerate: bool = False  # bypass LLM cache to get a fresh question
 
 
 @admin_router.post("/llm/generate-root-question")
@@ -840,6 +841,9 @@ def generate_root_question(
     Root questions are the entry point of the questionnaire (is_root_question=True).
     They cover a whole topic, not a specific bill or vote.
     Human approval still required before going public.
+
+    Set force_regenerate=True to bypass the LLM cache and get a new question
+    even if one was already generated for this topic.
     """
     try:
         tid = uuid.UUID(body.topic_id)
@@ -867,6 +871,11 @@ def generate_root_question(
             "Ask about the user's general stance on this policy area."
         ),
     }
+
+    # Bust the LLM cache by adding a unique nonce when force_regenerate is requested.
+    # The nonce makes the input_hash different so AuditedLLMService makes a fresh call.
+    if body.force_regenerate:
+        input_data["_cache_bust"] = str(uuid.uuid4())
 
     result = svc.generate_question_with_critique(input_data, entity_id=tid)
     neutrality_score = float(result.get("neutrality_score", 0.7))

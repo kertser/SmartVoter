@@ -1,0 +1,60 @@
+[
+  {
+    "_comment": "Dates support 'today-N' relative offsets (days before today) for mock recency.",
+    "id": "60000000-0000-0000-0000-000000000001",
+    "pollster_name": "Midgam (mock)",
+    "field_end_date": "today-42",
+    "sample_size": 502,
+    "quality_score": 0.75,
+    "results": [
+      { "party_official_name": "Likud",           "vote_share": 0.280 },
+      { "party_official_name": "Yesh Atid",       "vote_share": 0.220 },
+      { "party_official_name": "Yahadut HaTorah", "vote_share": 0.080 },
+      { "party_official_name": "HaAvoda",         "vote_share": 0.055 },
+      { "party_official_name": "Tikva Hadasha",   "vote_share": 0.040 }
+    ]
+  },
+  {
+    "id": "60000000-0000-0000-0000-000000000002",
+    "pollster_name": "Maariv Research (mock)",
+    "field_end_date": "today-28",
+    "sample_size": 612,
+    "quality_score": 0.70,
+    "results": [
+      { "party_official_name": "Likud",           "vote_share": 0.275 },
+      { "party_official_name": "Yesh Atid",       "vote_share": 0.228 },
+      { "party_official_name": "Yahadut HaTorah", "vote_share": 0.083 },
+      { "party_official_name": "HaAvoda",         "vote_share": 0.052 },
+      { "party_official_name": "Tikva Hadasha",   "vote_share": 0.038 }
+    ]
+  },
+  {
+    "id": "60000000-0000-0000-0000-000000000003",
+    "pollster_name": "Midgam (mock)",
+    "field_end_date": "today-14",
+    "sample_size": 547,
+    "quality_score": 0.78,
+    "results": [
+      { "party_official_name": "Likud",           "vote_share": 0.272 },
+      { "party_official_name": "Yesh Atid",       "vote_share": 0.234 },
+      { "party_official_name": "Yahadut HaTorah", "vote_share": 0.081 },
+      { "party_official_name": "HaAvoda",         "vote_share": 0.048 },
+      { "party_official_name": "Tikva Hadasha",   "vote_share": 0.035 }
+    ]
+  },
+  {
+    "id": "60000000-0000-0000-0000-000000000004",
+    "pollster_name": "Maariv Research (mock)",
+    "field_end_date": "today-5",
+    "sample_size": 710,
+    "quality_score": 0.82,
+    "results": [
+      { "party_official_name": "Likud",           "vote_share": 0.268 },
+      { "party_official_name": "Yesh Atid",       "vote_share": 0.240 },
+      { "party_official_name": "Yahadut HaTorah", "vote_share": 0.079 },
+      { "party_official_name": "HaAvoda",         "vote_share": 0.051 },
+      { "party_official_name": "Tikva Hadasha",   "vote_share": 0.034 }
+    ]
+  }
+]
+

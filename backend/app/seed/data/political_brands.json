@@ -1,0 +1,33 @@
+[
+  {
+    "id": "10000000-0000-0000-0000-000000000001",
+    "canonical_name": "Likud",
+    "names_json": { "he": "הליכוד", "en": "Likud", "ru": "Ликуд" },
+    "description": "Right-wing nationalist party founded by Menachem Begin."
+  },
+  {
+    "id": "10000000-0000-0000-0000-000000000002",
+    "canonical_name": "Labor",
+    "names_json": { "he": "העבודה", "en": "Labor", "ru": "Авода (Труд)" },
+    "description": "Center-left social-democratic party."
+  },
+  {
+    "id": "10000000-0000-0000-0000-000000000003",
+    "canonical_name": "United Torah Judaism",
+    "names_json": { "he": "יהדות התורה", "en": "United Torah Judaism", "ru": "Яхадут ха-Тора" },
+    "description": "Ultra-Orthodox Haredi political alliance."
+  },
+  {
+    "id": "10000000-0000-0000-0000-000000000004",
+    "canonical_name": "Yesh Atid",
+    "names_json": { "he": "יש עתיד", "en": "Yesh Atid", "ru": "Еш Атид" },
+    "description": "Centrist secular party focused on middle class."
+  },
+  {
+    "id": "10000000-0000-0000-0000-000000000005",
+    "canonical_name": "New Hope",
+    "names_json": { "he": "תקווה חדשה", "en": "New Hope", "ru": "Тиква Хадаша" },
+    "description": "Recently formed right-wing party with limited parliamentary history."
+  }
+]
+

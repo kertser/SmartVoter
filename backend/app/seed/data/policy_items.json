@@ -1,0 +1,168 @@
+[
+  {
+    "_comment": "--- Judiciary (4 items) ---",
+    "slug": "jud_01",
+    "topic_slug": "judiciary",
+    "title": "Judicial Review Scope",
+    "description": "Extent of Supreme Court authority to strike down Knesset laws.",
+    "directional_axis": "judicial_review_scope: -1=broad court power, +1=parliamentary supremacy",
+    "source_type": "vote"
+  },
+  {
+    "slug": "jud_02",
+    "topic_slug": "judiciary",
+    "title": "Judicial Appointments",
+    "description": "Who controls appointment of Supreme Court justices.",
+    "directional_axis": "appointment_control: -1=judicial committee control, +1=political appointment",
+    "source_type": "bill"
+  },
+  {
+    "slug": "jud_03",
+    "topic_slug": "judiciary",
+    "title": "Override Clause",
+    "description": "Ability of Knesset to override Supreme Court rulings.",
+    "directional_axis": "override: -1=no override, +1=simple majority override",
+    "source_type": "vote"
+  },
+  {
+    "slug": "jud_04",
+    "topic_slug": "judiciary",
+    "title": "Attorney General Independence",
+    "description": "Independence of the Attorney General from government.",
+    "directional_axis": "ag_independence: -1=full independence, +1=politically subordinate",
+    "source_type": "platform"
+  },
+  {
+    "_comment": "--- Economy & Taxes (4 items) ---",
+    "slug": "eco_01",
+    "topic_slug": "economy_taxes",
+    "title": "Income Tax Progressivity",
+    "description": "Whether top income tax brackets should be raised.",
+    "directional_axis": "tax_progressivity: -1=higher top rates, +1=flat/lower rates",
+    "source_type": "vote"
+  },
+  {
+    "slug": "eco_02",
+    "topic_slug": "economy_taxes",
+    "title": "State Welfare Spending",
+    "description": "Level of state social safety net and welfare benefits.",
+    "directional_axis": "welfare_spending: -1=expand welfare, +1=reduce welfare/privatize",
+    "source_type": "bill"
+  },
+  {
+    "slug": "eco_03",
+    "topic_slug": "economy_taxes",
+    "title": "Housing Market Regulation",
+    "description": "Government intervention in housing prices and rental market.",
+    "directional_axis": "housing_regulation: -1=strong state regulation, +1=free market",
+    "source_type": "vote"
+  },
+  {
+    "slug": "eco_04",
+    "topic_slug": "economy_taxes",
+    "title": "Religious Institution Funding",
+    "description": "State budget allocation to religious institutions.",
+    "directional_axis": "religious_funding: -1=cut funding, +1=increase funding",
+    "source_type": "vote"
+  },
+  {
+    "_comment": "--- Religion & State (4 items) ---",
+    "slug": "rel_01",
+    "topic_slug": "religion_state",
+    "title": "Civil Marriage",
+    "description": "Whether civil (non-religious) marriage should be legalized.",
+    "directional_axis": "civil_marriage: -1=legalize civil marriage, +1=maintain religious monopoly",
+    "source_type": "bill"
+  },
+  {
+    "slug": "rel_02",
+    "topic_slug": "religion_state",
+    "title": "Shabbat Commerce",
+    "description": "Whether businesses may operate on Shabbat.",
+    "directional_axis": "shabbat_commerce: -1=allow commerce, +1=restrict commerce",
+    "source_type": "vote"
+  },
+  {
+    "slug": "rel_03",
+    "topic_slug": "religion_state",
+    "title": "Haredi Military Service",
+    "description": "Whether Haredi men should serve in the military.",
+    "directional_axis": "haredi_service: -1=mandatory service, +1=exempt status",
+    "source_type": "vote"
+  },
+  {
+    "slug": "rel_04",
+    "topic_slug": "religion_state",
+    "title": "Kashrut Law",
+    "description": "State enforcement of kashrut (kosher) rules.",
+    "directional_axis": "kashrut_enforcement: -1=privatize kashrut, +1=state monopoly enforcement",
+    "source_type": "platform"
+  },
+  {
+    "_comment": "--- Security (4 items) ---",
+    "slug": "sec_01",
+    "topic_slug": "security",
+    "title": "Two-State Solution",
+    "description": "Support for Palestinian statehood alongside Israel.",
+    "directional_axis": "two_state: -1=support two states, +1=oppose Palestinian statehood",
+    "source_type": "platform"
+  },
+  {
+    "slug": "sec_02",
+    "topic_slug": "security",
+    "title": "Settlement Expansion",
+    "description": "Policy on West Bank settlement building.",
+    "directional_axis": "settlements: -1=freeze/remove settlements, +1=expand settlements",
+    "source_type": "vote"
+  },
+  {
+    "slug": "sec_03",
+    "topic_slug": "security",
+    "title": "Defense Budget",
+    "description": "Level of military and defense spending.",
+    "directional_axis": "defense_spending: -1=reduce, +1=increase significantly",
+    "source_type": "bill"
+  },
+  {
+    "slug": "sec_04",
+    "topic_slug": "security",
+    "title": "Gaza Ceasefire Terms",
+    "description": "Conditions acceptable for Gaza ceasefire agreement.",
+    "directional_axis": "ceasefire_terms: -1=flexible humanitarian terms, +1=military victory first",
+    "source_type": "statement"
+  },
+  {
+    "_comment": "--- Civil Rights (4 items) ---",
+    "slug": "civ_01",
+    "topic_slug": "civil_rights",
+    "title": "LGBTQ+ Rights",
+    "description": "Legal equality and recognition of LGBTQ+ persons.",
+    "directional_axis": "lgbtq_rights: -1=full equality, +1=restrict recognition",
+    "source_type": "vote"
+  },
+  {
+    "slug": "civ_02",
+    "topic_slug": "civil_rights",
+    "title": "Arab Minority Rights",
+    "description": "Language rights, political participation, budget parity for Arab citizens.",
+    "directional_axis": "arab_rights: -1=full equality and recognition, +1=restrict political participation",
+    "source_type": "bill"
+  },
+  {
+    "slug": "civ_03",
+    "topic_slug": "civil_rights",
+    "title": "Freedom of Press",
+    "description": "Independence of public broadcasting and press freedom.",
+    "directional_axis": "press_freedom: -1=strong independent media, +1=government control/influence",
+    "source_type": "vote"
+  },
+  {
+    "slug": "civ_04",
+    "topic_slug": "civil_rights",
+    "title": "Anti-Discrimination Law",
+    "description": "Scope of anti-discrimination protections in employment and services.",
+    "directional_axis": "anti_discrimination: -1=broad protections, +1=narrow/religious exemptions",
+    "source_type": "platform"
+  }
+]
+

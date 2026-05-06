@@ -647,7 +647,10 @@ export async function adminGetTopicsWithRootQuestions(): Promise<TopicWithRootQu
   return adminApiFetch<TopicWithRootQuestion[]>("/api/admin/topics/with-root-questions");
 }
 
-export async function adminGenerateRootQuestion(topicId: string): Promise<{
+export async function adminGenerateRootQuestion(
+  topicId: string,
+  forceRegenerate = false,
+): Promise<{
   action: string;
   question_id: string;
   topic_id: string;
@@ -661,7 +664,10 @@ export async function adminGenerateRootQuestion(topicId: string): Promise<{
 }> {
   return adminApiFetch("/api/admin/llm/generate-root-question", {
     method: "POST",
-    body: JSON.stringify({ topic_id: topicId }),
+    body: JSON.stringify({
+      topic_id: topicId,
+      force_regenerate: forceRegenerate,
+    }),
   });
 }
 

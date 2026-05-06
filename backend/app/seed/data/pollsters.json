@@ -1,0 +1,19 @@
+[
+  {
+    "id": "50000000-0000-0000-0000-000000000001",
+    "name": "Midgam (mock)",
+    "country": "IL",
+    "reliability_score": 0.82,
+    "historical_bias_json": { "Likud": 0.01, "Yesh Atid": -0.01 },
+    "historical_error_std_json": { "default": 0.025 }
+  },
+  {
+    "id": "50000000-0000-0000-0000-000000000002",
+    "name": "Maariv Research (mock)",
+    "country": "IL",
+    "reliability_score": 0.74,
+    "historical_bias_json": {},
+    "historical_error_std_json": { "default": 0.03 }
+  }
+]
+

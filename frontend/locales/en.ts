@@ -219,6 +219,15 @@ const en: Translations = {
     filterAll: "All instances",
     knessetLabel: (n) => `Knesset ${n}`,
     electionCycleLabel: (cycle) => cycle,
+    statusActiveTooltip: "This party currently holds seats in the Knesset or is active as an electoral list.",
+    statusDissolvedTooltip: "This party has been formally dissolved and no longer exists.",
+    statusMergedTooltip: "This party has merged into another party or list.",
+    statusSplitTooltip: "This party has split into multiple successor parties.",
+    statusRenamedTooltip: "This party has been renamed or rebranded under a new name.",
+    positionBarTooltip: "Party position on this policy axis. Left (−1) = one extreme, centre (0) = mixed or unclear, right (+1) = opposite extreme. Derived from parliamentary votes and bills.",
+    evidenceStrengthTooltip: "How strongly the available evidence supports this position. 1.0 = very strong (many votes/bills); 0.0 = inferred from statements or lineage only.",
+    evidenceTypeTooltip: "The primary type of evidence used to determine this position: vote = parliamentary votes, bill = sponsored bills, platform = party platform, statement = public statements.",
+    continuityWeightTooltip: "How much policy continuity is expected between related parties. 1.0 = identical, 0.0 = unrelated. Used to carry over evidence from predecessor parties.",
 
     votesHeading: "Votes",
     votesDesc: "Plenary votes tracked by SmartVoter.",
@@ -405,9 +414,14 @@ const en: Translations = {
     notPrediction:
       "This is a probabilistic simulation scenario, not a prediction or voting recommendation.",
     coalSeats: (mean, p10, p90) =>
-      `~${Math.round(mean)} seats (${p10}\u2013${p90} 80% interval)`,
+      `~${Math.round(mean)} seats (${p10}–${p90} 80% interval)`,
     coalFeasibility: (score) => `Feasibility: ${Math.round(score * 100)}%`,
     coalStability: (score) => `Stability: ${Math.round(score * 100)}%`,
+    feasibilityTooltip: "Estimated likelihood that coalition partners would agree to govern together, based on declared incompatibilities, ideological distance, and historical cooperation.",
+    stabilityTooltip: "Estimated likelihood that this coalition would complete its term without early collapse, based on seat margin, ideological spread, and historical patterns.",
+    coalProbabilityTooltip: "Estimated probability of this specific coalition outcome across all simulation runs. Higher = more likely scenario given the polling inputs.",
+    thresholdProbTooltip: "Probability of clearing the 3.25% electoral threshold required to enter the Knesset. Parties below threshold receive no seats regardless of vote share.",
+    runNewSimulationTooltip: "Run a new Monte Carlo simulation with the current polling data. Each run uses thousands of sampled vote distributions to compute seat ranges.",
   },
 };
 
