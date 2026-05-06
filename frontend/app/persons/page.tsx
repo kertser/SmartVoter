@@ -46,10 +46,11 @@ export default function PersonsPage() {
   const hebrewName = (p: PersonListItem) => p.name_he || p.name_en;
   const englishName = (p: PersonListItem) => p.name_en;
 
+  // Party names are always shown in Hebrew regardless of UI language.
+  // Israeli party names are proper nouns — translating them causes duplicate
+  // group headers (e.g. "Likud" and "הליכוד" treated as separate groups).
   const partyName = (p: PersonListItem) =>
-    lang === "he" ? (p.current_party_name_he ?? p.current_party_name) :
-    lang === "ru" ? (p.current_party_name_ru ?? p.current_party_name) :
-    p.current_party_name;
+    p.current_party_name_he ?? p.current_party_name_ru ?? p.current_party_name;
 
   const filtered = useMemo(() => {
     let list = persons;
@@ -78,7 +79,7 @@ export default function PersonsPage() {
     }
     return list;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [persons, query, sortMode, lang]);
+  }, [persons, query, sortMode]);
 
   // Group by party when sorting by party
   const groups = useMemo(() => {
@@ -91,7 +92,7 @@ export default function PersonsPage() {
     }
     return map;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtered, sortMode, lang]);
+  }, [filtered, sortMode]);
 
   const currentCount = persons.filter((p) => p.current_party_instance_id).length;
 

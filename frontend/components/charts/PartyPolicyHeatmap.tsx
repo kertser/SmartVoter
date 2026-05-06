@@ -31,10 +31,8 @@ export function PartyPolicyHeatmap({ parties, lang = "en", onCellClick }: Props)
     );
   }
 
-  const getPartyName = (p: PartyResult) =>
-    lang === "he" ? (p.name_he ?? p.name) :
-    lang === "ru" ? (p.name_ru ?? p.name) :
-    p.name;
+  // Party names always in Hebrew — they are proper nouns.
+  const getPartyName = (p: PartyResult) => p.name_he ?? p.name;
 
   return (
     <div className="overflow-x-auto">

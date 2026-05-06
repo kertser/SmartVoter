@@ -32,10 +32,8 @@ interface Props {
 export function EvidenceCompositionBar({ parties, lang = "en" }: Props) {
   const topParties = parties.slice(0, 5);
 
-  const getPartyName = (p: PartyResult) =>
-    lang === "he" ? (p.name_he ?? p.name) :
-    lang === "ru" ? (p.name_ru ?? p.name) :
-    p.name;
+  // Party names always in Hebrew — they are proper nouns.
+  const getPartyName = (p: PartyResult) => p.name_he ?? p.name;
 
   // Collect all evidence types present across all parties
   const allTypes = new Set<string>();

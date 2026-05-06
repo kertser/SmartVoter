@@ -51,10 +51,8 @@ export function TopicRadarChart({ parties, maxParties = 3, lang = "en" }: Props)
     return entry;
   });
 
-  const getPartyName = (p: PartyResult) =>
-    lang === "he" ? (p.name_he ?? p.name) :
-    lang === "ru" ? (p.name_ru ?? p.name) :
-    p.name;
+  // Party names always in Hebrew — they are proper nouns.
+  const getPartyName = (p: PartyResult) => p.name_he ?? p.name;
 
   const toggleParty = (id: string) => {
     setHidden((prev) => {

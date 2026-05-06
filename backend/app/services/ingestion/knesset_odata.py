@@ -165,12 +165,21 @@ def fetch_votes(
 
             for row in rows:
                 vote_id = row.get("vote_id")
-                # Use vote_item_dscr if available, fall back to sess_item_dscr
-                title = (
-                    row.get("vote_item_dscr")
-                    or row.get("sess_item_dscr")
-                    or "—"
-                )
+                # Build a contextual title that combines the session-item (law name) and
+                # the vote-item (action type: הסתייגות, קריאה שנייה, etc.).
+                # sess_item_dscr contains the law/topic being voted on (the valuable context).
+                # vote_item_dscr contains the procedural action type within that topic.
+                # Combining both gives e.g. "הצעת חוק X — הסתייגות" instead of bare "הסתייגות".
+                sess = (row.get("sess_item_dscr") or "").strip()
+                item = (row.get("vote_item_dscr") or "").strip()
+                if sess and item and sess != item:
+                    title = f"{sess} — {item}"
+                elif sess:
+                    title = sess
+                elif item:
+                    title = item
+                else:
+                    title = "—"
                 results.append({
                     "external_id": str(vote_id),
                     "title_he": title,

@@ -110,7 +110,7 @@ function ResultsContent() {
                 lang={lang}
                 onCellClick={(partyId, topic) => {
                   const p = results.parties.find((x) => x.party_id === partyId);
-                  if (p) setDrawerParty({ id: partyId, name: lang === "he" ? (p.name_he ?? p.name) : lang === "ru" ? (p.name_ru ?? p.name) : p.name, topic });
+                  if (p) setDrawerParty({ id: partyId, name: p.name_he ?? p.name, topic });
                 }}
               />
             </div>
@@ -141,7 +141,7 @@ function ResultsContent() {
                         : "text-slate-500 hover:bg-slate-100"
                     }`}
                   >
-                    {(lang === "he" ? (p.name_he ?? p.name) : lang === "ru" ? (p.name_ru ?? p.name) : p.name).slice(0, 8)}
+                     {(p.name_he ?? p.name).slice(0, 8)}
                   </button>
                 ))}
               </div>
@@ -222,10 +222,8 @@ function PartyMatchCard({
   onEvidenceClick: (partyId: string, name: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const displayName =
-    lang === "he" ? (party.name_he ?? party.name) :
-    lang === "ru" ? (party.name_ru ?? party.name) :
-    party.name;
+  // Party names always shown in Hebrew — they are proper nouns.
+  const displayName = party.name_he ?? party.name;
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">

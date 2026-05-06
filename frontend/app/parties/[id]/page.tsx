@@ -44,10 +44,8 @@ export default function PartyDetailPage() {
   );
   if (error || !party) return <p className="text-red-600 py-20">{error ?? "Not found"}</p>;
 
-  const partyName =
-    lang === "he" ? party.name_he ?? party.name
-    : lang === "ru" ? party.name_ru ?? party.name
-    : party.name;
+  // Party names are always shown in Hebrew — they are proper nouns.
+  const partyName = party.name_he ?? party.name;
 
   const topicName = (pos: PartyDetail["positions"][0]) =>
     lang === "he" ? pos.topic_name_he ?? pos.topic_slug ?? ""

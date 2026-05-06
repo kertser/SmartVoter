@@ -53,20 +53,11 @@ export default function PartiesPage() {
   const primaryName = (p: PartyListItem) => p.name_he || p.official_name || p.name;
 
   /**
-   * Secondary name shown in a smaller chip below:
-   * - In Russian: show Russian transliteration (often same as English)
-   * - In English: show the English/official name
-   * - In Hebrew: nothing (already showing Hebrew)
-   * Only show if different from primary.
+   * Secondary name: not shown — party names are always Hebrew only.
+   * Israeli party names are proper nouns and should not be transliterated.
    */
-  const secondaryName = (p: PartyListItem): string | null => {
-    if (lang === "he") return null;
-    const sec =
-      lang === "ru" ? (p.name_ru ?? p.name) :
-      (p.name_ru ? null : p.name); // only show English if no Russian
-    if (!sec || sec === primaryName(p)) return null;
-    return sec;
-  };
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const secondaryName = (_p: PartyListItem): string | null => null;
 
   const filtered = parties.filter((p) => {
     if (filter === "active" && p.status !== "active") return false;

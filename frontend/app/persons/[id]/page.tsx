@@ -57,10 +57,8 @@ export default function PersonDetailPage() {
             <div className="absolute top-0 bottom-0 start-0 w-px bg-slate-200" />
             <div className="space-y-4">
               {person.memberships.map((m, i) => {
-                const partyName =
-                  lang === "he" ? m.party_name_he ?? m.party_name
-                  : lang === "ru" ? m.party_name_ru ?? m.party_name
-                  : m.party_name;
+                // Always use Hebrew for party names — they are proper nouns
+                const partyName = m.party_name_he ?? m.party_name;
                 return (
                   <div key={i} className="ms-6 relative">
                     {/* Dot */}

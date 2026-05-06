@@ -55,9 +55,8 @@ export function PartyLineageTimeline({ lang = "en" }: Props) {
   const getName = (id: string) => {
     const n = nodeMap.get(id);
     if (!n) return id.slice(0, 8);
-    return lang === "he" ? (n.name_he ?? n.name) :
-           lang === "ru" ? (n.name_ru ?? n.name) :
-           n.name;
+    // Party names always in Hebrew — they are proper nouns.
+    return n.name_he ?? n.name;
   };
 
   const getStatusBadge = (status: string) => {
