@@ -592,6 +592,26 @@ export async function adminListIngestionJobs(): Promise<IngestionJobStatus[]> {
   return adminApiFetch<IngestionJobStatus[]>("/api/admin/ingest/jobs");
 }
 
+export interface AvailableKnessetData {
+  /** All Knesset numbers that have any data in the DB */
+  knessets: number[];
+  knessets_with_votes: number[];
+  knessets_with_factions: number[];
+  /** Knesset number (as string) → vote count */
+  vote_counts: Record<string, number>;
+  faction_counts: Record<string, number>;
+  total_votes: number;
+  total_bills: number;
+  total_persons: number;
+  total_vote_results: number;
+  /** Human-readable short summary, e.g. "Кнессет 22–25" or null if empty */
+  summary: string | null;
+}
+
+export async function adminGetAvailableKnessetData(): Promise<AvailableKnessetData> {
+  return adminApiFetch<AvailableKnessetData>("/api/admin/ingest/available-data");
+}
+
 // ── Full Multi-Knesset Pipeline ───────────────────────────────────────────────
 
 export interface FullPipelineKnessetResult {

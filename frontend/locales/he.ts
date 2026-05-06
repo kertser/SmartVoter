@@ -351,6 +351,18 @@ const he: Translations = {
     ingestManualSubtext: "\u05dc\u05d9\u05d9\u05d1\u05d5\u05d0 \u05de\u05de\u05d5\u05e7\u05d3 \u05e9\u05dc \u05db\u05e0\u05e1\u05ea \u05d1\u05d5\u05d3\u05d3\u05ea \u05d0\u05d5 \u05dc\u05d4\u05e9\u05dc\u05de\u05ea \u05e4\u05e2\u05e8\u05d9\u05dd.",
     ingestManualShowBtn: "\u25b6 \u05d9\u05d9\u05d1\u05d5\u05d0 \u05d9\u05d3\u05e0\u05d9",
     ingestManualHideBtn: "\u25bc \u05d4\u05e1\u05ea\u05e8 \u05d9\u05d9\u05d1\u05d5\u05d0 \u05d9\u05d3\u05e0\u05d9",
+    // Available data summary
+    availableDataHeading: "נתונים קיימים במסד הנתונים",
+    availableDataLoading: "בודק נתונים זמינים…",
+    availableDataEmpty: "לא יובאו נתוני כנסת עדיין.",
+    availableDataError: "לא ניתן לטעון סיכום נתונים.",
+    availableDataKnessets: (kns: number[]) => `כנסות עם נתונים: ${kns.join(", ")}`,
+    availableDataVotes: (n: number) => `${n.toLocaleString()} הצבעות`,
+    availableDataBills: (n: number) => `${n.toLocaleString()} הצעות חוק`,
+    availableDataPersons: (n: number) => `${n.toLocaleString()} אנשים`,
+    availableDataVoteResults: (n: number) => `${n.toLocaleString()} תוצאות הצבעה`,
+    availableDataPerKnesset: "לפי כנסת:",
+    availableDataRefresh: "רענן",
     // Question tree
     generateTopicHeading: "\u05e2\u05e5 \u05e9\u05d0\u05dc\u05d5\u05ea \u2014 \u05e9\u05d0\u05dc\u05d5\u05ea \u05e9\u05d5\u05e8\u05e9 \u05dc\u05e4\u05d9 \u05e0\u05d5\u05e9\u05d0",
     generateTopicSubtext: "\u05db\u05dc \u05e0\u05d5\u05e9\u05d0 \u05d6\u05e7\u05d5\u05e7 \u05dc\u05e9\u05d0\u05dc\u05d4 \u05e9\u05d5\u05e8\u05e9 \u05e8\u05d7\u05d1\u05d4 \u05e9\u05e4\u05d5\u05ea\u05d7\u05ea \u05d0\u05ea \u05d4\u05e9\u05d0\u05dc\u05d5\u05df. \u05dc\u05d0\u05d7\u05e8 \u05ea\u05e9\u05d5\u05d1\u05ea \u05d4\u05de\u05e9\u05ea\u05de\u05e9, \u05d4\u05de\u05e0\u05d5\u05e2 \u05d4\u05d0\u05d3\u05e4\u05d8\u05d9\u05d1\u05d9 \u05d1\u05d5\u05d7\u05e8 \u05e9\u05d0\u05dc\u05d5\u05ea \u05d4\u05de\u05e9\u05da.",

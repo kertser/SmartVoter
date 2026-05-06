@@ -329,6 +329,18 @@ export interface Translations {
     ingestManualSubtext: string;
     ingestManualShowBtn: string;
     ingestManualHideBtn: string;
+    // Available data summary
+    availableDataHeading: string;
+    availableDataLoading: string;
+    availableDataEmpty: string;
+    availableDataError: string;
+    availableDataKnessets: (knessets: number[]) => string;
+    availableDataVotes: (total: number) => string;
+    availableDataBills: (total: number) => string;
+    availableDataPersons: (total: number) => string;
+    availableDataVoteResults: (total: number) => string;
+    availableDataPerKnesset: string;
+    availableDataRefresh: string;
     // Question tree (Generate tab)
     generateTopicHeading: string;
     generateTopicSubtext: string;

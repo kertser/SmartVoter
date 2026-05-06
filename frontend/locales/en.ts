@@ -352,6 +352,18 @@ const en: Translations = {
     ingestManualSubtext: "For targeted single-Knesset imports or fixing gaps after the full pipeline has run.",
     ingestManualShowBtn: "▶ Show manual import",
     ingestManualHideBtn: "▼ Hide manual import",
+    // Available data summary
+    availableDataHeading: "Data already in database",
+    availableDataLoading: "Checking available data…",
+    availableDataEmpty: "No Knesset data imported yet.",
+    availableDataError: "Could not load data summary.",
+    availableDataKnessets: (kns: number[]) => `Knessets with data: ${kns.join(", ")}`,
+    availableDataVotes: (n: number) => `${n.toLocaleString()} votes`,
+    availableDataBills: (n: number) => `${n.toLocaleString()} bills`,
+    availableDataPersons: (n: number) => `${n.toLocaleString()} persons`,
+    availableDataVoteResults: (n: number) => `${n.toLocaleString()} vote results`,
+    availableDataPerKnesset: "Per Knesset:",
+    availableDataRefresh: "Refresh",
     // Question tree
     generateTopicHeading: "Question Tree — Root Questions by Topic",
     generateTopicSubtext: "Each topic needs one broad root question that opens the questionnaire. After the user answers it, the adaptive engine dynamically selects follow-up questions from that topic's policy items.",

@@ -352,6 +352,18 @@ const ru: Translations = {
     ingestManualSubtext: "\u0414\u043b\u044f \u0446\u0435\u043b\u0435\u0432\u043e\u0433\u043e \u0438\u043c\u043f\u043e\u0440\u0442\u0430 \u043e\u0442\u0434\u0435\u043b\u044c\u043d\u044b\u0445 \u0441\u043e\u0437\u044b\u0432\u043e\u0432 \u0438\u043b\u0438 \u0432\u043e\u0441\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f \u043f\u0440\u043e\u0431\u0435\u043b\u043e\u0432.",
     ingestManualShowBtn: "\u25b6 \u0420\u0443\u0447\u043d\u043e\u0439 \u0438\u043c\u043f\u043e\u0440\u0442",
     ingestManualHideBtn: "\u25bc \u0421\u043a\u0440\u044b\u0442\u044c \u0440\u0443\u0447\u043d\u043e\u0439 \u0438\u043c\u043f\u043e\u0440\u0442",
+    // Available data summary
+    availableDataHeading: "Данные в базе данных",
+    availableDataLoading: "Проверка доступных данных…",
+    availableDataEmpty: "Данные Кнессета ещё не загружены.",
+    availableDataError: "Не удалось загрузить сводку данных.",
+    availableDataKnessets: (kns: number[]) => `Созывы с данными: ${kns.join(", ")}`,
+    availableDataVotes: (n: number) => `${n.toLocaleString()} голосований`,
+    availableDataBills: (n: number) => `${n.toLocaleString()} законопроектов`,
+    availableDataPersons: (n: number) => `${n.toLocaleString()} персон`,
+    availableDataVoteResults: (n: number) => `${n.toLocaleString()} результатов голосований`,
+    availableDataPerKnesset: "По созывам:",
+    availableDataRefresh: "Обновить",
     // Question tree
     generateTopicHeading: "\u0414\u0435\u0440\u0435\u0432\u043e \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432 \u2014 \u043a\u043e\u0440\u043d\u0435\u0432\u044b\u0435 \u0432\u043e\u043f\u0440\u043e\u0441\u044b \u043f\u043e \u0442\u0435\u043c\u0430\u043c",
     generateTopicSubtext: "\u041a\u0430\u0436\u0434\u0430\u044f \u0442\u0435\u043c\u0430 \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u043e\u0434\u043d\u043e\u0433\u043e \u0448\u0438\u0440\u043e\u043a\u043e\u0433\u043e \u043a\u043e\u0440\u043d\u0435\u0432\u043e\u0433\u043e \u0432\u043e\u043f\u0440\u043e\u0441\u0430. \u041f\u043e\u0441\u043b\u0435 \u043e\u0442\u0432\u0435\u0442\u0430 \u0430\u0434\u0430\u043f\u0442\u0438\u0432\u043d\u044b\u0439 \u0434\u0432\u0438\u0436\u043e\u043a \u0432\u044b\u0431\u0438\u0440\u0430\u0435\u0442 \u0443\u0442\u043e\u0447\u043d\u044f\u044e\u0449\u0438\u0435 \u0432\u043e\u043f\u0440\u043e\u0441\u044b.",

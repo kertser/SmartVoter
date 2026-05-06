@@ -575,6 +575,73 @@ def list_ingestion_jobs() -> list[dict]:
     return list(_ingestion_jobs.values())
 
 
+@admin_router.get("/ingest/available-data")
+def get_available_knesset_data(db: Session = Depends(get_db)) -> dict:
+    """
+    Return a summary of which Knessets already have data in the database.
+    Useful to display before launching ingestion so the admin knows what is
+    already available (votes, factions/party instances, bills, persons).
+    """
+    from sqlalchemy import func
+    from backend.app.models.vote import Vote
+    from backend.app.models.bill import Bill
+    from backend.app.models.party_instance import PartyInstance
+    from backend.app.models.person import Person
+    from backend.app.models.vote_result import VoteResult
+
+    # Per-Knesset vote counts
+    vote_rows = (
+        db.query(Vote.knesset_number, func.count(Vote.id).label("cnt"))
+        .filter(Vote.knesset_number.isnot(None))
+        .group_by(Vote.knesset_number)
+        .order_by(Vote.knesset_number)
+        .all()
+    )
+
+    # Per-Knesset faction/party-instance counts
+    faction_rows = (
+        db.query(PartyInstance.knesset_number, func.count(PartyInstance.id).label("cnt"))
+        .filter(PartyInstance.knesset_number.isnot(None))
+        .group_by(PartyInstance.knesset_number)
+        .order_by(PartyInstance.knesset_number)
+        .all()
+    )
+
+    vote_counts: dict[str, int] = {str(r.knesset_number): r.cnt for r in vote_rows}
+    faction_counts: dict[str, int] = {str(r.knesset_number): r.cnt for r in faction_rows}
+
+    knessets_with_votes = sorted(int(k) for k in vote_counts)
+    knessets_with_factions = sorted(int(k) for k in faction_counts)
+    all_knessets = sorted(set(knessets_with_votes) | set(knessets_with_factions))
+
+    # Global totals
+    total_votes = db.query(func.count(Vote.id)).scalar() or 0
+    total_bills = db.query(func.count(Bill.id)).scalar() or 0
+    total_persons = db.query(func.count(Person.id)).scalar() or 0
+    total_vote_results = db.query(func.count(VoteResult.id)).scalar() or 0
+
+    if all_knessets:
+        if len(all_knessets) == 1:
+            summary = f"Кнессет {all_knessets[0]}"
+        else:
+            summary = f"Кнессет {min(all_knessets)}–{max(all_knessets)}"
+    else:
+        summary = None
+
+    return {
+        "knessets": all_knessets,
+        "knessets_with_votes": knessets_with_votes,
+        "knessets_with_factions": knessets_with_factions,
+        "vote_counts": vote_counts,
+        "faction_counts": faction_counts,
+        "total_votes": total_votes,
+        "total_bills": total_bills,
+        "total_persons": total_persons,
+        "total_vote_results": total_vote_results,
+        "summary": summary,
+    }
+
+
 # ── Full Multi-Knesset Pipeline ───────────────────────────────────────────────
 
 class FullPipelineBody(BaseModel):

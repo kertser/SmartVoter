@@ -32,6 +32,7 @@ import {
   adminCreateManualQuestion,
   adminDownloadBackup,
   adminRestoreBackup,
+  adminGetAvailableKnessetData,
   AdminQuestion,
   LlmOutputRecord,
   IngestionJobStatus,
@@ -39,6 +40,7 @@ import {
   FullPipelineKnessetResult,
   TopicWithRootQuestion,
   GenerateAllRootQuestionsJob,
+  AvailableKnessetData,
   getStoredAdminPassword,
   storeAdminPassword,
   clearAdminPassword,
@@ -835,6 +837,22 @@ function FullPipelineWizardSection() {
 
   const isRunning = job?.status === "running" || job?.status === "queued";
 
+  // ── Available data state ────────────────────────────────────────────────
+  const [availData, setAvailData] = useState<AvailableKnessetData | null>(null);
+  const [availDataLoading, setAvailDataLoading] = useState(true);
+  const [availDataError, setAvailDataError] = useState(false);
+
+  const loadAvailData = useCallback(() => {
+    setAvailDataLoading(true);
+    setAvailDataError(false);
+    adminGetAvailableKnessetData()
+      .then(setAvailData)
+      .catch(() => setAvailDataError(true))
+      .finally(() => setAvailDataLoading(false));
+  }, []);
+
+  useEffect(() => { loadAvailData(); }, [loadAvailData]);
+
   const statusColors: Record<string, string> = {
     queued:  "bg-slate-100 text-slate-700 border-slate-200",
     running: "bg-blue-50 text-blue-800 border-blue-200",
@@ -850,7 +868,106 @@ function FullPipelineWizardSection() {
 
   return (
     <div className="rounded-2xl border-2 border-brand-200 bg-brand-50/60 p-5 space-y-4">
-      {/* Heading */}
+      {/* ── Available data summary ───────────────────────────────────────── */}
+      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+        {/* Header bar */}
+        <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <span className="text-sm">🗄️</span>
+            <p className="text-xs font-semibold text-slate-700 tracking-wide">
+              {a.availableDataHeading}
+            </p>
+          </div>
+          <button
+            onClick={loadAvailData}
+            disabled={availDataLoading}
+            className="flex items-center gap-1 text-xs text-slate-500 hover:text-brand-700 disabled:opacity-40 transition-colors rounded px-1.5 py-0.5 hover:bg-slate-100"
+          >
+            <span className={availDataLoading ? "animate-spin inline-block" : ""}>↻</span>
+            {a.availableDataRefresh}
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-4 py-3">
+          {availDataLoading && (
+            <div className="flex items-center gap-2 text-xs text-slate-400 py-1">
+              <span className="inline-block h-3 w-3 rounded-full border-2 border-slate-300 border-t-brand-400 animate-spin" />
+              {a.availableDataLoading}
+            </div>
+          )}
+          {availDataError && (
+            <p className="text-xs text-red-500 py-1">{a.availableDataError}</p>
+          )}
+          {!availDataLoading && !availDataError && availData && (
+            availData.knessets.length === 0 ? (
+              <p className="text-xs text-slate-400 py-1 italic">{a.availableDataEmpty}</p>
+            ) : (
+              <div className="space-y-3">
+                {/* Knesset timeline pills */}
+                <div className="space-y-1">
+                  <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{a.availableDataPerKnesset}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(() => {
+                      const maxVotes = Math.max(...availData.knessets.map((kn: number) => availData.vote_counts[String(kn)] ?? 0), 1);
+                      return availData.knessets.map((kn: number) => {
+                        const votes = availData.vote_counts[String(kn)] ?? 0;
+                        const factions = availData.faction_counts[String(kn)] ?? 0;
+                        const pct = Math.round((votes / maxVotes) * 100);
+                        const hasVotes = votes > 0;
+                        return (
+                          <div
+                            key={kn}
+                            title={`${votes.toLocaleString()} votes · ${factions} factions`}
+                            className="relative flex flex-col items-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 min-w-[52px] overflow-hidden group"
+                          >
+                            {/* Vote fill bar at bottom */}
+                            {hasVotes && (
+                              <div
+                                className="absolute bottom-0 left-0 right-0 bg-brand-100 transition-all"
+                                style={{ height: `${Math.max(pct * 0.4, 3)}%` }}
+                              />
+                            )}
+                            <span className="relative text-xs font-bold text-slate-700 leading-none">{kn}</span>
+                            {hasVotes && (
+                              <span className="relative text-[9px] text-brand-600 font-medium mt-0.5 leading-none">
+                                {votes >= 1000 ? `${(votes / 1000).toFixed(1)}k` : votes}
+                              </span>
+                            )}
+                            {!hasVotes && factions > 0 && (
+                              <span className="relative text-[9px] text-slate-400 mt-0.5 leading-none">{factions}f</span>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+
+                {/* Global stat chips */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { icon: "🗳️", value: availData.total_votes,        label: a.availableDataVotes(availData.total_votes) },
+                    { icon: "📜", value: availData.total_bills,         label: a.availableDataBills(availData.total_bills) },
+                    { icon: "👤", value: availData.total_persons,       label: a.availableDataPersons(availData.total_persons) },
+                    { icon: "📊", value: availData.total_vote_results,  label: a.availableDataVoteResults(availData.total_vote_results) },
+                  ].filter(s => s.value > 0).map(({ icon, value, label }) => (
+                    <div key={icon} className="flex items-center gap-2 rounded-lg bg-slate-50 border border-slate-100 px-3 py-2">
+                      <span className="text-base leading-none">{icon}</span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-slate-800 tabular-nums">{value.toLocaleString()}</p>
+                        <p className="text-[10px] text-slate-400 truncate">{label.replace(/^[\d,\.]+\s*/, "")}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          )}
+        </div>
+      </div>
+
+      {/* ── Heading */}
       <div className="space-y-1">
         <h2 className="text-base font-semibold text-brand-800 flex items-center gap-2">
           <span className="text-lg">🚀</span>
