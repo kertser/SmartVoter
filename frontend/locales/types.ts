@@ -351,6 +351,18 @@ export interface Translations {
     backupRestoreError: string;
   };
 
+  privacy: {
+    bannerText: string;
+    learnMore: string;
+    accept: string;
+    policyHeading: string;
+    policyBody: string;
+    deleteSessionBtn: string;
+    deleteSessionConfirm: string;
+    deleteSessionSuccess: string;
+    deleteSessionError: string;
+  };
+
   simulation: {
     heading: string;
     subheading: string;

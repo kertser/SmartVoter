@@ -68,12 +68,8 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
     party_results: list[PartyResult] = []
 
     for party in party_instances:
-        # Load brand name
-        brand = (
-            db.query(PoliticalBrand)
-            .filter(PoliticalBrand.id == party.political_brand_id)
-            .first()
-        )
+        # Load brand name (from bulk-fetch cache)
+        brand = all_brands.get(party.political_brand_id)
         party_name = brand.canonical_name if brand else party.official_name
         names = brand.names_json or {} if brand else {}
         name_he = names.get("he") or party_name
@@ -114,14 +110,14 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
         topic_scores: dict[str, list[float]] = {}
         # Maps topic name_en → (name_he, name_ru)
         topic_names_i18n: dict[str, tuple[str | None, str | None]] = {}
-        answered_item_ids = {a.policy_item_id for a in user_answers}
+        answered_item_ids = answered_item_ids_global
         for pos in positions:
             if pos.policy_item_id not in answered_item_ids:
                 continue
-            pi = db.query(PolicyItem).filter(PolicyItem.id == pos.policy_item_id).first()
+            pi = all_policy_items.get(pos.policy_item_id)
             if not pi:
                 continue
-            topic = db.query(Topic).filter(Topic.id == pi.topic_id).first()
+            topic = all_topics.get(pi.topic_id) if pi.topic_id else None
             if not topic:
                 continue
             user_ans = next(
@@ -162,15 +158,11 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
             topic_names_i18n.get(t, (None, None))[1] or t for t in top_disagreements
         ]
         weak_evidence = [
-            t for t in (
-                db.query(Topic).join(PolicyItem, PolicyItem.topic_id == Topic.id)
-                .join(PartyPosition, PartyPosition.policy_item_id == PolicyItem.id)
-                .filter(
-                    PartyPosition.party_instance_id == party.id,
-                    PartyPosition.evidence_strength < 0.4,
-                )
-                .all()
-            )
+            all_topics[all_policy_items[p.policy_item_id].topic_id]
+            for p in positions_rows
+            if p.evidence_strength < 0.4
+            and p.policy_item_id in all_policy_items
+            and all_policy_items[p.policy_item_id].topic_id in all_topics
         ]
         weak_evidence_topic_names = list({t.name_en for t in weak_evidence})[:3]
 
@@ -234,10 +226,10 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
     # Representation gap
     answered_topics: dict[str, list[float]] = {}
     for a in user_answers:
-        pi = db.query(PolicyItem).filter(PolicyItem.id == a.policy_item_id).first()
+        pi = all_policy_items.get(a.policy_item_id)
         if not pi:
             continue
-        topic = db.query(Topic).filter(Topic.id == pi.topic_id).first()
+        topic = all_topics.get(pi.topic_id) if pi.topic_id else None
         if not topic:
             continue
         answered_topics.setdefault(topic.name_en, []).append(a.salience)

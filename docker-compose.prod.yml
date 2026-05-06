@@ -1,0 +1,123 @@
+# Production Docker Compose
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Required environment variables (set in .env or via CI secrets):
+#   DATABASE_URL           — postgres connection string
+#   REDIS_URL              — redis connection string
+#   SECRET_KEY             — strong random hex (python -c "import secrets; print(secrets.token_hex(32))")
+#   ADMIN_PASSWORD         — strong admin password (NOT "admin")
+#   APP_ENV                — must be "production"
+#   NEXT_PUBLIC_API_URL    — public backend URL seen by the browser (e.g. https://api.yourdomain.com)
+#   OPENAI_API_KEY         — optional; required for LLM features
+#   CORS_ORIGINS           — comma-separated allowed origins (e.g. https://yourdomain.com)
+
+services:
+  postgres:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-smartvoter}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-smartvoter}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-smartvoter} -d ${POSTGRES_DB:-smartvoter}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # No port exposure in production — only accessible internally
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: always
+    # Production: no --reload, multiple workers
+    command: uv run uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --workers 2 --no-access-log
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-smartvoter}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-smartvoter}
+      REDIS_URL: redis://redis:6379/0
+      APP_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # No source-code volume mounts in production
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL must be set}
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # ── One-off data init (run once after first deploy or after elections) ──────
+  # docker compose -f docker-compose.prod.yml --profile init up data-init
+  data-init:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: >
+      sh -c "
+        echo '=== SmartVoter Production Data Initialisation ===' &&
+        echo '1/3 Applying database migrations...' &&
+        uv run alembic upgrade head &&
+        echo '2/3 Seeding base data...' &&
+        uv run python -m backend.app.seed.run_seed &&
+        echo '3/3 Importing Knesset data (last $$LAST_N_KNESSETS Knessets)...' &&
+        uv run python -m backend.app.seed.ingest_knesset
+          --last-n $$LAST_N_KNESSETS
+          --no-llm &&
+        echo '=== Initialisation complete ==='
+      "
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-smartvoter}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-smartvoter}
+      REDIS_URL: redis://redis:6379/0
+      APP_ENV: production
+      LAST_N_KNESSETS: ${LAST_N_KNESSETS:-2}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - init
+    restart: "no"
+
+volumes:
+  postgres_data:
+  redis_data:
+

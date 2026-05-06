@@ -102,16 +102,17 @@ def _run_and_persist(db: Session, n_iterations: int = 5000) -> SimulationRun:
     }
 
     run = SimulationRun(
-        model_version="v1.0-mock-LR",
+        model_version="v1.1-bader-ofer",
         data_cutoff_date=date.today(),
         n_iterations=n_iterations,
         assumptions_json={
-            "method": "Hare-quota largest-remainder (simplified — not Bader-Ofer)",
+            "method": "Bader-Ofer (d'Hondt) — official Israeli seat allocation law (Elections Law §69a)",
             "threshold": "3.25%",
             "total_seats": 120,
+            "surplus_agreements": "not modelled in MVP",
             "poll_weighting": "recency+sample+quality",
             "half_life_days": 14,
-            "note": "Phase 1 mock data — not real Knesset polling.",
+            "note": "Mock polling data — not real Knesset polling.",
         },
         input_snapshot_hash=_snapshot_hash(polls),
     )

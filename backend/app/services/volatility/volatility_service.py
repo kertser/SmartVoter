@@ -242,7 +242,7 @@ def run_volatility_update(
         ext["volatility"] = v
         person.external_ids_json = ext
 
-    # Parties
+    # Parties — persist to DB column so scores survive restarts
     party_scores: dict[str, float] = {}
     pi_query = db.query(PartyInstance)
     if knesset_number:
@@ -251,6 +251,7 @@ def run_volatility_update(
     for party in parties:
         v = compute_party_volatility(db, party.id)
         party_scores[str(party.id)] = v
+        party.volatility_score = v  # persist to DB (avoids in-memory-only loss)
 
     db.commit()
 

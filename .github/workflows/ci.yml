@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  # ── Backend tests ───────────────────────────────────────────────────────────
+  backend:
+    name: Backend (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.13"]
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: smartvoter
+          POSTGRES_PASSWORD: smartvoter
+          POSTGRES_DB: smartvoter_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql+psycopg://smartvoter:smartvoter@localhost:5432/smartvoter_test
+      REDIS_URL: redis://localhost:6379/0
+      APP_ENV: testing
+      SECRET_KEY: ci-test-secret-key-not-for-production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run Alembic migrations
+        run: uv run alembic upgrade head
+
+      - name: Run tests
+        run: uv run pytest backend/app/tests/ -v --tb=short
+
+  # ── Frontend build ──────────────────────────────────────────────────────────
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+        run: npm run build
+
+  # ── Docker build check ──────────────────────────────────────────────────────
+  docker:
+    name: Docker build (prod)
+    runs-on: ubuntu-latest
+    # Only on push to main branch — skip for PRs to save time
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend Docker image
+        run: docker build -f backend/Dockerfile -t smartvoter-backend:ci .
+
+      - name: Build frontend Docker image (prod)
+        run: |
+          docker build \
+            -f frontend/Dockerfile.prod \
+            --build-arg NEXT_PUBLIC_API_URL=https://api.example.com \
+            -t smartvoter-frontend:ci \
+            frontend/
+

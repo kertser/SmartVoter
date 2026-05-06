@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { I18nProvider } from "@/lib/i18n";
 import { NavHeader, NavFooter } from "@/components/NavHeader";
+import PrivacyBanner from "@/components/PrivacyBanner";
 
 export const metadata: Metadata = {
   title: "SmartVoter — Evidence-Based Political Match",
@@ -24,6 +25,7 @@ export default function RootLayout({
           <NavHeader />
           <main className="mx-auto max-w-4xl px-4 py-10">{children}</main>
           <NavFooter />
+          <PrivacyBanner />
         </I18nProvider>
       </body>
     </html>

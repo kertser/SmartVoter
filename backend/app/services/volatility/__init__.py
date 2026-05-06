@@ -33,14 +33,25 @@ def get_party_volatility(party_instance_id: uuid.UUID, db: Session) -> float:
     """
     Returns party volatility score (0..1) for the scoring engine.
 
-    Checks the mock cache first (populated during seeding via
-    register_mock_volatility()), then falls back to live computation
-    via compute_party_volatility().
-
-    This is the public interface used by the results API and scoring engine.
+    Priority order:
+    1. Persisted `volatility_score` column on PartyInstance (set by run_volatility_update)
+    2. In-memory mock cache (set during seeding via register_mock_volatility)
+    3. Live computation via compute_party_volatility()
     """
+    # 1. Check persisted DB value (avoids losing scores on restart)
+    try:
+        from backend.app.models.party_instance import PartyInstance
+
+        party = db.query(PartyInstance).filter(PartyInstance.id == party_instance_id).first()
+        if party and party.volatility_score is not None:
+            return party.volatility_score
+    except Exception:
+        pass  # Fall through to cache / live computation
+
+    # 2. In-memory mock cache (seed data)
     if party_instance_id in _mock_volatility_cache:
         return _mock_volatility_cache[party_instance_id]
-    return compute_party_volatility(db, party_instance_id)
 
+    # 3. Live computation
+    return compute_party_volatility(db, party_instance_id)
 

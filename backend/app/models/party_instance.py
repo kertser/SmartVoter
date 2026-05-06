@@ -1,6 +1,6 @@
 import uuid
 import datetime
-from sqlalchemy import String, DateTime, func, Date, ForeignKey, Integer, Enum as SAEnum
+from sqlalchemy import String, DateTime, func, Date, ForeignKey, Integer, Enum as SAEnum, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.app.db.base import Base
 import enum
@@ -30,4 +30,8 @@ class PartyInstance(Base):
         SAEnum(PartyStatus, name="party_status"), default=PartyStatus.active
     )
     source_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    # Persisted volatility score (0..1). Updated by run_volatility_update().
+    # NULL means not yet computed — falls back to live computation.
+    volatility_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+
 

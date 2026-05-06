@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import model_validator
 
 
 class Settings(BaseSettings):
@@ -37,6 +38,24 @@ class Settings(BaseSettings):
     # API is updated — no manual bump needed in that case.
     last_knesset_with_votes: int = 24
 
+    # DB connection pool — expose for production tuning
+    db_pool_size: int = 5
+    db_max_overflow: int = 10
+
+    @model_validator(mode="after")
+    def _validate_production_secrets(self) -> "Settings":
+        if self.app_env == "production":
+            if self.secret_key == "change-me-in-production":
+                raise ValueError(
+                    "SECRET_KEY must be set to a strong random value in production. "
+                    "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+                )
+            if self.admin_password == "admin":
+                raise ValueError(
+                    "ADMIN_PASSWORD must be changed from the default 'admin' in production."
+                )
+        return self
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",")]
@@ -44,6 +63,10 @@ class Settings(BaseSettings):
     @property
     def has_openai(self) -> bool:
         return bool(self.openai_api_key and self.openai_api_key.startswith("sk-"))
+
+    @property
+    def is_production(self) -> bool:
+        return self.app_env == "production"
 
 
 @lru_cache

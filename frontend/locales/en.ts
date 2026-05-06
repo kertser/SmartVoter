@@ -374,6 +374,20 @@ const en: Translations = {
     backupRestoreError: "Restore failed. See console for details.",
   },
 
+  privacy: {
+    bannerText:
+      "This tool stores your answers anonymously using a random session ID. No account required. No personal data is linked to your political preferences.",
+    learnMore: "Learn more",
+    accept: "Got it",
+    policyHeading: "Privacy",
+    policyBody:
+      "Your answers are stored with a random session ID only. We do not store your IP address, name, or any identifying information alongside your political preferences. Your session data is used only to compute your results. You can delete your session at any time.",
+    deleteSessionBtn: "Delete my session data",
+    deleteSessionConfirm: "Are you sure? This will permanently delete your session and answers.",
+    deleteSessionSuccess: "Session deleted.",
+    deleteSessionError: "Failed to delete session. Please try again.",
+  },
+
   simulation: {
     heading: "Knesset Simulator",
     subheading: "Probabilistic seat distribution scenarios based on aggregated polling data.",
