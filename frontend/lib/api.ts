@@ -495,10 +495,14 @@ export interface PersonListItem {
   name_en: string;
   name_he: string;
   birth_year?: number;
+  current_party_name?: string;
+  current_party_name_he?: string;
+  current_party_name_ru?: string;
+  current_party_instance_id?: string;
 }
 
-export async function getParties(): Promise<PartyListItem[]> {
-  return apiFetch<PartyListItem[]>("/api/parties");
+export async function getParties(groupByBrand = true): Promise<PartyListItem[]> {
+  return apiFetch<PartyListItem[]>(`/api/parties?group_by_brand=${groupByBrand}`);
 }
 
 export async function getParty(id: string): Promise<PartyDetail> {
@@ -509,8 +513,8 @@ export async function getPerson(id: string): Promise<PersonDetail> {
   return apiFetch<PersonDetail>(`/api/persons/${id}`);
 }
 
-export async function getPersons(): Promise<PersonListItem[]> {
-  return apiFetch<PersonListItem[]>("/api/persons");
+export async function getPersons(currentOnly = false): Promise<PersonListItem[]> {
+  return apiFetch<PersonListItem[]>(`/api/persons?current_only=${currentOnly}&limit=500`);
 }
 
 export async function getVote(id: string): Promise<VoteDetail> {

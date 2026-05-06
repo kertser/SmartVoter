@@ -245,6 +245,25 @@ const en: Translations = {
     searchPersons: "Search\u2026",
     birthYear: (year) => `b.\u00a0${year}`,
     countOf: (shown, total) => `${shown}\u00a0/\u00a0${total} persons`,
+    filterCurrentOnly: "Active members only",
+    filterAllPersons: "All persons",
+    sortByName: "Sort A\u2013Z",
+    sortByParty: "Sort by party",
+    currentPartyLabel: "Current party",
+    noCurrentParty: "No current party",
+    // Vote enhancements
+    voteProceduralBadge: "Procedural",
+    voteImportanceHigh: "High importance",
+    voteImportanceMedium: "Medium importance",
+    voteImportanceLow: "Low importance",
+    // Bill enhancements
+    billStatusPassed: "Passed",
+    billStatusFailed: "Failed",
+    billStatusPending: "Pending",
+    billStatusWithdrawn: "Withdrawn",
+    billSortNewest: "Newest first",
+    billSortOldest: "Oldest first",
+    billYearFilterAll: "All years",
   },
 
   admin: {

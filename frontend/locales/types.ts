@@ -222,6 +222,25 @@ export interface Translations {
     searchPersons: string;
     birthYear: (year: number) => string;
     countOf: (shown: number, total: number) => string;
+    filterCurrentOnly: string;
+    filterAllPersons: string;
+    sortByName: string;
+    sortByParty: string;
+    currentPartyLabel: string;
+    noCurrentParty: string;
+    // Vote enhancements
+    voteProceduralBadge: string;
+    voteImportanceHigh: string;
+    voteImportanceMedium: string;
+    voteImportanceLow: string;
+    // Bill enhancements
+    billStatusPassed: string;
+    billStatusFailed: string;
+    billStatusPending: string;
+    billStatusWithdrawn: string;
+    billSortNewest: string;
+    billSortOldest: string;
+    billYearFilterAll: string;
   };
 
   admin: {

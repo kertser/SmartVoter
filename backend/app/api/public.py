@@ -309,18 +309,89 @@ def list_bills(
 
 
 @router.get("/persons")
-def list_persons(limit: int = 50, db: Session = Depends(get_db)) -> list[dict]:
-    """List MKs/candidates."""
-    persons = db.query(Person).limit(limit).all()
-    return [
-        {
+def list_persons(
+    limit: int = 500,
+    current_only: bool = False,
+    db: Session = Depends(get_db),
+) -> list[dict]:
+    """
+    List MKs/candidates with current party info.
+
+    current_only=true returns only persons who have at least one open-ended
+    membership (end_date IS NULL), i.e. currently active members.
+    """
+    if current_only:
+        # Only persons with an active membership
+        active_person_ids = (
+            db.query(PersonPartyMembership.person_id)
+            .filter(PersonPartyMembership.end_date.is_(None))
+            .distinct()
+            .all()
+        )
+        ids = [r[0] for r in active_person_ids]
+        q = db.query(Person).filter(Person.id.in_(ids))
+    else:
+        q = db.query(Person)
+
+    persons = q.limit(limit).all()
+
+    # Deduplicate by external_id (if set) or by normalised name
+    seen_names: set = set()
+    seen_ext: set = set()
+    unique_persons = []
+    for p in persons:
+        if p.external_ids_json:
+            ext = str(p.external_ids_json)
+            if ext in seen_ext:
+                continue
+            seen_ext.add(ext)
+        name_key = (p.name_en or "").lower().strip() + "|" + (p.name_he or "").lower().strip()
+        if name_key and name_key in seen_names:
+            continue
+        seen_names.add(name_key)
+        unique_persons.append(p)
+
+    # Sort by Hebrew name, fallback English
+    unique_persons.sort(key=lambda p: (p.name_he or p.name_en or "").lower())
+
+    # Attach current party for each person
+    result = []
+    for p in unique_persons:
+        # Look for the most recent open-ended membership
+        current_membership = (
+            db.query(PersonPartyMembership)
+            .filter(
+                PersonPartyMembership.person_id == p.id,
+                PersonPartyMembership.end_date.is_(None),
+            )
+            .order_by(PersonPartyMembership.start_date.desc())
+            .first()
+        )
+        current_party_name = None
+        current_party_name_he = None
+        current_party_name_ru = None
+        current_party_instance_id = None
+        if current_membership:
+            party = db.query(PartyInstance).filter(PartyInstance.id == current_membership.party_instance_id).first()
+            brand = db.query(PoliticalBrand).filter(PoliticalBrand.id == party.political_brand_id).first() if party else None
+            n = _brand_names(brand, party.official_name if party else "Unknown")
+            current_party_name = n["name"]
+            current_party_name_he = n["name_he"]
+            current_party_name_ru = n["name_ru"]
+            current_party_instance_id = str(current_membership.party_instance_id) if current_membership.party_instance_id else None
+
+        result.append({
             "id": str(p.id),
             "name_en": p.name_en,
             "name_he": p.name_he,
             "birth_year": p.birth_year,
-        }
-        for p in persons
-    ]
+            "current_party_name": current_party_name,
+            "current_party_name_he": current_party_name_he,
+            "current_party_name_ru": current_party_name_ru,
+            "current_party_instance_id": current_party_instance_id,
+        })
+
+    return result
 
 
 # ── Lazy LLM explanation endpoint ─────────────────────────────────────────────
