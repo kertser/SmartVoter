@@ -250,6 +250,24 @@ export interface Translations {
     ingestResultVolatility: (candidates: number, parties: number) => string;
     ingestStepError: (step: string, msg: string) => string;
     ingestKnesset25Warning: string;
+    // Full Pipeline Wizard
+    pipelineWizardHeading: string;
+    pipelineWizardSubtext: string;
+    pipelineWizardLastNLabel: string;
+    pipelineWizardNoLlmLabel: string;
+    pipelineWizardNoLlmNote: string;
+    pipelineWizardRunBtn: string;
+    pipelineWizardKnessetsLabel: (knessets: number[]) => string;
+    pipelineWizardPhase1: string;
+    pipelineWizardPhase2: string;
+    pipelineWizardCurrentStep: (step: string) => string;
+    pipelineWizardDone: string;
+    pipelineWizardError: string;
+    pipelineWizardStatusPrefix: string;
+    pipelineWizardKnessetPending: string;
+    pipelineWizardKnessetRunning: (kn: number) => string;
+    pipelineWizardKnessetDone: (kn: number) => string;
+    pipelineWizardVotesSkipped: string;
   };
 
   simulation: {

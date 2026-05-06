@@ -490,6 +490,162 @@ def list_ingestion_jobs() -> list[dict]:
     return list(_ingestion_jobs.values())
 
 
+# ── Full Multi-Knesset Pipeline ───────────────────────────────────────────────
+
+class FullPipelineBody(BaseModel):
+    last_n_knessets: int = 2          # how many recent Knessets to import
+    no_llm: bool = True               # default True — LLM costs money; enable explicitly
+    current_knesset: int | None = None  # override settings.current_knesset
+
+
+def _run_full_pipeline(job_id: str, body: FullPipelineBody, settings: Settings) -> None:
+    """
+    Background task: full pipeline for the last N Knessets.
+
+    Phase 1 (per Knesset): factions → votes* → bills → persons → vote_results*
+        (* skipped for Knessets > settings.last_knesset_with_votes)
+
+    Phase 2 (once, after all Knessets): policy_items → party_positions →
+        [questions if not no_llm] → lineage → volatility
+    """
+    from backend.app.db.session import SessionLocal
+    from backend.app.services.ingestion.importers import (
+        import_factions, import_votes, import_bills,
+        import_persons, import_vote_results,
+    )
+    from backend.app.services.ingestion.policy_item_pipeline import run_policy_item_pipeline
+    from backend.app.services.ingestion.party_position_pipeline import run_party_position_pipeline
+    from backend.app.services.ingestion.question_pipeline import run_question_pipeline
+    from backend.app.services.lineage.lineage_service import run_lineage_inference
+    from backend.app.services.volatility.volatility_service import run_volatility_update
+
+    current = body.current_knesset or settings.current_knesset
+    last_votes = settings.last_knesset_with_votes
+    knessets = list(range(current, current - body.last_n_knessets, -1))  # e.g. [25, 24]
+
+    db = SessionLocal()
+    _ingestion_jobs[job_id]["status"] = "running"
+    _ingestion_jobs[job_id]["knessets"] = knessets
+    _ingestion_jobs[job_id]["knesset_results"] = {
+        str(kn): {"knesset_number": kn, "status": "pending"} for kn in knessets
+    }
+
+    def _step(kn: int | None, label: str, fn, *args, **kwargs):
+        key = str(kn) if kn is not None else "analysis"
+        _ingestion_jobs[job_id]["current_knesset"] = kn
+        _ingestion_jobs[job_id]["current_step"] = label
+        try:
+            out = fn(*args, **kwargs)
+            if kn is not None:
+                _ingestion_jobs[job_id]["knesset_results"][key][label] = out
+            else:
+                _ingestion_jobs[job_id][label] = out
+            logger.info("Full pipeline job %s [%s/%s]: %s", job_id, key, label, out)
+            return out
+        except Exception as exc:
+            err = {"error": str(exc)}
+            if kn is not None:
+                _ingestion_jobs[job_id]["knesset_results"][key][label] = err
+            else:
+                _ingestion_jobs[job_id][label] = err
+            logger.error("Full pipeline job %s [%s/%s] failed: %s",
+                         job_id, key, label, exc, exc_info=True)
+            return err
+
+    try:
+        # ── Phase 1: raw data per Knesset ────────────────────────────────────
+        for kn in knessets:
+            _ingestion_jobs[job_id]["knesset_results"][str(kn)]["status"] = "running"
+
+            _step(kn, "factions", import_factions, db, kn, settings)
+
+            if kn <= last_votes:
+                _step(kn, "votes", import_votes, db, kn, settings,
+                      limit=5000, enrich_with_llm=not body.no_llm)
+                _step(kn, "vote_results", import_vote_results, db, kn, settings,
+                      vote_limit=5000)
+            else:
+                _ingestion_jobs[job_id]["knesset_results"][str(kn)]["votes"] = {
+                    "skipped": 1,
+                    "reason": f"Knesset {kn} > {last_votes}: vote data not yet in Votes.svc",
+                }
+                _ingestion_jobs[job_id]["knesset_results"][str(kn)]["vote_results"] = {
+                    "skipped": 1,
+                }
+
+            _step(kn, "bills", import_bills, db, kn, settings,
+                  limit=5000, enrich_with_llm=not body.no_llm)
+            _step(kn, "persons", import_persons, db, kn, settings, limit=2000)
+
+            _ingestion_jobs[job_id]["knesset_results"][str(kn)]["status"] = "done"
+
+        # ── Phase 2: analysis pipeline (runs once) ───────────────────────────
+        _ingestion_jobs[job_id]["current_step"] = "analysis"
+
+        _step(None, "policy_items", run_policy_item_pipeline, db, settings,
+              knesset_number=None, limit=500, enrich_with_llm=not body.no_llm)
+        _step(None, "party_positions", run_party_position_pipeline, db, settings,
+              knesset_number=None, enrich_with_llm=not body.no_llm)
+        if not body.no_llm:
+            _step(None, "questions", run_question_pipeline, db, settings, limit=100)
+        _step(None, "lineage", run_lineage_inference, db, settings,
+              knesset_number=knessets[0], enrich_with_llm=not body.no_llm)
+        _step(None, "volatility", run_volatility_update, db, knesset_number=knessets[0])
+
+        _ingestion_jobs[job_id]["status"] = "done"
+        _ingestion_jobs[job_id]["current_step"] = None
+        logger.info("Full pipeline job %s complete. Knessets: %s", job_id, knessets)
+
+    except Exception as exc:
+        logger.error("Full pipeline job %s failed: %s", job_id, exc, exc_info=True)
+        _ingestion_jobs[job_id]["status"] = "error"
+        _ingestion_jobs[job_id]["error"] = str(exc)
+    finally:
+        db.close()
+
+
+@admin_router.post("/ingest/full-pipeline")
+def trigger_full_pipeline(
+    body: FullPipelineBody,
+    background_tasks: BackgroundTasks,
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    """
+    One-button wizard: import all data for the last N Knessets and run the full
+    analysis pipeline (policy items, party positions, lineage, volatility).
+
+    Designed to be run once before going live, or after each election.
+    Poll /api/admin/ingest/status/{job_id} for progress.
+    """
+    import uuid as _uuid
+    current = body.current_knesset or settings.current_knesset
+    last_n = max(1, min(body.last_n_knessets, 10))
+    knessets = list(range(current, current - last_n, -1))
+
+    job_id = str(_uuid.uuid4())[:8]
+    _ingestion_jobs[job_id] = {
+        "job_id": job_id,
+        "status": "queued",
+        "mode": "full_pipeline",
+        "knessets": knessets,
+        "no_llm": body.no_llm,
+        "current_knesset": None,
+        "current_step": None,
+        "knesset_results": {},
+    }
+    background_tasks.add_task(_run_full_pipeline, job_id, body, settings)
+    return {
+        "job_id": job_id,
+        "status": "queued",
+        "knessets": knessets,
+        "no_llm": body.no_llm,
+        "message": (
+            f"Full pipeline queued for Knessets {knessets}. "
+            f"Poll /api/admin/ingest/status/{job_id} for progress."
+        ),
+    }
+
+
 
 # ── Dedicated pipeline endpoints ──────────────────────────────────────────────
 

@@ -582,3 +582,43 @@ export async function adminListIngestionJobs(): Promise<IngestionJobStatus[]> {
   return adminApiFetch<IngestionJobStatus[]>("/api/admin/ingest/jobs");
 }
 
+// ── Full Multi-Knesset Pipeline ───────────────────────────────────────────────
+
+export interface FullPipelineKnessetResult {
+  knesset_number: number;
+  status: "pending" | "running" | "done" | "error";
+  factions?: IngestionStepResult;
+  votes?: IngestionStepResult;
+  bills?: IngestionStepResult;
+  persons?: IngestionStepResult;
+  vote_results?: IngestionStepResult;
+  [key: string]: unknown;
+}
+
+export interface FullPipelineJobStatus extends IngestionJobStatus {
+  mode?: "full_pipeline";
+  /** list of Knesset numbers being processed, e.g. [25, 24] */
+  knessets?: number[];
+  /** Knesset number currently being processed in Phase 1 */
+  current_knesset?: number | null;
+  /** current step name within the active Knesset or analysis phase */
+  current_step?: string | null;
+  /** per-Knesset step results, keyed by Knesset number as string */
+  knesset_results?: Record<string, FullPipelineKnessetResult>;
+}
+
+export async function adminTriggerFullPipeline(params: {
+  last_n_knessets: number;
+  no_llm: boolean;
+  current_knesset?: number;
+}): Promise<{ job_id: string; status: string; knessets: number[]; message: string }> {
+  return adminApiFetch("/api/admin/ingest/full-pipeline", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+export async function adminGetFullPipelineStatus(jobId: string): Promise<FullPipelineJobStatus> {
+  return adminApiFetch<FullPipelineJobStatus>(`/api/admin/ingest/status/${jobId}`);
+}
+

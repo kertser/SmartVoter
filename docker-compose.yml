@@ -72,6 +72,55 @@ services:
       - /app/node_modules
       - /app/.next
 
+  # ── Data initialisation service ───────────────────────────────────────────
+  # Opt-in via Docker profile "init".
+  #
+  # Run ONCE before going live, or after elections:
+  #   docker compose --profile init up data-init
+  #
+  # What it does:
+  #   1. Applies DB migrations (alembic upgrade head)
+  #   2. Seeds mock data (topics, questions, simulation data)
+  #   3. Imports real Knesset data for the last 2 Knessets (no LLM)
+  #      — Bills + factions + persons for all Knessets
+  #      — Votes + vote results only for Knessets ≤ LAST_KNESSET_WITH_VOTES (24)
+  #   4. Runs analysis pipeline: policy items, party positions, lineage, volatility
+  #
+  # LLM enrichment is OFF by default (no API key needed). Enable it separately
+  # from the Admin panel once the API key is configured.
+  #
+  # Override LAST_N_KNESSETS to import more history (e.g. 4 = K22–K25).
+  data-init:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: >
+      sh -c "
+        echo '=== SmartVoter Data Initialisation ===' &&
+        echo '1/3 Applying database migrations...' &&
+        uv run alembic upgrade head &&
+        echo '2/3 Seeding mock data...' &&
+        uv run python -m backend.app.seed.run_seed &&
+        echo '3/3 Importing Knesset data (last $$LAST_N_KNESSETS Knessets, no LLM)...' &&
+        uv run python -m backend.app.seed.ingest_knesset
+          --last-n $$LAST_N_KNESSETS
+          --no-llm &&
+        echo '=== Initialisation complete ==='
+      "
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://smartvoter:smartvoter@postgres:5432/smartvoter
+      REDIS_URL: redis://redis:6379/0
+      LAST_N_KNESSETS: ${LAST_N_KNESSETS:-2}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - init
+    restart: "no"
+
 volumes:
   postgres_data:
+
 

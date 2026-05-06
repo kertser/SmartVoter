@@ -24,10 +24,14 @@ import {
   adminTriggerIngestion,
   adminGetIngestionStatus,
   adminListIngestionJobs,
+  adminTriggerFullPipeline,
+  adminGetFullPipelineStatus,
   AdminQuestion,
   PolicyItemAdmin,
   LlmOutputRecord,
   IngestionJobStatus,
+  FullPipelineJobStatus,
+  FullPipelineKnessetResult,
   getStoredAdminPassword,
   storeAdminPassword,
   clearAdminPassword,
@@ -370,6 +374,235 @@ function GenerateTab() {
   );
 }
 
+// ── Full Pipeline Wizard ──────────────────────────────────────────────────────
+
+function FullPipelineWizardSection() {
+  const a = useT().admin;
+  const [lastN, setLastN] = useState(2);
+  const [noLlm, setNoLlm] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [job, setJob] = useState<FullPipelineJobStatus | null>(null);
+  const ivRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Preview which Knessets would be imported based on lastN
+  const previewKnessets = Array.from({ length: lastN }, (_, i) => 25 - i);
+
+  const stopPolling = () => {
+    if (ivRef.current) { clearInterval(ivRef.current); ivRef.current = null; }
+  };
+
+  // Cleanup on unmount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => () => stopPolling(), []);
+
+  const startPolling = (jobId: string) => {
+    stopPolling();
+    ivRef.current = setInterval(async () => {
+      try {
+        const status = await adminGetFullPipelineStatus(jobId);
+        setJob(status);
+        if (status.status === "done" || status.status === "error") stopPolling();
+      } catch {
+        stopPolling();
+        setJob((prev) => prev ? { ...prev, status: "error", error: "Polling failed." } : prev);
+      }
+    }, 2500);
+  };
+
+  const handleRun = async () => {
+    setSubmitting(true);
+    setJob(null);
+    try {
+      const res = await adminTriggerFullPipeline({ last_n_knessets: lastN, no_llm: noLlm });
+      const initial: FullPipelineJobStatus = {
+        job_id: res.job_id,
+        status: "queued",
+        mode: "full_pipeline",
+        knessets: res.knessets,
+        no_llm: noLlm,
+      };
+      setJob(initial);
+      startPolling(res.job_id);
+    } catch (err) {
+      setJob({ job_id: "—", status: "error", error: String(err) });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const isRunning = job?.status === "running" || job?.status === "queued";
+
+  const statusColors: Record<string, string> = {
+    queued:  "bg-slate-100 text-slate-700 border-slate-200",
+    running: "bg-blue-50 text-blue-800 border-blue-200",
+    done:    "bg-green-50 text-green-800 border-green-200",
+    error:   "bg-red-50 text-red-700 border-red-200",
+  };
+
+  const knessetStatusBadge = (kr: FullPipelineKnessetResult) => {
+    if (kr.status === "done") return <span className="text-xs text-green-700">✓ {a.pipelineWizardKnessetDone(kr.knesset_number)}</span>;
+    if (kr.status === "running") return <span className="text-xs text-blue-700 animate-pulse">⟳ {a.pipelineWizardKnessetRunning(kr.knesset_number)}</span>;
+    return <span className="text-xs text-slate-400">{a.pipelineWizardKnessetPending}</span>;
+  };
+
+  return (
+    <div className="rounded-2xl border-2 border-brand-200 bg-brand-50/60 p-5 space-y-4">
+      {/* Heading */}
+      <div className="space-y-1">
+        <h2 className="text-base font-semibold text-brand-800 flex items-center gap-2">
+          <span className="text-lg">🚀</span>
+          {a.pipelineWizardHeading}
+        </h2>
+        <p className="text-xs text-slate-600">{a.pipelineWizardSubtext}</p>
+      </div>
+
+      {/* Controls */}
+      <div className="flex flex-wrap items-end gap-4">
+        {/* Last N input */}
+        <div className="space-y-1">
+          <label className="block text-xs font-medium text-slate-600">
+            {a.pipelineWizardLastNLabel}
+          </label>
+          <input
+            type="number"
+            min={1}
+            max={10}
+            value={lastN}
+            onChange={(e) => setLastN(Math.max(1, Math.min(10, Number(e.target.value))))}
+            className="w-20 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-center"
+          />
+        </div>
+
+        {/* No-LLM toggle */}
+        <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer pb-1">
+          <input
+            type="checkbox"
+            checked={noLlm}
+            onChange={(e) => setNoLlm(e.target.checked)}
+            className="accent-brand-600 h-4 w-4"
+          />
+          {a.pipelineWizardNoLlmLabel}
+        </label>
+
+        {/* Run button */}
+        <button
+          onClick={handleRun}
+          disabled={submitting || isRunning}
+          className="rounded-xl bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+        >
+          {isRunning ? (
+            <span className="flex items-center gap-2">
+              <span className="inline-block h-3 w-3 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              {a.ingestRunning}
+            </span>
+          ) : (
+            a.pipelineWizardRunBtn
+          )}
+        </button>
+      </div>
+
+      {/* LLM note and preview */}
+      {noLlm && (
+        <p className="text-xs text-slate-400">{a.pipelineWizardNoLlmNote}</p>
+      )}
+      <p className="text-xs text-slate-500">{a.pipelineWizardKnessetsLabel(previewKnessets)}</p>
+
+      {/* Progress display */}
+      {job && (
+        <div className={`rounded-xl border p-4 space-y-3 text-sm ${statusColors[job.status] ?? "bg-slate-50 border-slate-200"}`}>
+          {/* Header row */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="font-semibold">
+              {job.status === "done" ? a.pipelineWizardDone
+               : job.status === "error" ? a.pipelineWizardError
+               : `${a.pipelineWizardStatusPrefix} ${job.status}`}
+            </span>
+            {isRunning && (
+              <span className="inline-block h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+            )}
+            {job.current_step && (
+              <span className="text-xs opacity-75">{a.pipelineWizardCurrentStep(job.current_step)}</span>
+            )}
+            <span className="text-xs opacity-50 ms-auto">{a.ingestJobId}: {job.job_id}</span>
+          </div>
+
+          {/* Phase 1: per-Knesset results */}
+          {job.knessets && job.knessets.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs font-semibold opacity-80">{a.pipelineWizardPhase1}</p>
+              <div className="space-y-1 ps-3">
+                {job.knessets.map((kn) => {
+                  const kr = job.knesset_results?.[String(kn)];
+                  return (
+                    <div key={kn} className="text-xs space-y-0.5">
+                      {kr ? knessetStatusBadge(kr) : (
+                        <span className="text-slate-400">Knesset {kn}: {a.pipelineWizardKnessetPending}</span>
+                      )}
+                      {kr && kr.factions && (
+                        <p className="ps-4 text-xs opacity-70">
+                          ✓ {a.ingestResultFactions(
+                            (kr.factions as Record<string, number>).inserted ?? 0,
+                            (kr.factions as Record<string, number>).updated ?? 0
+                          )}
+                        </p>
+                      )}
+                      {kr && kr.votes && !("skipped" in (kr.votes as Record<string, unknown>)) && (
+                        <p className="ps-4 text-xs opacity-70">
+                          ✓ {a.ingestResultVotes(
+                            (kr.votes as Record<string, number>).inserted ?? 0,
+                            (kr.votes as Record<string, number>).updated ?? 0,
+                            (kr.votes as Record<string, number>).skipped ?? 0
+                          )}
+                        </p>
+                      )}
+                      {kr && kr.votes && "skipped" in (kr.votes as Record<string, unknown>) && (
+                        <p className="ps-4 text-xs opacity-60">⚠ {a.pipelineWizardVotesSkipped}</p>
+                      )}
+                      {kr && kr.bills && (
+                        <p className="ps-4 text-xs opacity-70">
+                          ✓ {a.ingestResultBills(
+                            (kr.bills as Record<string, number>).inserted ?? 0,
+                            (kr.bills as Record<string, number>).skipped ?? 0
+                          )}
+                        </p>
+                      )}
+                      {kr && kr.persons && (
+                        <p className="ps-4 text-xs opacity-70">
+                          ✓ {a.ingestResultPersons(
+                            (kr.persons as Record<string, number>).inserted ?? 0,
+                            (kr.persons as Record<string, number>).skipped ?? 0
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Phase 2: analysis pipeline results */}
+          {(job.policy_items || job.party_positions || job.lineage || job.volatility) && (
+            <div className="space-y-1">
+              <p className="text-xs font-semibold opacity-80">{a.pipelineWizardPhase2}</p>
+              <div className="space-y-0.5 ps-3">
+                {job.policy_items && <p className="text-xs opacity-70">✓ {a.ingestResultPolicyItems((job.policy_items as Record<string, number>).created ?? 0, (job.policy_items as Record<string, number>).skipped ?? 0)}</p>}
+                {job.party_positions && <p className="text-xs opacity-70">✓ {a.ingestResultPartyPositions((job.party_positions as Record<string, number>).positions_created ?? 0, (job.party_positions as Record<string, number>).positions_updated ?? 0)}</p>}
+                {job.lineage && <p className="text-xs opacity-70">✓ {a.ingestResultLineage((job.lineage as Record<string, number>).edges_proposed ?? 0)}</p>}
+                {job.volatility && <p className="text-xs opacity-70">✓ {a.ingestResultVolatility((job.volatility as Record<string, number>).candidates_updated ?? 0, (job.volatility as Record<string, number>).parties_updated ?? 0)}</p>}
+              </div>
+            </div>
+          )}
+
+          {job.error && (
+            <p className="text-xs font-medium text-red-700 bg-red-50 rounded px-2 py-1">{job.error}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Ingestion Tab ─────────────────────────────────────────────────────────────
 
 /** Show detailed results for all steps that have completed. */
@@ -483,9 +716,15 @@ function IngestionTab() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <p className="text-sm font-medium text-slate-700">{a.ingestHeading}</p>
-        <p className="text-xs text-slate-400">{a.ingestSubtext}</p>
+      {/* ── Full Pipeline Wizard ────────────────────────────────────────── */}
+      <FullPipelineWizardSection />
+
+      {/* ── Divider ─────────────────────────────────────────────────────── */}
+      <div className="border-t border-slate-200 pt-4">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-slate-700">{a.ingestHeading}</p>
+          <p className="text-xs text-slate-400">{a.ingestSubtext}</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 max-w-sm">

@@ -50,6 +50,15 @@ def main() -> None:  # noqa: C901
     parser.add_argument("--knesset", type=int, default=25, help="Knesset number (default: 25)")
     parser.add_argument("--limit", type=int, default=500, help="Max records per entity type")
     parser.add_argument("--no-llm", action="store_true", help="Skip LLM enrichment")
+    # Multi-Knesset mode: runs the full pipeline for the last N Knessets
+    parser.add_argument("--last-n", type=int, default=0, dest="last_n",
+                        help=(
+                            "Run the full pipeline for the last N Knessets automatically.\n"
+                            "E.g. --last-n 2 imports Knessets 24 and 25 (using --current-knesset).\n"
+                            "Votes are skipped for Knessets >= --last-knesset-with-votes+1."
+                        ))
+    parser.add_argument("--current-knesset", type=int, default=None, dest="current_knesset",
+                        help="Most recent Knesset number (default: from settings.current_knesset)")
 
     parser.add_argument("--factions",        action="store_true", help="Import factions/party instances")
     parser.add_argument("--votes",           action="store_true", help="Import plenary votes")
@@ -87,7 +96,83 @@ def main() -> None:  # noqa: C901
     if args.bills_only:
         args.bills = True
 
+    # ── Multi-Knesset mode (--last-n) ────────────────────────────────────────
+    if args.last_n > 0:
+        from backend.app.config import get_settings as _get_settings
+        _settings = _get_settings()
+        _current = args.current_knesset or _settings.current_knesset
+        _knessets = list(range(_current, _current - args.last_n, -1))  # e.g. [25, 24]
+        _last_votes = _settings.last_knesset_with_votes
+
+        print(f"\n{'='*60}")
+        print(f"Full pipeline — Knessets: {_knessets} (no-LLM={args.no_llm})")
+        print(f"Vote data available up to Knesset {_last_votes}")
+        print(f"{'='*60}\n")
+
+        from backend.app.db.session import SessionLocal as _SL
+        _db = _SL()
+
+        def _step(label, fn, *a, **kw):
+            logger.info("=== %s ===", label.upper())
+            try:
+                r = fn(*a, **kw)
+                logger.info("%s complete: %s", label, r)
+                return r
+            except Exception as exc:
+                logger.error("%s FAILED: %s", label, exc, exc_info=True)
+                return None
+
+        try:
+            # Phase 1: raw data per Knesset (most recent first)
+            for _kn in _knessets:
+                print(f"\n--- Knesset {_kn} ---")
+                from backend.app.services.ingestion.importers import (
+                    import_factions, import_votes, import_bills,
+                    import_persons, import_vote_results,
+                )
+                _step(f"[K{_kn}] factions",      import_factions,      _db, _kn, _settings)
+                if _kn <= _last_votes:
+                    _step(f"[K{_kn}] votes",     import_votes,         _db, _kn, _settings,
+                          limit=args.limit, enrich_with_llm=not args.no_llm)
+                    _step(f"[K{_kn}] vote_results", import_vote_results, _db, _kn, _settings,
+                          vote_limit=args.limit)
+                else:
+                    print(f"  ⚠  Knesset {_kn} vote data not yet in Votes.svc — skipping votes+vote_results")
+                _step(f"[K{_kn}] bills",          import_bills,         _db, _kn, _settings,
+                      limit=args.limit, enrich_with_llm=not args.no_llm)
+                _step(f"[K{_kn}] persons",        import_persons,       _db, _kn, _settings,
+                      limit=args.limit)
+
+            # Phase 2: analysis pipeline (runs once over all imported data)
+            print("\n--- Analysis pipeline ---")
+            from backend.app.services.ingestion.policy_item_pipeline import run_policy_item_pipeline
+            from backend.app.services.ingestion.party_position_pipeline import run_party_position_pipeline
+            from backend.app.services.ingestion.question_pipeline import run_question_pipeline
+            from backend.app.services.lineage.lineage_service import run_lineage_inference
+            from backend.app.services.volatility.volatility_service import run_volatility_update
+
+            _step("policy_items",    run_policy_item_pipeline,    _db, _settings,
+                  knesset_number=None, limit=args.limit, enrich_with_llm=not args.no_llm)
+            _step("party_positions", run_party_position_pipeline, _db, _settings,
+                  knesset_number=None, enrich_with_llm=not args.no_llm)
+            if not args.no_llm:
+                _step("questions",   run_question_pipeline, _db, _settings, limit=args.limit)
+            _step("lineage",         run_lineage_inference,       _db, _settings,
+                  knesset_number=_knessets[0], enrich_with_llm=not args.no_llm)
+            _step("volatility",      run_volatility_update,       _db, knesset_number=_knessets[0])
+
+            print(f"\n✅ Full pipeline complete for Knessets {_knessets}")
+            logger.info("All requested steps complete.")
+        except KeyboardInterrupt:
+            logger.warning("Interrupted.")
+            sys.exit(130)
+        finally:
+            _db.close()
+        sys.exit(0)
+    # ── /end multi-Knesset mode ──────────────────────────────────────────────
+
     steps_selected = any([
+        args.last_n > 0,
         args.factions, args.votes, args.bills, args.persons,
         args.vote_results, args.policy_items, args.party_positions,
         args.questions, args.lineage, args.volatility,

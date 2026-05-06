@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     # Entity: View_vote_rslts_hdr_Approved (headers), vote_rslts_kmmbr_shadow (per-MK results)
     knesset_votes_api_base_url: str = "https://knesset.gov.il/Odata/Votes.svc"
     oknesset_api_base_url: str = "https://oknesset.org/api/v2"
+    # Most recent Knesset number. Bump this when a new election occurs.
+    # Knessets >= this value have no vote data in Votes.svc yet.
+    current_knesset: int = 25
+    # Highest Knesset number with full vote data in Votes.svc
+    last_knesset_with_votes: int = 24
 
     @property
     def cors_origins_list(self) -> list[str]:
