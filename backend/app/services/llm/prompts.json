@@ -1,0 +1,76 @@
+{
+  "_meta": {
+    "version": "v1.1",
+    "description": "SmartVoter LLM prompt templates. Edit here instead of in Python source. Each template uses {variable} placeholders filled by the provider at call time.",
+    "changelog": {
+      "v1.0": "Initial prompts (hardcoded in openai_provider.py)",
+      "v1.1": "Extracted to JSON; added dedicated root_question template with improved multilingual instructions"
+    }
+  },
+
+  "system_neutral": "You are a neutral, non-partisan political analyst assistant for the SmartVoter app. Your job is to classify, summarize, and analyze political positions and legislative data for Israeli parties. Always be factual, balanced, and concise. Always respond with valid JSON only — no markdown fences, no extra text.",
+
+  "templates": {
+
+    "root_question": {
+      "version": "v1.1-root",
+      "description": "Generate a broad topic-level opening question for the questionnaire, NOT tied to any specific bill or vote.",
+      "user_message": "Generate a broad, topic-level survey question in English, Hebrew (עברית), and Russian for the SmartVoter political-preference app.\n\nTOPIC (English): {topic_name_en}\nTOPIC (Hebrew):  {topic_name_he}\nTOPIC (Russian): {topic_name_ru}\nTOPIC DESCRIPTION: {topic_description}\n\n── RULES FOR ROOT QUESTIONS ──────────────────────────────────────────\n• This is a BROAD topic-level question — NOT about a specific bill, vote, law, or event.\n• Ask about the user's general stance, values, or priorities in this policy area.\n• Do NOT name specific parties, politicians, judges, or specific legislation.\n• Do NOT reference specific dates, events, or scandals.\n• Use neutral, non-loaded wording readable by any adult member of the public.\n• The question must make sense WITHOUT prior knowledge of Israeli politics.\n• Hebrew and Russian translations must be accurate and natural — not transliterated English.\n• The answer scale always runs from 'Strongly oppose' to 'Strongly support', so phrase the question so that both poles are meaningful.\n\n── HIGH-QUALITY EXAMPLES ─────────────────────────────────────────────\nGood: 'How much power should the Supreme Court have to strike down laws passed by parliament?'\nGood: 'Should military service be mandatory for all citizens, regardless of background?'\nGood: 'How should the government balance economic growth with environmental protection?'\n\nBad (too specific — avoid): 'Do you support the judicial reform bill of 2023?'\nBad (names a party): 'Do you agree with the Likud position on taxes?'\nBad (names a person): 'Should Prime Minister X resign?'\n──────────────────────────────────────────────────────────────────────\n\nReturn JSON with ALL of these keys:\n  question_en          (string — natural English question),\n  question_he          (string — natural Hebrew question, right-to-left),\n  question_ru          (string — natural Russian question),\n  context_note_en      (string — 1–2 neutral sentences explaining the topic for someone unfamiliar with Israeli politics),\n  answer_scale         (list of exactly 5 English strings, e.g. ['Strongly oppose', 'Somewhat oppose', 'Neutral / unsure', 'Somewhat support', 'Strongly support']),\n  neutrality_risk      ('low' | 'medium' | 'high'),\n  loaded_terms         (list of strings — any potentially biased words; [] if none),\n  is_loaded            (boolean — is the question biased or slanted?),\n  bias_direction       (string or null — e.g. 'left', 'right', 'religious', 'secular'),\n  suggested_revision   (string or null — improved neutral wording if is_loaded is true),\n  reading_level        ('general public' | 'educated' | 'expert'),\n  requires_context     (boolean — does the question need the context_note to be understood?),\n  context_note         (string or null — brief explanation shown under the question if requires_context is true)."
+    },
+
+    "generate_question_with_critique": {
+      "version": "v1.0",
+      "description": "Generate a policy-item-specific question AND self-critique it in one call.",
+      "user_message": "Generate a neutral survey question for the SmartVoter app AND immediately self-critique it for bias or loaded wording — all in one JSON response.\n\nPolicy item: {title}\nDescription: {description}\nDirectional axis: {directional_axis}\n\nRules:\n- The question must be factual and non-loaded.\n- Do not name specific parties in the question.\n- Use a 5-point Likert scale (Strongly oppose → Strongly support).\n- Keep the reading level accessible to the general public.\n\nReturn JSON with ALL of these keys:\n  question_en (string),\n  question_he (string, Hebrew),\n  question_ru (string, Russian),\n  context_note_en (string, 1–2 neutral sentences),\n  answer_scale (list of 5 English strings),\n  neutrality_risk (low|medium|high),\n  loaded_terms (list of strings, empty if none),\n  source_refs (list of strings),\n  is_loaded (boolean — is the question biased?),\n  bias_direction (string or null),\n  suggested_revision (string or null — only if is_loaded=true),\n  reading_level (general public|educated|expert),\n  requires_context (boolean),\n  context_note (string or null)."
+    },
+
+    "generate_question": {
+      "version": "v1.0",
+      "description": "Generate a neutral policy-item-specific question in three languages.",
+      "user_message": "Generate a neutral, non-partisan survey question in English, Hebrew (עברית), and Russian for the SmartVoter app.\n\nPolicy item: {title}\nDescription: {description}\nDirectional axis: {directional_axis}\n\nRules:\n- The question must be factual and non-loaded.\n- Do not name specific parties in the question.\n- Use a 5-point Likert scale (Strongly oppose → Strongly support).\n- Keep the reading level accessible to the general public.\n- Include a brief neutral context note (1–2 sentences).\n\nReturn JSON with:\n  question_en (string),\n  question_he (string, Hebrew),\n  question_ru (string, Russian),\n  context_note_en (string, 1–2 sentences),\n  answer_scale (list of 5 English strings),\n  neutrality_risk (low|medium|high),\n  loaded_terms (list of strings, empty if none),\n  source_refs (list of strings)."
+    },
+
+    "critique_question": {
+      "version": "v1.0",
+      "description": "Critically review a question for bias or loaded wording.",
+      "user_message": "Critically review this survey question for bias or loaded wording.\n\nQuestion: {question}\n\nReturn JSON with:\n  is_loaded (boolean),\n  bias_direction (string or null — 'left'|'right'|'religious'|'secular'|etc.),\n  suggested_revision (string or null — improved neutral wording),\n  reading_level (string — 'general public'|'educated'|'expert'),\n  requires_context (boolean),\n  context_note (string or null — suggested context explanation)."
+    },
+
+    "summarize_bill_or_vote": {
+      "version": "v1.0",
+      "description": "Summarize an Israeli legislative item for SmartVoter.",
+      "user_message": "Summarize the following Israeli legislative item for the SmartVoter app.\n\nTitle: {title}\nText: {text}\nMetadata: {metadata}\n\nReturn JSON with these exact keys:\n  plain_summary (string, max 3 sentences, plain language),\n  main_policy_change (string, 1 sentence),\n  affected_groups (list of strings),\n  is_procedural (boolean),\n  importance_score (float 0.0–1.0),\n  reasoning_summary (string, max 2 sentences, public explanation only — no chain-of-thought)."
+    },
+
+    "classify_and_extract": {
+      "version": "v1.0",
+      "description": "Classify a policy item into topics AND extract its directional axis in one call.",
+      "user_message": "Analyze this Israeli policy item and return BOTH topic classification AND directional policy axis in a single JSON response.\n\nTitle: {title}\nDescription: {description}\n\nAvailable topics: {topics_list}\n\nReturn JSON with ALL of these keys:\n  topics (list of objects with 'topic' and 'confidence' float 0–1),\n  primary_topic (string from available topics),\n  classification_confidence (float 0–1),\n  axis_name (snake_case identifier for the policy axis),\n  negative_pole (string — what -1 means on this axis),\n  positive_pole (string — what +1 means on this axis),\n  direction_explanation (string — 1 sentence explaining scale direction)."
+    },
+
+    "classify_policy_item": {
+      "version": "v1.0",
+      "description": "Classify an Israeli policy item into topics.",
+      "user_message": "Classify this Israeli policy item into topics.\n\nTitle: {title}\nDescription: {description}\n\nAvailable topics: {topics_list}\n\nReturn JSON with:\n  topics (list of objects with 'topic' and 'confidence' float 0–1),\n  primary_topic (string),\n  classification_confidence (float 0–1)."
+    },
+
+    "extract_policy_axis": {
+      "version": "v1.0",
+      "description": "Extract the directional policy axis for an Israeli political issue.",
+      "user_message": "Extract the directional policy axis for this Israeli political issue.\n\nTitle: {title}\nDescription: {description}\n\nReturn JSON with:\n  axis_name (snake_case identifier),\n  negative_pole (string — what -1 means),\n  positive_pole (string — what +1 means),\n  direction_explanation (string — 1 sentence explaining scale direction)."
+    },
+
+    "infer_party_position": {
+      "version": "v1.0",
+      "description": "Infer a party's position on a policy axis from available evidence.",
+      "user_message": "Infer this Israeli party's position on a policy axis based on the evidence.\n\nParty: {party_name}\nPolicy item: {policy_title}\nDirectional axis: {directional_axis}\n  -1 = {negative_pole}\n  +1 = {positive_pole}\nEvidence sources: {evidence}\n\nReturn JSON with:\n  party_position_mean (float -1.0 to +1.0),\n  uncertainty (float 0.0 to 1.0 — higher = less certain),\n  evidence_strength (float 0.0 to 1.0),\n  evidence_sources (list of objects with 'type' and 'id' and 'weight'),\n  explanation (string, max 3 sentences, factual and neutral)."
+    },
+
+    "infer_party_lineage": {
+      "version": "v1.0",
+      "description": "Analyze the lineage relationship between two Israeli party instances.",
+      "user_message": "Analyze the lineage relationship between two Israeli party instances.\n\nFrom party: {from_party}\nTo party: {to_party}\nContext: {context}\n\nRelation types: rename | split | merger | successor | alliance | rebrand\n\nReturn JSON with:\n  relation_type (string from list above),\n  continuity_weight (float 0.0–1.0 — how much predecessor behavior carries over),\n  explanation (string, max 2 sentences),\n  confidence (float 0.0–1.0)."
+    }
+  }
+}
+

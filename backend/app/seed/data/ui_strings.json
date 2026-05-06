@@ -1,0 +1,10 @@
+{
+  "_comment": "Backend user-facing system strings for the questionnaire API. Edit here — never hardcode in Python.",
+  "why_selected": {
+    "root_question": "This is an opening question that helps us understand your general priorities across this topic.",
+    "adaptive_question": "This question best distinguishes between the parties that are currently closest in your results.",
+    "first_question": "This opening question covers the topic where the main parties disagree most.",
+    "auto_generated": "This question was generated from the available evidence for your questionnaire."
+  }
+}
+

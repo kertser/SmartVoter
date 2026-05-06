@@ -220,6 +220,16 @@ export async function adminReject(id: string): Promise<{ status: string }> {
   return adminApiFetch(`/api/admin/review/${id}/reject`, { method: "POST" });
 }
 
+export async function adminApproveAll(params?: {
+  ids?: string[];
+  status_filter?: string;
+}): Promise<{ approved: number; status: string }> {
+  return adminApiFetch("/api/admin/review/bulk-approve", {
+    method: "POST",
+    body: JSON.stringify(params ?? {}),
+  });
+}
+
 export async function adminEditQuestion(
   id: string,
   body: { question_text_en?: string; question_text_he?: string; question_text_ru?: string; neutrality_score?: number }
@@ -668,6 +678,71 @@ export async function adminGenerateRootQuestion(
       topic_id: topicId,
       force_regenerate: forceRegenerate,
     }),
+  });
+}
+
+// ── Batch root question generation ────────────────────────────────────────────
+
+export interface GenerateAllRootQuestionsJob {
+  job_id: string;
+  status: "queued" | "running" | "done" | "error";
+  total: number;
+  completed: number;
+  errors: number;
+  current_topic: string | null;
+  results: Array<{
+    topic_slug: string;
+    topic_name_en: string;
+    action: "created" | "updated" | "skipped_approved" | "error";
+    error?: string;
+    question_en?: string;
+    neutrality_score?: number;
+  }>;
+  error?: string;
+}
+
+export async function adminGenerateAllRootQuestions(params: {
+  force_regenerate: boolean;
+  skip_existing: boolean;
+  max_workers?: number;
+}): Promise<{ job_id: string; status: string }> {
+  return adminApiFetch("/api/admin/llm/generate-all-root-questions", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+export async function adminGetGenerateAllRootQuestionsStatus(
+  jobId: string,
+): Promise<GenerateAllRootQuestionsJob> {
+  return adminApiFetch<GenerateAllRootQuestionsJob>(
+    `/api/admin/llm/generate-all-root-questions/status/${jobId}`,
+  );
+}
+
+// ── Manual question creation ───────────────────────────────────────────────
+
+export interface ManualQuestionResult {
+  action: "created" | "updated";
+  question_id: string;
+  topic_id: string;
+  topic_name_en: string;
+  question_text_en: string;
+}
+
+export async function adminCreateManualQuestion(params: {
+  topic_id: string;
+  is_root_question: boolean;
+  policy_item_id?: string;
+  question_text_en: string;
+  question_text_he: string;
+  question_text_ru: string;
+  answer_scale_type?: string;
+  context_note_en?: string;
+}): Promise<ManualQuestionResult> {
+  return adminApiFetch("/api/admin/questions/manual", {
+    method: "POST",
+    body: JSON.stringify(params),
   });
 }
 

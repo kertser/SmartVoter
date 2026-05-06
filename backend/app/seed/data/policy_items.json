@@ -132,6 +132,176 @@
     "source_type": "statement"
   },
   {
+    "_comment": "--- Cost of Living (2 items) ---",
+    "slug": "col_01",
+    "topic_slug": "cost_of_living",
+    "title": "Basic Necessities Subsidies",
+    "description": "Direct government subsidies to reduce the cost of food and basic consumer goods.",
+    "directional_axis": "necessities_subsidies: -1=expand direct subsidies, +1=market prices only",
+    "source_type": "vote"
+  },
+  {
+    "slug": "col_02",
+    "topic_slug": "cost_of_living",
+    "title": "VAT Exemptions on Essentials",
+    "description": "Removing or reducing VAT on essential goods like bread, milk, and vegetables.",
+    "directional_axis": "vat_exemptions: -1=broad product exemptions, +1=uniform VAT on all goods",
+    "source_type": "bill"
+  },
+  {
+    "_comment": "--- Education (2 items) ---",
+    "slug": "edu_01",
+    "topic_slug": "education",
+    "title": "School Choice Vouchers",
+    "description": "State vouchers allowing parents to choose private or charter schools.",
+    "directional_axis": "school_choice: -1=invest in public schools, +1=school-choice vouchers",
+    "source_type": "vote"
+  },
+  {
+    "slug": "edu_02",
+    "topic_slug": "education",
+    "title": "Core Curriculum in Religious Schools",
+    "description": "Requirement for state-funded yeshivot to teach secular core subjects.",
+    "directional_axis": "yeshiva_curriculum: -1=mandatory core subjects, +1=full yeshiva autonomy",
+    "source_type": "bill"
+  },
+  {
+    "_comment": "--- Environment (2 items) ---",
+    "slug": "env_01",
+    "topic_slug": "environment",
+    "title": "Carbon Tax",
+    "description": "Imposing a carbon tax on large industrial emitters to reduce greenhouse gas output.",
+    "directional_axis": "carbon_tax: -1=strict emission regulations/tax, +1=economic growth over climate",
+    "source_type": "vote"
+  },
+  {
+    "slug": "env_02",
+    "topic_slug": "environment",
+    "title": "Offshore Gas Extraction",
+    "description": "Accelerating offshore natural gas extraction to maximize state revenue.",
+    "directional_axis": "gas_extraction: -1=limit extraction/transition to renewables, +1=maximize gas revenues",
+    "source_type": "bill"
+  },
+  {
+    "_comment": "--- Governance & Corruption (2 items) ---",
+    "slug": "gov_01",
+    "topic_slug": "governance_corruption",
+    "title": "PM Under Indictment",
+    "description": "Whether a Prime Minister under criminal indictment must temporarily leave office.",
+    "directional_axis": "pm_indictment: -1=PM must suspend on indictment, +1=PM may serve through trial",
+    "source_type": "vote"
+  },
+  {
+    "slug": "gov_02",
+    "topic_slug": "governance_corruption",
+    "title": "State Comptroller Independence",
+    "description": "Degree to which the state comptroller operates independently from the governing coalition.",
+    "directional_axis": "comptroller_independence: -1=full independence, +1=limit comptroller powers",
+    "source_type": "bill"
+  },
+  {
+    "_comment": "--- Healthcare (2 items) ---",
+    "slug": "hea_01",
+    "topic_slug": "healthcare",
+    "title": "Public vs Private Healthcare",
+    "description": "Government funding for public hospitals vs expanding private supplemental medicine.",
+    "directional_axis": "healthcare_public: -1=strengthen public health, +1=expand private medicine",
+    "source_type": "vote"
+  },
+  {
+    "slug": "hea_02",
+    "topic_slug": "healthcare",
+    "title": "Mental Health Funding",
+    "description": "Level of state budget dedicated to mental health services.",
+    "directional_axis": "mental_health_budget: -1=significantly increase, +1=status quo or reduce",
+    "source_type": "bill"
+  },
+  {
+    "_comment": "--- Housing (2 items) ---",
+    "slug": "hou_01",
+    "topic_slug": "housing",
+    "title": "Public Affordable Housing",
+    "description": "Large-scale government construction of affordable housing to reduce prices.",
+    "directional_axis": "public_housing: -1=large state housing program, +1=market-driven only",
+    "source_type": "vote"
+  },
+  {
+    "slug": "hou_02",
+    "topic_slug": "housing",
+    "title": "Rent Control",
+    "description": "Legal caps on annual rent increases to protect tenants.",
+    "directional_axis": "rent_control: -1=statutory rent caps, +1=free market rents",
+    "source_type": "bill"
+  },
+  {
+    "_comment": "--- Military Service (2 items) ---",
+    "slug": "mil_01",
+    "topic_slug": "military_service",
+    "title": "Universal Military Service",
+    "description": "Whether military service applies equally to ultra-Orthodox and Arab citizens.",
+    "directional_axis": "universal_service: -1=truly universal service, +1=maintain exemptions",
+    "source_type": "vote"
+  },
+  {
+    "slug": "mil_02",
+    "topic_slug": "military_service",
+    "title": "Mandatory Service Length",
+    "description": "Whether mandatory military service should be shortened to allow earlier workforce entry.",
+    "directional_axis": "service_length: -1=shorten service, +1=maintain or extend current length",
+    "source_type": "bill"
+  },
+  {
+    "_comment": "--- Settlements (2 items) ---",
+    "slug": "set_01",
+    "topic_slug": "settlements",
+    "title": "West Bank Annexation",
+    "description": "Formal Israeli annexation of major settlement blocs in the West Bank.",
+    "directional_axis": "annexation: -1=oppose annexation, +1=formal annexation of settlement blocs",
+    "source_type": "platform"
+  },
+  {
+    "slug": "set_02",
+    "topic_slug": "settlements",
+    "title": "Evacuation-Compensation Law",
+    "description": "State financial packages for settlers willing to voluntarily leave isolated outposts.",
+    "directional_axis": "evacuation_comp: -1=support voluntary evacuation with compensation, +1=oppose any evacuation",
+    "source_type": "vote"
+  },
+  {
+    "_comment": "--- Transport (2 items) ---",
+    "slug": "tra_01",
+    "topic_slug": "transport",
+    "title": "Public Transit Investment",
+    "description": "Prioritizing mass public transit (rail, BRT, metro) over new highway construction.",
+    "directional_axis": "public_transit: -1=major public transit investment, +1=rely on private cars/highways",
+    "source_type": "vote"
+  },
+  {
+    "slug": "tra_02",
+    "topic_slug": "transport",
+    "title": "High-Speed Intercity Rail",
+    "description": "Building a high-speed rail network connecting all major Israeli cities.",
+    "directional_axis": "hsr: -1=prioritize high-speed rail, +1=highway expansion over rail",
+    "source_type": "bill"
+  },
+  {
+    "_comment": "--- Welfare (2 items) ---",
+    "slug": "wel_01",
+    "topic_slug": "welfare",
+    "title": "Guaranteed Minimum Income",
+    "description": "A guaranteed minimum income (negative income tax) for all working-age adults.",
+    "directional_axis": "minimum_income: -1=support guaranteed minimum income, +1=oppose / cut welfare",
+    "source_type": "vote"
+  },
+  {
+    "slug": "wel_02",
+    "topic_slug": "welfare",
+    "title": "Universal Child Allowance",
+    "description": "Significantly increasing universal child allowances paid to all families.",
+    "directional_axis": "child_allowance: -1=expand universal allowance, +1=means-test or reduce allowance",
+    "source_type": "bill"
+  },
+  {
     "_comment": "--- Civil Rights (4 items) ---",
     "slug": "civ_01",
     "topic_slug": "civil_rights",

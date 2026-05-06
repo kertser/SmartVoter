@@ -57,6 +57,20 @@ class LLMProvider(ABC):
         """
 
     @abstractmethod
+    def generate_root_question(self, input_data: dict) -> dict:
+        """
+        Generate a BROAD TOPIC-LEVEL opening question for the questionnaire.
+        Uses a dedicated prompt — NOT the same as generate_question_with_critique.
+
+        input_data keys:
+            topic_name_en, topic_name_he, topic_name_ru, topic_description
+
+        Returns: question_en, question_he, question_ru, context_note_en,
+                 answer_scale, neutrality_risk, neutrality_score, is_loaded,
+                 bias_direction, suggested_revision, requires_context, context_note
+        """
+
+    @abstractmethod
     def infer_party_position(self, input_data: dict) -> dict:
         """Returns: party_position_mean, uncertainty, evidence_strength,
         evidence_sources, explanation"""

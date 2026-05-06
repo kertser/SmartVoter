@@ -22,6 +22,25 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["questionnaire"])
 
+
+def _ui_strings() -> dict:
+    """Static UI strings for why-selected explanations (i18n-ready placeholder)."""
+    return {
+        "why_selected": {
+            "first_question": (
+                "This is the first question. It helps us understand your general priorities."
+            ),
+            "adaptive_question": (
+                "This question helps distinguish between parties that are currently "
+                "close in your results."
+            ),
+            "auto_generated": (
+                "This question was automatically generated because no pre-existing "
+                "question covered this policy area."
+            ),
+        }
+    }
+
 # ── Statuses that the questionnaire can serve ─────────────────────────────────
 # approved  = human-curated seed questions (highest quality)
 # llm_generated = auto-generated on-the-fly, pending post-hoc admin review
@@ -250,7 +269,7 @@ def get_next_question(
                     topic_name_he=topic.name_he if topic else None,
                     topic_name_ru=topic.name_ru if topic else None,
                     context_note=None,
-                    why_selected="This question was generated in real time for your questionnaire.",
+                    why_selected=_ui_strings()["why_selected"]["auto_generated"],
                 )
         return None
 
@@ -263,9 +282,9 @@ def get_next_question(
     ).first()
 
     why_selected = (
-        "Our first question covers the topic with most party disagreement."
+        _ui_strings()["why_selected"]["first_question"]
         if len(answered_ids) == 0
-        else "This question best distinguishes between your current top parties."
+        else _ui_strings()["why_selected"]["adaptive_question"]
     )
 
     return QuestionOut(

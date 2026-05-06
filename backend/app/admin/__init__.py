@@ -89,6 +89,39 @@ def approve_item(item_id: str, db: Session = Depends(get_db)) -> dict:
     return {"status": "approved", "id": item_id}
 
 
+class BulkApproveBody(BaseModel):
+    ids: list[str] | None = None   # if None → approve ALL non-approved questions
+    status_filter: str | None = None  # optionally restrict to a specific status
+
+
+@admin_router.post("/review/bulk-approve")
+def bulk_approve_items(
+    body: BulkApproveBody, db: Session = Depends(get_db)
+) -> dict:
+    """
+    Approve multiple questions in one call.
+    If `ids` is omitted, approves ALL questions that are not yet approved
+    (optionally filtered by `status_filter`, e.g. "needs_review").
+    Returns the number of questions approved.
+    """
+    q = db.query(Question)
+    if body.ids is not None:
+        uuids = [uuid.UUID(i) for i in body.ids]
+        q = q.filter(Question.id.in_(uuids))
+    else:
+        q = q.filter(Question.human_review_status != ReviewStatus.approved)
+        if body.status_filter:
+            q = q.filter(Question.human_review_status == body.status_filter)
+
+    questions = q.all()
+    count = 0
+    for question in questions:
+        question.human_review_status = ReviewStatus.approved
+        count += 1
+    db.commit()
+    return {"approved": count, "status": "ok"}
+
+
 @admin_router.post("/review/{item_id}/reject")
 def reject_item(item_id: str, db: Session = Depends(get_db)) -> dict:
     """Reject a question."""
@@ -130,88 +163,136 @@ def edit_question(item_id: str, body: EditQuestionBody, db: Session = Depends(ge
 
 class GenerateQuestionsBody(BaseModel):
     policy_item_ids: list[str]
+    max_workers: int = 6   # parallel LLM calls; keep ≤ 10 to avoid rate limits
 
 
 @admin_router.post("/llm/generate-questions")
 def generate_questions(
     body: GenerateQuestionsBody,
-    db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks,
     settings=Depends(get_settings),
 ) -> dict:
     """
     Use LLM to generate questions for specified policy items.
+    Runs as a background job (parallel workers) so the HTTP call returns immediately.
     All outputs are stored for audit and placed in needs_review status.
     Human approval required before questions become public.
+    Poll /api/admin/ingest/status/{job_id} for progress.
     """
-    provider = get_llm_provider(settings)
-    svc = AuditedLLMService(provider, db)
-    generated = []
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from backend.app.db.session import SessionLocal
 
-    for pid_str in body.policy_item_ids:
+    job_id = str(uuid.uuid4())[:8]
+    _ingestion_jobs[job_id] = {
+        "job_id": job_id,
+        "status": "queued",
+        "step": "generate-questions",
+        "total": len(body.policy_item_ids),
+        "completed": 0,
+        "errors": 0,
+        "generated": [],
+    }
+
+    def _process_one(pid_str: str) -> dict:
+        """Worker: each call gets its own DB session."""
+        db = SessionLocal()
         try:
-            pid = uuid.UUID(pid_str)
-        except ValueError:
-            generated.append({"policy_item_id": pid_str, "error": "invalid UUID"})
-            continue
+            try:
+                pid = uuid.UUID(pid_str)
+            except ValueError:
+                return {"policy_item_id": pid_str, "error": "invalid UUID"}
 
-        pi = db.query(PolicyItem).filter(PolicyItem.id == pid).first()
-        if not pi:
-            generated.append({"policy_item_id": pid_str, "error": "not found"})
-            continue
+            pi = db.query(PolicyItem).filter(PolicyItem.id == pid).first()
+            if not pi:
+                return {"policy_item_id": pid_str, "error": "not found"}
 
-        input_data = {
-            "title": pi.title,
-            "description": pi.description or "",
-            "directional_axis": pi.directional_axis or "",
-        }
+            provider = get_llm_provider(settings)
+            svc = AuditedLLMService(provider, db)
+            input_data = {
+                "title": pi.title,
+                "description": pi.description or "",
+                "directional_axis": pi.directional_axis or "",
+            }
 
-        try:
-            result = svc.generate_question(input_data, entity_id=pid)
+            try:
+                result = svc.generate_question(input_data, entity_id=pid)
+            except Exception as exc:
+                return {"policy_item_id": pid_str, "error": str(exc)}
+
+            critique_input = {"question": result.get("question_en", result.get("question", ""))}
+            try:
+                critique = svc.critique_question(critique_input)
+            except Exception:
+                critique = {"neutrality_risk": "unknown", "is_loaded": False}
+
+            neutrality_score = (
+                0.4 if critique.get("is_loaded") else
+                0.9 if result.get("neutrality_risk") == "low" else
+                0.7 if result.get("neutrality_risk") == "medium" else 0.5
+            )
+
+            q = Question(
+                policy_item_id=pid,
+                question_text_en=result.get("question_en") or result.get("question", ""),
+                question_text_he=result.get("question_he", ""),
+                question_text_ru=result.get("question_ru", ""),
+                answer_scale_type=AnswerScaleType.likert_5,
+                neutrality_score=neutrality_score,
+                llm_prompt_version=result.get("_prompt_version", "v1.0"),
+                human_review_status=ReviewStatus.needs_review,
+            )
+            db.add(q)
+            db.commit()
+            db.refresh(q)
+
+            return {
+                "policy_item_id": pid_str,
+                "question_id": str(q.id),
+                "question_en": q.question_text_en,
+                "question_he": q.question_text_he,
+                "question_ru": q.question_text_ru,
+                "neutrality_score": neutrality_score,
+                "is_loaded": critique.get("is_loaded", False),
+                "suggested_revision": critique.get("suggested_revision"),
+                "status": "needs_review",
+                "provider": provider.provider,
+            }
         except Exception as exc:
-            generated.append({"policy_item_id": pid_str, "error": str(exc)})
-            continue
+            return {"policy_item_id": pid_str, "error": str(exc)}
+        finally:
+            db.close()
 
-        # Critique pass to compute neutrality score
-        critique_input = {"question": result.get("question_en", result.get("question", ""))}
+    def _run():
+        _ingestion_jobs[job_id]["status"] = "running"
+        workers = min(max(1, body.max_workers), 10)
         try:
-            critique = svc.critique_question(critique_input)
-        except Exception:
-            critique = {"neutrality_risk": "unknown", "is_loaded": False}
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                futures = {
+                    executor.submit(_process_one, pid_str): pid_str
+                    for pid_str in body.policy_item_ids
+                }
+                for future in as_completed(futures):
+                    try:
+                        result = future.result()
+                    except Exception as exc:
+                        result = {"policy_item_id": futures[future], "error": str(exc)}
+                        _ingestion_jobs[job_id]["errors"] += 1
+                    if "error" in result:
+                        _ingestion_jobs[job_id]["errors"] += 1
+                    _ingestion_jobs[job_id]["generated"].append(result)
+                    _ingestion_jobs[job_id]["completed"] += 1
+            _ingestion_jobs[job_id]["status"] = "done"
+        except Exception as exc:
+            _ingestion_jobs[job_id].update({"status": "error", "error": str(exc)})
 
-        neutrality_score = (
-            0.4 if critique.get("is_loaded") else
-            0.9 if result.get("neutrality_risk") == "low" else
-            0.7 if result.get("neutrality_risk") == "medium" else 0.5
-        )
-
-        q = Question(
-            policy_item_id=pid,
-            question_text_en=result.get("question_en") or result.get("question", ""),
-            question_text_he=result.get("question_he", ""),
-            question_text_ru=result.get("question_ru", ""),
-            answer_scale_type=AnswerScaleType.likert_5,
-            neutrality_score=neutrality_score,
-            llm_prompt_version=result.get("_prompt_version", "v1.0"),
-            human_review_status=ReviewStatus.needs_review,
-        )
-        db.add(q)
-        db.commit()
-        db.refresh(q)
-
-        generated.append({
-            "policy_item_id": pid_str,
-            "question_id": str(q.id),
-            "question_en": q.question_text_en,
-            "question_he": q.question_text_he,
-            "question_ru": q.question_text_ru,
-            "neutrality_score": neutrality_score,
-            "is_loaded": critique.get("is_loaded", False),
-            "suggested_revision": critique.get("suggested_revision"),
-            "status": "needs_review",
-            "provider": provider.provider,
-        })
-
-    return {"generated": generated, "count": len(generated)}
+    background_tasks.add_task(_run)
+    return {
+        "job_id": job_id,
+        "status": "queued",
+        "total": len(body.policy_item_ids),
+        "workers": min(max(1, body.max_workers), 10),
+        "message": f"Question generation started for {len(body.policy_item_ids)} policy items.",
+    }
 
 
 class ClassifyPolicyBody(BaseModel):
@@ -830,6 +911,93 @@ class GenerateRootQuestionBody(BaseModel):
     force_regenerate: bool = False  # bypass LLM cache to get a fresh question
 
 
+def _generate_root_question_for_topic(
+    topic: Topic,
+    db: Session,
+    settings,
+    force_regenerate: bool = False,
+) -> dict:
+    """
+    Core logic shared by single and batch root-question generation.
+    Returns the result dict. Raises on LLM error.
+    """
+    from backend.app.services.llm.audit_service import AuditedLLMService
+
+    provider = get_llm_provider(settings)
+    svc = AuditedLLMService(provider, db)
+
+    input_data = {
+        "topic_name_en": topic.name_en,
+        "topic_name_he": topic.name_he,
+        "topic_name_ru": topic.name_ru or "",
+        "topic_description": (
+            topic.description
+            or f"Policy questions related to the topic: {topic.name_en}"
+        ),
+    }
+
+    # Bust the LLM cache by adding a unique nonce when force_regenerate is requested.
+    if force_regenerate:
+        input_data["_cache_bust"] = str(uuid.uuid4())
+
+    result = svc.generate_root_question(input_data, entity_id=topic.id)
+    question_en = result.get("question_en") or result.get("question", "")
+
+    if not question_en:
+        raise ValueError(f"LLM returned empty question for topic {topic.slug!r}")
+
+    neutrality_score = float(result.get("neutrality_score", 0.7))
+
+    existing = db.query(Question).filter(
+        Question.topic_id == topic.id,
+        Question.is_root_question.is_(True),
+    ).first()
+
+    if existing:
+        existing.question_text_en = question_en
+        existing.question_text_he = result.get("question_he", existing.question_text_he)
+        existing.question_text_ru = result.get("question_ru")
+        existing.neutrality_score = neutrality_score
+        existing.llm_prompt_version = result.get("_prompt_version", "v1.1-root")
+        existing.human_review_status = ReviewStatus.needs_review
+        db.commit()
+        db.refresh(existing)
+        q = existing
+        action = "updated"
+    else:
+        q = Question(
+            id=uuid.uuid4(),
+            is_root_question=True,
+            topic_id=topic.id,
+            policy_item_id=None,
+            question_text_en=question_en,
+            question_text_he=result.get("question_he", ""),
+            question_text_ru=result.get("question_ru"),
+            answer_scale_type=AnswerScaleType.likert_5,
+            neutrality_score=neutrality_score,
+            llm_prompt_version=result.get("_prompt_version", "v1.1-root"),
+            human_review_status=ReviewStatus.needs_review,
+        )
+        db.add(q)
+        db.commit()
+        db.refresh(q)
+        action = "created"
+
+    return {
+        "action": action,
+        "question_id": str(q.id),
+        "topic_id": str(topic.id),
+        "topic_slug": topic.slug,
+        "topic_name_en": topic.name_en,
+        "question_en": q.question_text_en,
+        "question_he": q.question_text_he,
+        "question_ru": q.question_text_ru,
+        "neutrality_score": neutrality_score,
+        "status": q.human_review_status.value,
+        "provider": provider.provider,
+    }
+
+
 @admin_router.post("/llm/generate-root-question")
 def generate_root_question(
     body: GenerateRootQuestionBody,
@@ -841,9 +1009,7 @@ def generate_root_question(
     Root questions are the entry point of the questionnaire (is_root_question=True).
     They cover a whole topic, not a specific bill or vote.
     Human approval still required before going public.
-
-    Set force_regenerate=True to bypass the LLM cache and get a new question
-    even if one was already generated for this topic.
+    Uses the dedicated root_question prompt from prompts.json.
     """
     try:
         tid = uuid.UUID(body.topic_id)
@@ -854,78 +1020,244 @@ def generate_root_question(
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
 
-    # Check if a root question already exists for this topic
-    existing = db.query(Question).filter(
-        Question.topic_id == tid,
-        Question.is_root_question.is_(True),
-    ).first()
+    try:
+        return _generate_root_question_for_topic(
+            topic, db, settings, force_regenerate=body.force_regenerate
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
-    provider = get_llm_provider(settings)
-    svc = AuditedLLMService(provider, db)
 
-    input_data = {
-        "title": f"[ROOT] {topic.name_en}",
-        "description": topic.description or f"Broad question covering the topic: {topic.name_en}",
-        "directional_axis": (
-            "This is a broad topic-level question. Do not reference specific bills. "
-            "Ask about the user's general stance on this policy area."
-        ),
+# ── Batch root question generation ───────────────────────────────────────────
+
+# In-memory job store for batch root-question generation
+_root_gen_jobs: dict[str, dict] = {}
+
+
+class GenerateAllRootQuestionsBody(BaseModel):
+    force_regenerate: bool = False  # regenerate even if a root question already exists
+    skip_existing: bool = True      # skip topics that already have an approved root question
+    max_workers: int = 8            # parallel LLM calls; capped at 15
+
+
+@admin_router.post("/llm/generate-all-root-questions")
+def generate_all_root_questions(
+    body: GenerateAllRootQuestionsBody,
+    background_tasks: BackgroundTasks,
+    settings=Depends(get_settings),
+) -> dict:
+    """
+    Generate root questions for ALL topics in a single background job.
+    Returns a job_id to poll /llm/generate-all-root-questions/status/{job_id}.
+    """
+    job_id = str(uuid.uuid4())[:8]
+    _root_gen_jobs[job_id] = {
+        "job_id": job_id,
+        "status": "queued",
+        "total": 0,
+        "completed": 0,
+        "errors": 0,
+        "results": [],
+        "current_topic": None,
     }
 
-    # Bust the LLM cache by adding a unique nonce when force_regenerate is requested.
-    # The nonce makes the input_hash different so AuditedLLMService makes a fresh call.
-    if body.force_regenerate:
-        input_data["_cache_bust"] = str(uuid.uuid4())
+    def _run():
+        from backend.app.db.session import SessionLocal
+        from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    result = svc.generate_question_with_critique(input_data, entity_id=tid)
-    neutrality_score = float(result.get("neutrality_score", 0.7))
-    question_en = result.get("question_en") or result.get("question", "")
+        _root_gen_jobs[job_id]["status"] = "running"
 
-    if not question_en:
-        raise HTTPException(status_code=500, detail="LLM returned empty question")
+        # Load topic metadata in a short-lived session, then close it.
+        # Each worker thread will open its own session — SQLAlchemy sessions
+        # are NOT thread-safe and must not be shared across threads.
+        db_main = SessionLocal()
+        try:
+            topics_raw = db_main.query(Topic).order_by(Topic.slug).all()
+            topic_list = [
+                {
+                    "id": t.id,
+                    "slug": t.slug,
+                    "name_en": t.name_en,
+                    "name_he": t.name_he,
+                    "name_ru": t.name_ru,
+                    "description": t.description,
+                }
+                for t in topics_raw
+            ]
+        finally:
+            db_main.close()
 
-    if existing:
-        # Update existing root question
-        existing.question_text_en = question_en
-        existing.question_text_he = result.get("question_he", existing.question_text_he)
-        existing.question_text_ru = result.get("question_ru")
-        existing.neutrality_score = neutrality_score
-        existing.llm_prompt_version = result.get("_prompt_version", "v1.0")
-        existing.human_review_status = ReviewStatus.needs_review
-        db.commit()
-        db.refresh(existing)
-        q = existing
-        action = "updated"
-    else:
-        q = Question(
-            id=uuid.uuid4(),
-            is_root_question=True,
-            topic_id=tid,
-            policy_item_id=None,
-            question_text_en=question_en,
-            question_text_he=result.get("question_he", ""),
-            question_text_ru=result.get("question_ru"),
-            answer_scale_type=AnswerScaleType.likert_5,
-            neutrality_score=neutrality_score,
-            llm_prompt_version=result.get("_prompt_version", "v1.0"),
-            human_review_status=ReviewStatus.needs_review,
-        )
-        db.add(q)
-        db.commit()
-        db.refresh(q)
-        action = "created"
+        _root_gen_jobs[job_id]["total"] = len(topic_list)
+
+        def process_one(td: dict) -> dict:
+            """Called in a worker thread — gets its own DB session."""
+            db = SessionLocal()
+            try:
+                topic = db.query(Topic).filter(Topic.id == td["id"]).first()
+                if not topic:
+                    return {"action": "error", "topic_slug": td["slug"],
+                            "topic_name_en": td["name_en"], "error": "Topic not found"}
+
+                # Optionally skip topics that already have an approved root question
+                if body.skip_existing and not body.force_regenerate:
+                    existing = db.query(Question).filter(
+                        Question.topic_id == topic.id,
+                        Question.is_root_question.is_(True),
+                        Question.human_review_status == ReviewStatus.approved,
+                    ).first()
+                    if existing:
+                        return {"action": "skipped_approved", "topic_slug": topic.slug,
+                                "topic_name_en": topic.name_en}
+
+                return _generate_root_question_for_topic(
+                    topic, db, settings, force_regenerate=body.force_regenerate
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Root question generation failed for topic %s: %s", td["slug"], exc
+                )
+                return {"action": "error", "topic_slug": td["slug"],
+                        "topic_name_en": td["name_en"], "error": str(exc)}
+            finally:
+                db.close()
+
+        # Run up to MAX_WORKERS topics concurrently.
+        # Limit keeps OpenAI rate limits comfortable while still cutting wall-clock
+        # time from ~5 min sequential → ~30–60 sec parallel for 15 topics.
+        MAX_WORKERS = min(max(1, body.max_workers), 15)
+        try:
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                futures = {executor.submit(process_one, td): td for td in topic_list}
+                for future in as_completed(futures):
+                    try:
+                        result = future.result()
+                    except Exception as exc:
+                        td = futures[future]
+                        result = {"action": "error", "topic_slug": td["slug"],
+                                  "topic_name_en": td["name_en"], "error": str(exc)}
+                        _root_gen_jobs[job_id]["errors"] += 1
+
+                    if result.get("action") == "error":
+                        _root_gen_jobs[job_id]["errors"] += 1
+
+                    _root_gen_jobs[job_id]["results"].append(result)
+                    _root_gen_jobs[job_id]["completed"] += 1
+                    _root_gen_jobs[job_id]["current_topic"] = result.get("topic_name_en")
+
+            _root_gen_jobs[job_id].update({"status": "done", "current_topic": None})
+        except Exception as exc:
+            _root_gen_jobs[job_id].update({"status": "error", "error": str(exc), "current_topic": None})
+
+    background_tasks.add_task(_run)
+    return {"job_id": job_id, "status": "queued"}
+
+
+@admin_router.get("/llm/generate-all-root-questions/status/{job_id}")
+def get_generate_all_root_questions_status(job_id: str) -> dict:
+    """Poll the status of a batch root-question generation job."""
+    job = _root_gen_jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+
+# ── Manual question creation ──────────────────────────────────────────────────
+
+class ManualQuestionBody(BaseModel):
+    topic_id: str
+    is_root_question: bool = False
+    policy_item_id: str | None = None
+    question_text_en: str
+    question_text_he: str = ""
+    question_text_ru: str = ""
+    answer_scale_type: str = "likert_5"
+    context_note_en: str = ""
+
+
+@admin_router.post("/questions/manual")
+def create_manual_question(
+    body: ManualQuestionBody,
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    Create a question manually (written by an admin, not by the LLM).
+    Immediately saved as human_review_status=approved since it was human-authored.
+    """
+    try:
+        tid = uuid.UUID(body.topic_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid topic UUID")
+
+    topic = db.query(Topic).filter(Topic.id == tid).first()
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    if not body.question_text_en.strip():
+        raise HTTPException(status_code=400, detail="English question text is required")
+
+    # Validate scale type
+    try:
+        scale = AnswerScaleType(body.answer_scale_type)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid answer_scale_type: {body.answer_scale_type}")
+
+    # Resolve optional policy_item_id
+    pi_id: uuid.UUID | None = None
+    if body.policy_item_id:
+        try:
+            pi_id = uuid.UUID(body.policy_item_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid policy_item_id")
+        pi = db.query(PolicyItem).filter(PolicyItem.id == pi_id).first()
+        if not pi:
+            raise HTTPException(status_code=404, detail="PolicyItem not found")
+
+    # For root questions: replace existing root question for this topic if present
+    if body.is_root_question:
+        existing = db.query(Question).filter(
+            Question.topic_id == tid,
+            Question.is_root_question.is_(True),
+        ).first()
+        if existing:
+            existing.question_text_en = body.question_text_en.strip()
+            existing.question_text_he = body.question_text_he.strip() or existing.question_text_he
+            existing.question_text_ru = body.question_text_ru.strip() or existing.question_text_ru
+            existing.answer_scale_type = scale
+            existing.human_review_status = ReviewStatus.approved
+            existing.llm_prompt_version = "manual"
+            db.commit()
+            db.refresh(existing)
+            return {
+                "action": "updated",
+                "question_id": str(existing.id),
+                "topic_id": str(tid),
+                "topic_name_en": topic.name_en,
+                "question_text_en": existing.question_text_en,
+            }
+
+    q = Question(
+        id=uuid.uuid4(),
+        topic_id=tid,
+        policy_item_id=pi_id,
+        is_root_question=body.is_root_question,
+        question_text_en=body.question_text_en.strip(),
+        question_text_he=body.question_text_he.strip(),
+        question_text_ru=body.question_text_ru.strip(),
+        answer_scale_type=scale,
+        neutrality_score=1.0,        # human-authored: assume neutral
+        llm_prompt_version="manual",
+        human_review_status=ReviewStatus.approved,
+    )
+    db.add(q)
+    db.commit()
+    db.refresh(q)
 
     return {
-        "action": action,
+        "action": "created",
         "question_id": str(q.id),
         "topic_id": str(tid),
         "topic_name_en": topic.name_en,
-        "question_en": q.question_text_en,
-        "question_he": q.question_text_he,
-        "question_ru": q.question_text_ru,
-        "neutrality_score": neutrality_score,
-        "status": q.human_review_status.value,
-        "provider": provider.provider,
+        "question_text_en": q.question_text_en,
     }
 
 

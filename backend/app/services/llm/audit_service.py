@@ -210,6 +210,20 @@ class AuditedLLMService:
             "generate_question_with_critique", "question", entity_id,
         )
 
+    def generate_root_question(
+        self, input_data: dict, entity_id: uuid.UUID | None = None
+    ) -> dict:
+        """
+        Generate a broad topic-level root question using the dedicated root_question
+        prompt from prompts.json. NOT the same as generate_question_with_critique.
+        Results are audited and stored like all other LLM calls.
+        """
+        return _run_and_store(
+            self.db, self.provider,
+            self.provider.generate_root_question, input_data,
+            "generate_root_question", "question", entity_id,
+        )
+
     def infer_party_position(self, input_data: dict, entity_id: uuid.UUID | None = None) -> dict:
         return _run_and_store(
             self.db, self.provider,

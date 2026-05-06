@@ -174,6 +174,126 @@ def seed_missing_topics() -> None:
         db.close()
 
 
+def seed_missing_policy_items() -> None:
+    """
+    Insert policy items, party positions, and questions for any policy-item slug
+    that does not yet exist in the database. Safe to run on an already-seeded DB.
+    """
+    from backend.app.models.policy_item import PolicyItem as _PI2
+    from backend.app.models.party_position import PartyPosition as _PP2
+    from backend.app.models.question import Question as _Q2
+
+    db = SessionLocal()
+    try:
+        # Build a slug → id map for existing policy items (matched by title)
+        existing_titles = {pi.title for pi in db.query(_PI2).all()}
+
+        added_items = 0
+        added_positions = 0
+        added_questions = 0
+
+        pi_slug_to_id: dict[str, uuid.UUID] = {}
+
+        for item in POLICY_ITEMS:
+            if item["title"] in existing_titles:
+                # Already in DB — need its id for positions/questions
+                matched = db.query(_PI2).filter(_PI2.title == item["title"]).first()
+                if matched:
+                    pi_slug_to_id[item["slug"]] = matched.id
+                continue
+
+            topic_id = item["topic_id"]  # already a UUID from seed_data.py processing
+
+            pi_id = uuid.uuid4()
+            pi_slug_to_id[item["slug"]] = pi_id
+            from backend.app.models.policy_item import PolicySourceType, ReviewStatus as RS
+            db.add(_PI2(
+                id=pi_id,
+                title=item["title"],
+                description=item.get("description"),
+                topic_id=topic_id,
+                directional_axis=item.get("directional_axis"),
+                source_type=PolicySourceType(item["source_type"]),
+                llm_confidence=0.85,
+                human_review_status=RS.approved,
+            ))
+            added_items += 1
+
+        db.flush()
+
+        if added_items:
+            print(f"  ✓ Added {added_items} missing policy items")
+        else:
+            print("  All policy items already present.")
+
+        # Add missing party positions
+        from backend.app.models.party_position import PartyPosition as _PP3
+        existing_positions = {
+            (str(pp.party_instance_id), str(pp.policy_item_id))
+            for pp in db.query(_PP3).all()
+        }
+
+        for (party_id, item_slug), (pos_mean, uncertainty, strength, ev_type) in PARTY_POSITIONS_RAW.items():
+            policy_item_id = pi_slug_to_id.get(item_slug)
+            if not policy_item_id:
+                continue
+            key = (str(party_id), str(policy_item_id))
+            if key in existing_positions:
+                continue
+            db.add(_PP3(
+                party_instance_id=party_id,
+                policy_item_id=policy_item_id,
+                position_mean=pos_mean,
+                position_uncertainty=uncertainty,
+                evidence_strength=strength,
+                evidence_type=ev_type,
+                llm_explanation=f"Mock position inferred from {ev_type} evidence.",
+            ))
+            added_positions += 1
+
+        db.flush()
+        if added_positions:
+            print(f"  ✓ Added {added_positions} missing party positions")
+
+        # Add missing questions
+        existing_questions_text = {q.question_text_en for q in db.query(_Q2).all()}
+        from backend.app.models.question import AnswerScaleType as AST
+        from backend.app.models.policy_item import ReviewStatus as RS2
+
+        for q_tuple in QUESTIONS_DATA:
+            item_slug, text_en, text_he = q_tuple[0], q_tuple[1], q_tuple[2]
+            text_ru = q_tuple[3] if len(q_tuple) > 3 else None
+            if text_en in existing_questions_text:
+                continue
+            policy_item_id = pi_slug_to_id.get(item_slug)
+            if not policy_item_id:
+                continue
+            db.add(_Q2(
+                policy_item_id=policy_item_id,
+                question_text_en=text_en,
+                question_text_he=text_he,
+                question_text_ru=text_ru,
+                answer_scale_type=AST.likert_5,
+                neutrality_score=0.82,
+                complexity_score=0.45,
+                llm_prompt_version="mock-v1",
+                human_review_status=RS2.approved,
+            ))
+            added_questions += 1
+
+        db.flush()
+        if added_questions:
+            print(f"  ✓ Added {added_questions} missing questions")
+
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"seed_missing_policy_items failed: {e}", file=sys.stderr)
+        raise
+    finally:
+        db.close()
+
+
 def run_seed() -> None:
     db = SessionLocal()
     try:
@@ -182,6 +302,7 @@ def run_seed() -> None:
             print("Database already seeded. Checking for missing topics...")
             db.close()
             seed_missing_topics()
+            seed_missing_policy_items()
             return
 
         print("Seeding database...")

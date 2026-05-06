@@ -17,6 +17,7 @@ import {
   adminGetReviewItems,
   adminApprove,
   adminReject,
+  adminApproveAll,
   adminEditQuestion,
   adminGetLlmOutputs,
   adminTriggerIngestion,
@@ -26,6 +27,9 @@ import {
   adminGetFullPipelineStatus,
   adminGetTopicsWithRootQuestions,
   adminGenerateRootQuestion,
+  adminGenerateAllRootQuestions,
+  adminGetGenerateAllRootQuestionsStatus,
+  adminCreateManualQuestion,
   adminDownloadBackup,
   adminRestoreBackup,
   AdminQuestion,
@@ -34,6 +38,7 @@ import {
   FullPipelineJobStatus,
   FullPipelineKnessetResult,
   TopicWithRootQuestion,
+  GenerateAllRootQuestionsJob,
   getStoredAdminPassword,
   storeAdminPassword,
   clearAdminPassword,
@@ -183,6 +188,8 @@ function ReviewTab() {
   const [editText, setEditText] = useState("");
   const [editHe, setEditHe] = useState("");
   const [editRu, setEditRu] = useState("");
+  const [approvingAll, setApprovingAll] = useState(false);
+  const [approveAllMsg, setApproveAllMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -198,6 +205,22 @@ function ReviewTab() {
 
   const handleApprove = async (id: string) => { await adminApprove(id); reload(); };
   const handleReject = async (id: string) => { await adminReject(id); reload(); };
+
+  const handleApproveAll = async () => {
+    if (!window.confirm(a.reviewApproveAllConfirm(questions.length))) return;
+    setApprovingAll(true);
+    setApproveAllMsg(null);
+    try {
+      const ids = questions.map(q => q.id);
+      const res = await adminApproveAll({ ids });
+      setApproveAllMsg({ ok: true, text: a.reviewApproveAllSuccess(res.approved) });
+      reload();
+    } catch {
+      setApproveAllMsg({ ok: false, text: a.reviewApproveAllError });
+    } finally {
+      setApprovingAll(false);
+    }
+  };
   const handleEditSave = async (id: string) => {
     await adminEditQuestion(id, { question_text_en: editText, question_text_he: editHe, question_text_ru: editRu });
     setEditingId(null);
@@ -214,7 +237,7 @@ function ReviewTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -229,7 +252,24 @@ function ReviewTab() {
         </select>
         <button onClick={reload} className="text-xs text-brand-600 hover:underline">{a.reviewRefresh}</button>
         <span className="text-xs text-slate-400">{questions.length} items</span>
+
+        {/* ── Approve All ─────────────────────────────────────────────── */}
+        {questions.length > 0 && (
+          <button
+            onClick={handleApproveAll}
+            disabled={approvingAll}
+            className="ms-auto rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {approvingAll ? "…" : a.reviewApproveAll}
+          </button>
+        )}
       </div>
+
+      {approveAllMsg && (
+        <p className={`text-xs px-3 py-1.5 rounded-lg ${approveAllMsg.ok ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
+          {approveAllMsg.text}
+        </p>
+      )}
 
       {loading ? (
         <p className="text-slate-400 text-sm py-10 text-center">Loading…</p>
@@ -295,6 +335,169 @@ function ReviewTab() {
   );
 }
 
+// ── Manual Question Form ───────────────────────────────────────────────────────
+
+function ManualQuestionForm({
+  topics,
+  onSaved,
+}: {
+  topics: TopicWithRootQuestion[];
+  onSaved: () => void;
+}) {
+  const a = useT().admin;
+  const [open, setOpen] = useState(false);
+  const [topicId, setTopicId] = useState("");
+  const [isRoot, setIsRoot] = useState(true);
+  const [en, setEn] = useState("");
+  const [he, setHe] = useState("");
+  const [ru, setRu] = useState("");
+  const [context, setContext] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const reset = () => { setEn(""); setHe(""); setRu(""); setContext(""); setSuccess(null); setError(null); };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!topicId || !en.trim()) return;
+    setSubmitting(true);
+    setSuccess(null);
+    setError(null);
+    try {
+      const res = await adminCreateManualQuestion({
+        topic_id: topicId,
+        is_root_question: isRoot,
+        question_text_en: en.trim(),
+        question_text_he: he.trim(),
+        question_text_ru: ru.trim(),
+        context_note_en: context.trim(),
+      });
+      setSuccess(a.manualEntrySuccess(res.action));
+      reset();
+      onSaved();
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <button
+        onClick={() => { setOpen(o => !o); setSuccess(null); setError(null); }}
+        className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+      >
+        <span>✏️ {a.manualEntryHeading}</span>
+        <span className="text-slate-400 text-xs">{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open && (
+        <form onSubmit={handleSubmit} className="border-t border-slate-100 p-4 space-y-4">
+          <p className="text-xs text-slate-500">{a.manualEntrySubtext}</p>
+
+          {/* Topic + root checkbox */}
+          <div className="flex flex-wrap gap-4 items-end">
+            <div className="flex-1 min-w-[180px] space-y-1">
+              <label className="block text-xs font-medium text-slate-600">{a.manualEntryTopicLabel} *</label>
+              <select
+                value={topicId}
+                onChange={e => setTopicId(e.target.value)}
+                required
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+              >
+                <option value="">— select —</option>
+                {topics.map(t => (
+                  <option key={t.topic_id} value={t.topic_id}>{t.name_en}</option>
+                ))}
+              </select>
+            </div>
+            <label className="flex items-center gap-2 text-xs text-slate-700 pb-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isRoot}
+                onChange={e => setIsRoot(e.target.checked)}
+                className="rounded"
+              />
+              {a.manualEntryIsRoot}
+            </label>
+          </div>
+
+          {/* Three language inputs */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {/* English */}
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-slate-600">
+                {a.manualEntryEnLabel} *
+              </label>
+              <textarea
+                value={en}
+                onChange={e => setEn(e.target.value)}
+                required
+                rows={3}
+                placeholder={a.manualEntryEnPlaceholder}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-400"
+              />
+            </div>
+            {/* Hebrew */}
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-slate-600">
+                {a.manualEntryHeLabel}
+              </label>
+              <textarea
+                value={he}
+                onChange={e => setHe(e.target.value)}
+                rows={3}
+                dir="rtl"
+                placeholder={a.manualEntryHePlaceholder}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-400 text-right"
+              />
+            </div>
+            {/* Russian */}
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-slate-600">
+                {a.manualEntryRuLabel}
+              </label>
+              <textarea
+                value={ru}
+                onChange={e => setRu(e.target.value)}
+                rows={3}
+                placeholder={a.manualEntryRuPlaceholder}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-400"
+              />
+            </div>
+          </div>
+
+          {/* Context note */}
+          <div className="space-y-1">
+            <label className="block text-xs font-medium text-slate-600">{a.manualEntryContextLabel}</label>
+            <input
+              type="text"
+              value={context}
+              onChange={e => setContext(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+            />
+          </div>
+
+          {success && <p className="text-xs text-green-700 font-medium">{success}</p>}
+          {error   && <p className="text-xs text-red-600">{error}</p>}
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={submitting || !topicId || !en.trim()}
+              className="rounded-lg bg-slate-800 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {submitting ? a.manualEntrySubmitting : a.manualEntrySubmitBtn}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+
 // ── Generate Tab — Root Question Tree ─────────────────────────────────────────
 
 function GenerateTab() {
@@ -304,6 +507,19 @@ function GenerateTab() {
   const [loading, setLoading] = useState(true);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Generate All state
+  const [allForce, setAllForce] = useState(false);
+  const [allSkip, setAllSkip] = useState(true);
+  const [allWorkers, setAllWorkers] = useState(8);
+  const [allJob, setAllJob] = useState<GenerateAllRootQuestionsJob | null>(null);
+  const allPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopAllPoll = () => {
+    if (allPollRef.current) { clearInterval(allPollRef.current); allPollRef.current = null; }
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => () => stopAllPoll(), []);
 
   const reload = useCallback(() => {
     setLoading(true);
@@ -319,8 +535,6 @@ function GenerateTab() {
     setGeneratingId(topicId);
     setError(null);
     try {
-      // Pass force_regenerate=true when updating an existing question so the
-      // LLM cache is bypassed and a genuinely new question is generated.
       await adminGenerateRootQuestion(topicId, isUpdate);
       reload();
     } catch (e) {
@@ -329,6 +543,51 @@ function GenerateTab() {
       setGeneratingId(null);
     }
   };
+
+  const handleGenerateAll = async () => {
+    setError(null);
+    setAllJob(null);
+    stopAllPoll();
+    try {
+      const res = await adminGenerateAllRootQuestions({ force_regenerate: allForce, skip_existing: allSkip, max_workers: allWorkers });
+      const initial: GenerateAllRootQuestionsJob = {
+        job_id: res.job_id,
+        status: "queued",
+        total: 0,
+        completed: 0,
+        errors: 0,
+        current_topic: null,
+        results: [],
+      };
+      setAllJob(initial);
+      allPollRef.current = setInterval(async () => {
+        try {
+          const status = await adminGetGenerateAllRootQuestionsStatus(res.job_id);
+          setAllJob(status);
+          if (status.status === "done" || status.status === "error") {
+            stopAllPoll();
+            reload();
+          }
+        } catch {
+          stopAllPoll();
+        }
+      }, 2000);
+    } catch (e) {
+      setError(String(e));
+    }
+  };
+
+  const allRunning = allJob?.status === "queued" || allJob?.status === "running";
+
+  const allDoneSummary = allJob?.status === "done"
+    ? (() => {
+        const created = allJob.results.filter(r => r.action === "created").length;
+        const updated = allJob.results.filter(r => r.action === "updated").length;
+        const skipped = allJob.results.filter(r => r.action === "skipped_approved").length;
+        const errors  = allJob.results.filter(r => r.action === "error").length;
+        return a.generateAllDone(created, updated, skipped, errors);
+      })()
+    : null;
 
   const statusColors: Record<string, string> = {
     needs_review: "bg-yellow-50 text-yellow-700 border-yellow-200",
@@ -346,6 +605,78 @@ function GenerateTab() {
         <p className="text-xs text-slate-600">{a.generateTopicSubtext}</p>
       </div>
 
+      {/* ── Generate All panel ─────────────────────────────────────────── */}
+      <div className="rounded-xl border-2 border-brand-200 bg-brand-50/40 p-4 space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={allForce}
+                onChange={e => setAllForce(e.target.checked)}
+                disabled={allRunning}
+                className="rounded"
+              />
+              {a.generateAllForceLabel}
+            </label>
+            <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={allSkip}
+                onChange={e => setAllSkip(e.target.checked)}
+                disabled={allRunning}
+                className="rounded"
+              />
+              {a.generateAllSkipLabel}
+            </label>
+            <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+              <span>{a.generateAllWorkersLabel}</span>
+              <input
+                type="number"
+                min={1}
+                max={15}
+                value={allWorkers}
+                onChange={e => setAllWorkers(Math.max(1, Math.min(15, Number(e.target.value))))}
+                disabled={allRunning}
+                className="w-14 rounded-md border border-slate-200 px-2 py-0.5 text-xs text-center"
+              />
+            </label>
+          </div>
+          <button
+            onClick={handleGenerateAll}
+            disabled={allRunning}
+            className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+          >
+            {allRunning ? "⏳ " + a.generateRootGenerating : a.generateAllBtn}
+          </button>
+        </div>
+
+        {/* Progress */}
+        {allJob && (
+          <div className="space-y-1">
+            {(allJob.status === "queued" || allJob.status === "running") && (
+              <>
+                <div className="w-full bg-slate-200 rounded-full h-1.5">
+                  <div
+                    className="bg-brand-600 h-1.5 rounded-full transition-all"
+                    style={{ width: allJob.total > 0 ? `${(allJob.completed / allJob.total) * 100}%` : "5%" }}
+                  />
+                </div>
+                <p className="text-xs text-slate-600">
+                  {a.generateAllRunning(allJob.completed, allJob.total, allJob.current_topic)}
+                </p>
+              </>
+            )}
+            {allJob.status === "done" && (
+              <p className="text-xs text-green-700 font-medium">{allDoneSummary}</p>
+            )}
+            {allJob.status === "error" && (
+              <p className="text-xs text-red-600">{a.generateAllError} {allJob.error}</p>
+            )}
+          </div>
+        )}
+      </div>
+
       {error && (
         <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
       )}
@@ -357,7 +688,6 @@ function GenerateTab() {
           {topics.map((topic) => {
             const rq = topic.root_question;
             const isGenerating = generatingId === topic.topic_id;
-            // Show localized topic name
             const topicName =
               lang === "he" && topic.name_he ? topic.name_he
               : lang === "ru" && topic.name_ru ? topic.name_ru
@@ -366,8 +696,7 @@ function GenerateTab() {
               <div
                 key={topic.topic_id}
                 className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3"
-              >
-                {/* Topic header */}
+              >                {/* Topic header */}
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div className="space-y-0.5 flex-1">
                     <p className="text-sm font-semibold text-slate-800">
@@ -437,6 +766,11 @@ function GenerateTab() {
             );
           })}
         </div>
+      )}
+
+      {/* ── Manual question entry form ─────────────────────────────── */}
+      {!loading && (
+        <ManualQuestionForm topics={topics} onSaved={reload} />
       )}
     </div>
   );

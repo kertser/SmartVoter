@@ -247,6 +247,10 @@ export interface Translations {
     reviewFilterRejected: string;
     reviewRefresh: string;
     reviewApprove: string;
+    reviewApproveAll: string;
+    reviewApproveAllConfirm: (n: number) => string;
+    reviewApproveAllSuccess: (n: number) => string;
+    reviewApproveAllError: string;
     reviewEdit: string;
     reviewReject: string;
     reviewSave: string;
@@ -336,6 +340,29 @@ export interface Translations {
     generatePolicyItemCount: (n: number) => string;
     generateFollowupCount: (n: number) => string;
     generateRootStatus: (s: string) => string;
+    // Generate All
+    generateAllBtn: string;
+    generateAllForceLabel: string;
+    generateAllSkipLabel: string;
+    generateAllWorkersLabel: string;
+    generateAllRunning: (completed: number, total: number, current: string | null) => string;
+    generateAllDone: (created: number, updated: number, skipped: number, errors: number) => string;
+    generateAllError: string;
+    // Manual question entry
+    manualEntryHeading: string;
+    manualEntrySubtext: string;
+    manualEntryTopicLabel: string;
+    manualEntryIsRoot: string;
+    manualEntryEnLabel: string;
+    manualEntryHeLabel: string;
+    manualEntryRuLabel: string;
+    manualEntryContextLabel: string;
+    manualEntrySubmitBtn: string;
+    manualEntrySubmitting: string;
+    manualEntrySuccess: (action: string) => string;
+    manualEntryEnPlaceholder: string;
+    manualEntryHePlaceholder: string;
+    manualEntryRuPlaceholder: string;
     // Backup / Restore tab
     tabBackup: string;
     backupHeading: string;
