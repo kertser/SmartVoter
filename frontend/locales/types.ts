@@ -240,6 +240,16 @@ export interface Translations {
     ingestPollBtn: string;
     ingestResultVotes: (inserted: number, updated: number, skipped: number) => string;
     ingestResultBills: (inserted: number, skipped: number) => string;
+    ingestResultFactions: (inserted: number, updated: number) => string;
+    ingestResultPersons: (inserted: number, skipped: number) => string;
+    ingestResultVoteResults: (inserted: number, skipped: number) => string;
+    ingestResultPolicyItems: (created: number, skipped: number) => string;
+    ingestResultPartyPositions: (created: number, updated: number) => string;
+    ingestResultQuestions: (created: number, skipped: number) => string;
+    ingestResultLineage: (edges: number) => string;
+    ingestResultVolatility: (candidates: number, parties: number) => string;
+    ingestStepError: (step: string, msg: string) => string;
+    ingestKnesset25Warning: string;
   };
 
   simulation: {

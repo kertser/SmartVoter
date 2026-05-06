@@ -522,15 +522,43 @@ export async function getBills(): Promise<BillDetail[]> {
 
 // ── Admin Knesset Ingestion (Phase 6) ─────────────────────────────────────────
 
+export interface IngestionStepResult {
+  inserted?: number;
+  updated?: number;
+  skipped?: number;
+  created?: number;
+  edges_proposed?: number;
+  candidates_evaluated?: number;
+  positions_created?: number;
+  positions_updated?: number;
+  skipped_no_evidence?: number;
+  candidates_updated?: number;
+  parties_updated?: number;
+  processed?: number;
+  errors?: number;
+  error?: string;
+  [key: string]: number | string | undefined;
+}
+
 export interface IngestionJobStatus {
   job_id: string;
   status: "queued" | "running" | "done" | "error";
   knesset_number?: number;
   limit?: number;
   no_llm?: boolean;
-  votes?: { inserted: number; updated: number; skipped: number };
-  bills?: { inserted: number; skipped: number };
+  // per-step results (set once each step completes)
+  factions?: IngestionStepResult;
+  votes?: IngestionStepResult;
+  bills?: IngestionStepResult;
+  persons?: IngestionStepResult;
+  vote_results?: IngestionStepResult;
+  policy_items?: IngestionStepResult;
+  party_positions?: IngestionStepResult;
+  questions?: IngestionStepResult;
+  lineage?: IngestionStepResult;
+  volatility?: IngestionStepResult;
   error?: string;
+  results?: Record<string, IngestionStepResult>;
 }
 
 export async function adminTriggerIngestion(params: {

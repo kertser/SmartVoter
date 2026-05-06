@@ -2,7 +2,18 @@ from abc import ABC, abstractmethod
 
 
 class LLMProvider(ABC):
-    """Abstract interface for all LLM providers. Every method returns a validated dict."""
+    """Abstract interface for all LLM providers. Every method returns a validated dict.
+
+    Every concrete subclass MUST define both class-level attributes:
+        provider: str   — e.g. "openai", "mock", "fallback"
+        model:    str   — e.g. "gpt-4o-mini", "mock-v1"
+
+    They are declared here with empty defaults so that AuditedLLMService can always
+    read them without an AttributeError, even if a subclass omits them.
+    """
+
+    provider: str = ""   # overridden by each concrete provider
+    model: str = ""      # overridden by each concrete provider
 
     @abstractmethod
     def summarize_bill_or_vote(self, input_data: dict) -> dict:

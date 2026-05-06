@@ -269,6 +269,16 @@ const en: Translations = {
     ingestPollBtn: "↻ Check status",
     ingestResultVotes: (i, u, s) => `Votes: ${i} inserted, ${u} updated, ${s} skipped`,
     ingestResultBills: (i, s) => `Bills: ${i} inserted, ${s} skipped`,
+    ingestResultFactions: (i, u) => `Factions: ${i} inserted, ${u} updated`,
+    ingestResultPersons: (i, s) => `Persons: ${i} inserted, ${s} skipped`,
+    ingestResultVoteResults: (i, s) => `Vote results: ${i} inserted, ${s} skipped`,
+    ingestResultPolicyItems: (c, s) => `Policy items: ${c} created, ${s} skipped`,
+    ingestResultPartyPositions: (c, u) => `Party positions: ${c} created, ${u} updated`,
+    ingestResultQuestions: (c, s) => `Questions: ${c} created, ${s} skipped`,
+    ingestResultLineage: (e) => `Lineage edges proposed: ${e}`,
+    ingestResultVolatility: (c, p) => `Volatility updated — ${c} candidates, ${p} parties`,
+    ingestStepError: (step, msg) => `${step} failed: ${msg}`,
+    ingestKnesset25Warning: "⚠️ Knesset 25+ vote data is not yet available in the official Votes.svc OData API. Bills from ParliamentInfo.svc are available for all Knessets. Use the probe endpoint to check availability before importing votes.",
   },
 
   simulation: {

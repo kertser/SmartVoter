@@ -23,8 +23,10 @@ class FallbackLLMProvider(LLMProvider):
     """
 
     provider = "fallback"
+    model = "fallback"  # required by AuditedLLMService / LlmRun row
 
     def __init__(self, openai: OpenAIProvider, max_retries: int = 2):
+        self.model = f"fallback({openai.model})"  # more descriptive at runtime
         self._openai = openai
         self._mock = MockLLMProvider()
         self._max_retries = max_retries

@@ -12,7 +12,7 @@
  * Requires admin password (X-Admin-Password header, configured in backend config.py).
  */
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   adminGetReviewItems,
   adminApprove,
@@ -372,6 +372,33 @@ function GenerateTab() {
 
 // ── Ingestion Tab ─────────────────────────────────────────────────────────────
 
+/** Show detailed results for all steps that have completed. */
+function JobStepDetails({ job, a }: {
+  job: IngestionJobStatus;
+  a: ReturnType<typeof useT>["admin"];
+}) {
+  const hasAny =
+    job.factions || job.votes || job.bills || job.persons || job.vote_results ||
+    job.policy_items || job.party_positions || job.questions || job.lineage ||
+    job.volatility || job.error;
+  if (!hasAny) return null;
+  return (
+    <div className="space-y-1 pt-2 mt-2 border-t border-current/10">
+      {job.factions      && <p className="text-xs">✓ {a.ingestResultFactions(job.factions.inserted ?? 0, job.factions.updated ?? 0)}</p>}
+      {job.votes         && <p className="text-xs">✓ {a.ingestResultVotes(job.votes.inserted ?? 0, job.votes.updated ?? 0, job.votes.skipped ?? 0)}</p>}
+      {job.bills         && <p className="text-xs">✓ {a.ingestResultBills(job.bills.inserted ?? 0, job.bills.skipped ?? 0)}</p>}
+      {job.persons       && <p className="text-xs">✓ {a.ingestResultPersons(job.persons.inserted ?? 0, job.persons.skipped ?? 0)}</p>}
+      {job.vote_results  && <p className="text-xs">✓ {a.ingestResultVoteResults(job.vote_results.inserted ?? 0, job.vote_results.skipped ?? 0)}</p>}
+      {job.policy_items  && <p className="text-xs">✓ {a.ingestResultPolicyItems(job.policy_items.created ?? 0, job.policy_items.skipped ?? 0)}</p>}
+      {job.party_positions && <p className="text-xs">✓ {a.ingestResultPartyPositions(job.party_positions.positions_created ?? 0, job.party_positions.positions_updated ?? 0)}</p>}
+      {job.questions     && <p className="text-xs">✓ {a.ingestResultQuestions(job.questions.created ?? 0, job.questions.skipped ?? 0)}</p>}
+      {job.lineage       && <p className="text-xs">✓ {a.ingestResultLineage(job.lineage.edges_proposed ?? 0)}</p>}
+      {job.volatility    && <p className="text-xs">✓ {a.ingestResultVolatility(job.volatility.candidates_updated ?? 0, job.volatility.parties_updated ?? 0)}</p>}
+      {job.error         && <p className="text-xs text-red-600 font-medium">{job.error}</p>}
+    </div>
+  );
+}
+
 function IngestionTab() {
   const a = useT().admin;
   const [knessetNum, setKnessetNum] = useState(25);
@@ -383,46 +410,63 @@ function IngestionTab() {
   const [activeJob, setActiveJob] = useState<IngestionJobStatus | null>(null);
   const [jobs, setJobs] = useState<IngestionJobStatus[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
-  const [pollInterval, setPollInterval] = useState<ReturnType<typeof setInterval> | null>(null);
+  // Store the interval ID in a ref so polling callbacks always see the latest
+  // value without creating circular useCallback dependencies.
+  const ivRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     adminListIngestionJobs().then(setJobs).finally(() => setLoadingJobs(false));
   }, []);
 
   const stopPolling = useCallback(() => {
-    if (pollInterval) { clearInterval(pollInterval); setPollInterval(null); }
-  }, [pollInterval]);
+    if (ivRef.current) { clearInterval(ivRef.current); ivRef.current = null; }
+  }, []);
 
   const startPolling = useCallback((jobId: string) => {
     stopPolling();
-    const iv = setInterval(async () => {
+    ivRef.current = setInterval(async () => {
       try {
         const status = await adminGetIngestionStatus(jobId);
         setActiveJob(status);
         if (status.status === "done" || status.status === "error") {
-          clearInterval(iv);
-          setPollInterval(null);
+          stopPolling();
           adminListIngestionJobs().then(setJobs);
         }
-      } catch { clearInterval(iv); setPollInterval(null); }
+      } catch {
+        // Polling failed (e.g. network error or 404 from a different Docker worker).
+        // Reset to error so the Start button re-enables.
+        stopPolling();
+        setActiveJob((prev) =>
+          prev ? { ...prev, status: "error", error: "Polling failed — job status unavailable." } : prev
+        );
+      }
     }, 2000);
-    setPollInterval(iv);
   }, [stopPolling]);
 
-  useEffect(() => () => { if (pollInterval) clearInterval(pollInterval); }, [pollInterval]);
+  useEffect(() => () => stopPolling(), [stopPolling]);
 
   const handleStart = async () => {
     setSubmitting(true);
     setActiveJob(null);
     try {
-      const res = await adminTriggerIngestion({ knesset_number: knessetNum, limit, no_llm: noLlm, votes_only: votesOnly, bills_only: billsOnly });
-      const job: IngestionJobStatus = { job_id: res.job_id, status: "queued", knesset_number: knessetNum, limit, no_llm: noLlm };
+      const res = await adminTriggerIngestion({
+        knesset_number: knessetNum, limit,
+        no_llm: noLlm, votes_only: votesOnly, bills_only: billsOnly,
+      });
+      const job: IngestionJobStatus = {
+        job_id: res.job_id, status: "queued",
+        knesset_number: knessetNum, limit, no_llm: noLlm,
+      };
       setActiveJob(job);
       startPolling(res.job_id);
+    } catch (err) {
+      setActiveJob({ job_id: "—", status: "error", error: String(err) });
     } finally {
       setSubmitting(false);
     }
   };
+
+  const isRunning = activeJob?.status === "running" || activeJob?.status === "queued";
 
   const statusColors: Record<string, string> = {
     queued: "bg-slate-100 text-slate-600",
@@ -462,11 +506,19 @@ function IngestionTab() {
           />
         </div>
       </div>
+
+      {/* K25+ warning: official Votes.svc does not yet have data for Knesset 25+ */}
+      {knessetNum >= 25 && (
+        <p className="text-xs rounded-lg bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 leading-relaxed">
+          {a.ingestKnesset25Warning}
+        </p>
+      )}
+
       <div className="flex flex-wrap gap-4 text-sm">
         {([
-          [noLlm, setNoLlm, a.ingestNoLlmLabel],
-          [votesOnly, setVotesOnly, a.ingestVotesOnlyLabel],
-          [billsOnly, setBillsOnly, a.ingestBillsOnlyLabel],
+          [noLlm,      setNoLlm,      a.ingestNoLlmLabel],
+          [votesOnly,  setVotesOnly,  a.ingestVotesOnlyLabel],
+          [billsOnly,  setBillsOnly,  a.ingestBillsOnlyLabel],
         ] as [boolean, (v: boolean) => void, string][]).map(([val, setter, label], i) => (
           <label key={i} className="flex items-center gap-2 cursor-pointer text-slate-600">
             <input type="checkbox" checked={val} onChange={(e) => setter(e.target.checked)} className="accent-brand-600" />
@@ -477,24 +529,30 @@ function IngestionTab() {
 
       <button
         onClick={handleStart}
-        disabled={submitting || activeJob?.status === "running" || activeJob?.status === "queued"}
+        disabled={submitting || isRunning}
         className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {submitting ? a.ingestRunning : a.ingestRunBtn}
       </button>
 
       {activeJob && (
-        <div className={`rounded-xl border p-4 space-y-2 text-sm ${statusColors[activeJob.status] ?? "bg-slate-50"}`}>
-          <div className="flex items-center gap-3">
+        <div className={`rounded-xl border p-4 space-y-1 text-sm ${statusColors[activeJob.status] ?? "bg-slate-50"}`}>
+          <div className="flex items-center gap-3 flex-wrap">
             <span className="font-medium">{statusLabel(activeJob.status)}</span>
+            {isRunning && (
+              <span className="inline-block h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" aria-hidden="true" />
+            )}
             <span className="text-xs opacity-60">{a.ingestJobId}: {activeJob.job_id}</span>
-            {(activeJob.status === "done" || activeJob.status === "error") && (
-              <button onClick={() => adminGetIngestionStatus(activeJob.job_id).then(setActiveJob)} className="text-xs underline opacity-70 hover:opacity-100">{a.ingestPollBtn}</button>
+            {!isRunning && (
+              <button
+                onClick={() => adminGetIngestionStatus(activeJob.job_id).then(setActiveJob).catch(() => {})}
+                className="text-xs underline opacity-70 hover:opacity-100"
+              >
+                {a.ingestPollBtn}
+              </button>
             )}
           </div>
-          {activeJob.votes && <p className="text-xs">{a.ingestResultVotes(activeJob.votes.inserted, activeJob.votes.updated, activeJob.votes.skipped)}</p>}
-          {activeJob.bills && <p className="text-xs">{a.ingestResultBills(activeJob.bills.inserted, activeJob.bills.skipped)}</p>}
-          {activeJob.error && <p className="text-xs text-red-600">{activeJob.error}</p>}
+          <JobStepDetails job={activeJob} a={a} />
         </div>
       )}
 
@@ -503,12 +561,13 @@ function IngestionTab() {
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Previous jobs (this session)</p>
           <div className="space-y-1">
             {jobs.slice().reverse().map((job) => (
-              <div key={job.job_id} className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs text-slate-600">
-                <span className={`rounded-full px-2 py-0.5 ${statusColors[job.status]}`}>{statusLabel(job.status)}</span>
-                <span>Knesset {job.knesset_number} · limit {job.limit}</span>
-                <span className="text-slate-400">{job.job_id}</span>
-                {job.votes && <span className="text-green-600">{a.ingestResultVotes(job.votes.inserted, job.votes.updated, job.votes.skipped)}</span>}
-                {job.bills && <span className="text-blue-600">{a.ingestResultBills(job.bills.inserted, job.bills.skipped)}</span>}
+              <div key={job.job_id} className="rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs text-slate-600">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className={`rounded-full px-2 py-0.5 ${statusColors[job.status] ?? ""}`}>{statusLabel(job.status)}</span>
+                  <span>Knesset {job.knesset_number} · limit {job.limit}</span>
+                  <span className="text-slate-400">{job.job_id}</span>
+                </div>
+                <JobStepDetails job={job} a={a} />
               </div>
             ))}
           </div>
