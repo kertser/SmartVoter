@@ -73,7 +73,8 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
         party_name = brand.canonical_name if brand else party.official_name
         names = brand.names_json or {} if brand else {}
         name_he = names.get("he") or party_name
-        name_ru = names.get("ru") or party_name
+        # For Russian, prefer "he" over the English canonical fallback
+        name_ru = names.get("ru") or names.get("he") or party_name
 
         # Load party positions
         positions_rows = (

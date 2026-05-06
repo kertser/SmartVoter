@@ -233,6 +233,8 @@ export interface Translations {
     voteImportanceHigh: string;
     voteImportanceMedium: string;
     voteImportanceLow: string;
+    voteHideProcedural: string;
+    voteShowProcedural: string;
     // Bill enhancements
     billStatusPassed: string;
     billStatusFailed: string;

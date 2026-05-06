@@ -52,8 +52,8 @@ def get_lineage(db: Session = Depends(get_db)) -> dict:
         nodes.append({
             "id": str(party.id),
             "name": brand.canonical_name if brand else party.official_name,
-            "name_he": names.get("he"),
-            "name_ru": names.get("ru"),
+            "name_he": names.get("he") or party.official_name,
+            "name_ru": names.get("ru") or names.get("he") or party.official_name,
             "official_name": party.official_name,
             "election_cycle": party.election_cycle,
             "knesset_number": party.knesset_number,

@@ -173,7 +173,7 @@ const ru: Translations = {
     votesHeading: "\u0413\u043e\u043b\u043e\u0441\u043e\u0432\u0430\u043d\u0438\u044f",
     votesDesc: "\u041f\u043b\u0435\u043d\u0430\u0440\u043d\u044b\u0435 \u0433\u043e\u043b\u043e\u0441\u043e\u0432\u0430\u043d\u0438\u044f, \u043e\u0442\u0441\u043b\u0435\u0436\u0438\u0432\u0430\u0435\u043c\u044b\u0435 SmartVoter.",
     searchVotes: "\u041f\u043e\u0438\u0441\u043a \u0433\u043e\u043b\u043e\u0441\u043e\u0432\u0430\u043d\u0438\u0439\u2026",
-    allKnessets: "\u0412\u0441\u0435 \u043a\u043e\u043d\u0432\u043e\u043a\u0430\u0446\u0438\u0438",
+    allKnessets: "Все каденции",
     knessetN: (n) => `\u041a\u043d\u0435\u0441\u0441\u0435\u0442 ${n}`,
     importanceLabel: (pct) => `\u0432\u0430\u0436\u043d\u043e\u0441\u0442\u044c ${pct}%`,
 
@@ -196,6 +196,8 @@ const ru: Translations = {
     voteImportanceHigh: "Высокая важность",
     voteImportanceMedium: "Средняя важность",
     voteImportanceLow: "Низкая важность",
+    voteHideProcedural: "Только содержательные",
+    voteShowProcedural: "Все голосования",
     billStatusPassed: "Принят",
     billStatusFailed: "Отклонён",
     billStatusPending: "На рассмотрении",

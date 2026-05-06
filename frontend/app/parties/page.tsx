@@ -6,7 +6,7 @@ import { getParties, PartyListItem } from "@/lib/api";
 import { useLang, useT } from "@/lib/i18n";
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  active:    { bg: "bg-emerald-50",  text: "text-emerald-700", dot: "bg-emerald-400" },
+  active:    { bg: "bg-emerald-50",  text: "text-emerald-700", dot: "bg-emerald-500" },
   dissolved: { bg: "bg-slate-100",   text: "text-slate-500",   dot: "bg-slate-300" },
   merged:    { bg: "bg-amber-50",    text: "text-amber-700",   dot: "bg-amber-400" },
   split:     { bg: "bg-orange-50",   text: "text-orange-700",  dot: "bg-orange-400" },
@@ -14,6 +14,18 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string }> =
 };
 
 type FilterMode = "active" | "all";
+
+/** Status label translation */
+function statusLabel(status: string, lang: string): string {
+  const map: Record<string, Record<string, string>> = {
+    active:    { en: "Active",    he: "פעיל",     ru: "Активна" },
+    dissolved: { en: "Dissolved", he: "מפורקת",   ru: "Ликвидирована" },
+    merged:    { en: "Merged",    he: "מאוחדת",   ru: "Объединилась" },
+    split:     { en: "Split",     he: "נפצלה",    ru: "Разделилась" },
+    renamed:   { en: "Renamed",   he: "שונתה שם", ru: "Переименована" },
+  };
+  return map[status]?.[lang] ?? map[status]?.["en"] ?? status;
+}
 
 export default function PartiesPage() {
   const { lang } = useLang();
@@ -34,19 +46,36 @@ export default function PartiesPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const partyName = (p: PartyListItem) =>
-    lang === "he" ? (p.name_he ?? p.name) :
-    lang === "ru" ? (p.name_ru ?? p.name) :
-    p.name;
+  /**
+   * Primary display name: always Hebrew (since these are Israeli parties).
+   * Hebrew is the authoritative name for Israeli political parties.
+   */
+  const primaryName = (p: PartyListItem) => p.name_he || p.official_name || p.name;
+
+  /**
+   * Secondary name shown in a smaller chip below:
+   * - In Russian: show Russian transliteration (often same as English)
+   * - In English: show the English/official name
+   * - In Hebrew: nothing (already showing Hebrew)
+   * Only show if different from primary.
+   */
+  const secondaryName = (p: PartyListItem): string | null => {
+    if (lang === "he") return null;
+    const sec =
+      lang === "ru" ? (p.name_ru ?? p.name) :
+      (p.name_ru ? null : p.name); // only show English if no Russian
+    if (!sec || sec === primaryName(p)) return null;
+    return sec;
+  };
 
   const filtered = parties.filter((p) => {
     if (filter === "active" && p.status !== "active") return false;
     if (search) {
       const q = search.toLowerCase();
       return (
+        primaryName(p).toLowerCase().includes(q) ||
         p.name.toLowerCase().includes(q) ||
         (p.name_he ?? "").toLowerCase().includes(q) ||
-        (p.name_ru ?? "").toLowerCase().includes(q) ||
         (p.official_name ?? "").toLowerCase().includes(q)
       );
     }
@@ -55,18 +84,10 @@ export default function PartiesPage() {
 
   const activeCount = parties.filter((p) => p.status === "active").length;
 
-  const statusLabel = (status: string) => {
-    const map: Record<string, Record<string, string>> = {
-      active:    { en: "Active",    he: "פעיל",     ru: "Активна" },
-      dissolved: { en: "Dissolved", he: "מפורקת",   ru: "Ликвидирована" },
-      merged:    { en: "Merged",    he: "מאוחדת",   ru: "Объединилась" },
-      split:     { en: "Split",     he: "נפצלה",    ru: "Разделилась" },
-      renamed:   { en: "Renamed",   he: "שונתה שם", ru: "Переименована" },
-    };
-    return map[status]?.[lang] ?? map[status]?.["en"] ?? status;
-  };
-
-  const searchPlaceholder = lang === "he" ? "חיפוש מפלגה…" : lang === "ru" ? "Поиск партии…" : "Search party…";
+  const searchPlaceholder =
+    lang === "he" ? "חיפוש מפלגה…" :
+    lang === "ru" ? "Поиск партии…" :
+    "Search party…";
 
   return (
     <div className="space-y-6 pb-16">
@@ -80,9 +101,9 @@ export default function PartiesPage() {
         </p>
       </div>
 
-      {/* Filter + Search */}
+      {/* Controls */}
       <div className="flex flex-wrap gap-3 items-center">
-        <div className="flex gap-1 text-sm bg-slate-100 rounded-full p-1">
+        <div className="flex gap-1 bg-slate-100 rounded-full p-1">
           {(["active", "all"] as FilterMode[]).map((f) => (
             <button
               key={f}
@@ -117,46 +138,53 @@ export default function PartiesPage() {
       {error && <p className="text-red-600">{error}</p>}
 
       {/* Party grid */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((party) => {
           const sc = STATUS_COLORS[party.status] ?? STATUS_COLORS.dissolved;
-          const mainName = partyName(party);
-          const showHeName = lang !== "he" && party.name_he && party.name_he !== mainName;
+          const main = primaryName(party);
+          const sub = secondaryName(party);
+
           return (
             <Link
               key={party.id}
               href={`/parties/${party.id}`}
-              className="group block rounded-xl border border-slate-200 bg-white p-4 hover:border-brand-300 hover:shadow-md transition-all"
+              className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 hover:border-brand-300 hover:shadow-md transition-all"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0 space-y-1.5">
-                  <div className="flex items-start gap-2">
-                    <div className={`shrink-0 mt-1.5 h-2 w-2 rounded-full ${sc.dot}`} />
-                    <p className="font-semibold text-slate-900 leading-snug group-hover:text-brand-700 transition-colors">
-                      {mainName}
-                    </p>
-                  </div>
-                  {showHeName && (
-                    <p className="text-sm text-slate-400 truncate ps-4">{party.name_he}</p>
+              {/* Status dot */}
+              <div className={`shrink-0 h-2.5 w-2.5 rounded-full ${sc.dot}`} />
+
+              {/* Names — left aligned, flexible */}
+              <div className="flex-1 min-w-0">
+                <p
+                  className="font-semibold text-slate-900 group-hover:text-brand-700 transition-colors truncate leading-tight max-w-[16rem]"
+                  dir="rtl"
+                  title={main}
+                >
+                  {main}
+                </p>
+                {sub && (
+                  <p className="text-xs text-slate-400 truncate leading-tight mt-0.5">{sub}</p>
+                )}
+                {/* Knesset + cycle meta */}
+                <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-400 flex-wrap">
+                  {party.knesset_number && (
+                    <span className="font-medium text-slate-500">
+                      {lang === "ru" ? `Кнессет ${party.knesset_number}` :
+                       lang === "he" ? `כנסת ${party.knesset_number}` :
+                       `Knesset ${party.knesset_number}`}
+                    </span>
                   )}
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-400 ps-4">
-                    {party.knesset_number && (
-                      <span className="font-medium text-slate-500">
-                        {lang === "he" ? `כנסת ${party.knesset_number}` :
-                         lang === "ru" ? `Кнессет ${party.knesset_number}` :
-                         `Knesset ${party.knesset_number}`}
-                      </span>
-                    )}
-                    {party.knesset_number && party.election_cycle && (
-                      <span className="text-slate-300">·</span>
-                    )}
-                    {party.election_cycle && <span>{party.election_cycle}</span>}
-                  </div>
+                  {party.knesset_number && party.election_cycle && (
+                    <span className="text-slate-200">·</span>
+                  )}
+                  {party.election_cycle && <span>{party.election_cycle}</span>}
                 </div>
-                <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${sc.bg} ${sc.text}`}>
-                  {statusLabel(party.status)}
-                </span>
               </div>
+
+              {/* Status badge */}
+              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${sc.bg} ${sc.text}`}>
+                {statusLabel(party.status, lang)}
+              </span>
             </Link>
           );
         })}
@@ -178,4 +206,3 @@ export default function PartiesPage() {
     </div>
   );
 }
-

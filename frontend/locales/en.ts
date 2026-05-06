@@ -256,6 +256,8 @@ const en: Translations = {
     voteImportanceHigh: "High importance",
     voteImportanceMedium: "Medium importance",
     voteImportanceLow: "Low importance",
+    voteHideProcedural: "Substantive only",
+    voteShowProcedural: "All votes",
     // Bill enhancements
     billStatusPassed: "Passed",
     billStatusFailed: "Failed",

@@ -36,10 +36,18 @@ router = APIRouter(tags=["public-browser"])
 
 def _brand_names(brand: PoliticalBrand | None, official_name: str) -> dict:
     names = brand.names_json or {} if brand else {}
+    # Strip trailing/leading whitespace from all name strings (Knesset API data often has it)
+    def _s(v: str | None) -> str | None:
+        return v.strip() if v else None
+    he = _s(names.get("he")) or _s(official_name)
+    # For Russian, prefer the explicit "ru" translation, then fall back to Hebrew
+    # (not official_name, which may be an English transliteration like "HaAvoda")
+    ru = _s(names.get("ru")) or _s(names.get("he")) or _s(official_name)
+    canonical = _s(brand.canonical_name if brand else official_name)
     return {
-        "name": brand.canonical_name if brand else official_name,
-        "name_he": names.get("he") or official_name,
-        "name_ru": names.get("ru") or official_name,
+        "name": canonical,
+        "name_he": he,
+        "name_ru": ru,
     }
 
 
@@ -60,12 +68,103 @@ def _party_dict(party: PartyInstance, brand: PoliticalBrand | None) -> dict:
 # ── Endpoints ──────────────────────────────────────────────────────────────────
 
 @router.get("/parties")
-def list_parties(db: Session = Depends(get_db)) -> list[dict]:
-    """Return all party instances with brand names."""
+def list_parties(
+    group_by_brand: bool = True,
+    db: Session = Depends(get_db),
+) -> list[dict]:
+    """
+    Return party instances with brand names.
+
+    group_by_brand=true (default): one entry per political identity.
+    Deduplication is two-pass:
+      1. By political_brand_id (standard brand linking)
+      2. By normalised Hebrew name + knesset_number (catches seed vs. ingested duplicates
+         that were created with different brand IDs for the same real-world party)
+    When duplicates exist, prefer the instance whose official_name is Hebrew-script.
+    """
+    import unicodedata
+
+    def _norm_he(s: str | None) -> str:
+        """Normalise a Hebrew string for comparison: strip, lowercase, collapse spaces."""
+        if not s:
+            return ""
+        return unicodedata.normalize("NFC", s).strip().lower()
+
+    def _is_hebrew(s: str | None) -> bool:
+        """Return True if most characters in s are Hebrew script."""
+        if not s:
+            return False
+        he_chars = sum(1 for c in s if "\u05d0" <= c <= "\u05ea")
+        return he_chars > len(s) * 0.3
+
     parties = db.query(PartyInstance).order_by(PartyInstance.knesset_number.desc()).all()
-    result = []
+    brand_cache: dict = {}
+
+    if not group_by_brand:
+        result = []
+        for p in parties:
+            brand = brand_cache.setdefault(
+                str(p.political_brand_id),
+                db.query(PoliticalBrand).filter(PoliticalBrand.id == p.political_brand_id).first(),
+            )
+            result.append(_party_dict(p, brand))
+        return result
+
+    # Pass 1: deduplicate by political_brand_id (keep instance with highest knesset_number)
+    by_brand: dict[str, PartyInstance] = {}
     for p in parties:
-        brand = db.query(PoliticalBrand).filter(PoliticalBrand.id == p.political_brand_id).first()
+        key = str(p.political_brand_id) if p.political_brand_id else str(p.id)
+        if key not in by_brand:
+            by_brand[key] = p
+        else:
+            # Same brand: keep if Hebrew official_name beats English, or higher knesset_number
+            existing = by_brand[key]
+            existing_he = _is_hebrew(existing.official_name)
+            this_he = _is_hebrew(p.official_name)
+            existing_kn = existing.knesset_number or 0
+            this_kn = p.knesset_number or 0
+            if (not existing_he and this_he) or (this_kn > existing_kn):
+                by_brand[key] = p
+
+    # Pass 2: deduplicate by (normalised_he_name, knesset_number)
+    # This catches seed 'יש עתיד' vs. ingested 'יש עתיד ' (trailing space, different brand)
+    by_he_name: dict[tuple, PartyInstance] = {}
+    for p in by_brand.values():
+        brand = brand_cache.setdefault(
+            str(p.political_brand_id),
+            db.query(PoliticalBrand).filter(PoliticalBrand.id == p.political_brand_id).first(),
+        )
+        names = brand.names_json or {} if brand else {}
+        he_name = _norm_he(names.get("he") or p.official_name or "")
+        kn = p.knesset_number or 0
+        he_key = (he_name, kn)
+
+        if he_name == "":  # no Hebrew name → keep by brand key only
+            by_he_name[("__no_he__", id(p))] = p
+            continue
+
+        if he_key not in by_he_name:
+            by_he_name[he_key] = p
+        else:
+            # Prefer Hebrew official_name over English; prefer higher knesset if different
+            existing = by_he_name[he_key]
+            existing_he = _is_hebrew(existing.official_name)
+            this_he = _is_hebrew(p.official_name)
+            if not existing_he and this_he:
+                by_he_name[he_key] = p
+
+    # Sort: active first → knesset_number desc → Hebrew name asc
+    def _sort_key(p: PartyInstance):
+        brand = brand_cache.get(str(p.political_brand_id))
+        names = brand.names_json or {} if brand else {}
+        he = _norm_he(names.get("he") or p.official_name or "")
+        return (0 if p.status == "active" else 1, -(p.knesset_number or 0), he)
+
+    parties_sorted = sorted(by_he_name.values(), key=_sort_key)
+
+    result = []
+    for p in parties_sorted:
+        brand = brand_cache.get(str(p.political_brand_id))
         result.append(_party_dict(p, brand))
     return result
 
@@ -264,14 +363,66 @@ def get_bill(bill_id: str, db: Session = Depends(get_db)) -> dict:
 @router.get("/votes")
 def list_votes(
     knesset_number: int | None = None,
-    limit: int = 50,
+    hide_procedural: bool = False,
+    limit: int = 200,
     db: Session = Depends(get_db),
 ) -> list[dict]:
-    """List votes, optionally filtered by Knesset number."""
+    """
+    List votes, optionally filtered by Knesset number.
+
+    hide_procedural=true excludes votes whose titles are purely procedural
+    (הסתייגות, committee transfers, etc.) with no substantive information.
+    """
+    # Titles that are 100 % procedural / uninformative on their own.
+    # Without a bill name in the title these convey no policy signal.
+    PROCEDURAL_EXACT = {
+        "הסתייגות",
+        "הצבעה",
+        "הצעת ועדה",
+        "הצעת ועדת הכנסת",
+        # Bill readings — informative only if the bill name is embedded in the title.
+        # When stored as a bare word they carry no additional meaning.
+        "קריאה שנייה",
+        "קריאה ראשונה ושנייה",
+        "קריאה ראשונה",
+        "אישור החוק",
+        "הצעת ועדת הכנסת לסדר היום",
+        "הודעת הממשלה",
+        "הצעה לסדר היום",
+        "בקשה לסדר היום",
+        "הצעת הוועדה המסדרת",   # parliamentary rules / agenda-ordering committee — procedural
+    }
+    # Title prefixes that indicate procedural votes
+    PROCEDURAL_PREFIXES = (
+        "להעביר את הצעת החוק לוועדה",
+        "להעביר את הנושא לוועדה",
+        "העברת הנושא לוועדה",
+        "לכלול את הנושא בסדר היום",
+        "העברת הצעת החוק לוועדה",
+        "להחזיר את הצעת החוק",
+        "קריאה שנייה ושלישית",
+    )
+
     q = db.query(Vote)
     if knesset_number:
         q = q.filter(Vote.knesset_number == knesset_number)
+
+    if hide_procedural:
+        from sqlalchemy import and_, not_, or_
+        exact_conds = [Vote.title_he == t for t in PROCEDURAL_EXACT]
+        prefix_conds = [Vote.title_he.like(f"{p}%") for p in PROCEDURAL_PREFIXES]
+        q = q.filter(not_(or_(*exact_conds, *prefix_conds)))
+
     votes = q.order_by(Vote.date.desc()).limit(limit).all()
+
+    def _is_procedural(title_he: str | None) -> bool:
+        if not title_he:
+            return False
+        t = title_he.strip()
+        if t in PROCEDURAL_EXACT:
+            return True
+        return any(t.startswith(p) for p in PROCEDURAL_PREFIXES)
+
     return [
         {
             "id": str(v.id),
@@ -281,6 +432,7 @@ def list_votes(
             "date": v.date.isoformat() if v.date else None,
             "knesset_number": v.knesset_number,
             "importance_score": v.importance_score,
+            "is_procedural_estimate": v.is_procedural_estimate or _is_procedural(v.title_he),
             "source_url": v.source_url,
         }
         for v in votes
@@ -335,20 +487,37 @@ def list_persons(
 
     persons = q.limit(limit).all()
 
-    # Deduplicate by external_id (if set) or by normalised name
-    seen_names: set = set()
-    seen_ext: set = set()
+    # Filter out obviously mock/seed persons:
+    # Real Israeli MKs always have a proper Hebrew name.
+    # Seed mock persons use patterns like "MK Changer A" / "MK X".
+    import re as _re
+    import unicodedata as _ud
+    _mock_pattern = _re.compile(r'^MK\s+[A-Z](\s|$)', _re.IGNORECASE)
+    persons = [p for p in persons if not (p.name_en and _mock_pattern.match(p.name_en))]
+
+    def _norm(s: str | None) -> str:
+        if not s:
+            return ""
+        return _ud.normalize("NFC", s).strip().lower()
+
+    # Deduplicate:
+    # Primary key: Hebrew name (catches seed "בנימין נתניהו" = ingested "בנימין נתניהו")
+    # Fallback: English name (when no Hebrew name exists)
+    # The old key combined both → missed duplicates where one had name_en and other didn't.
+    seen_he: set = set()   # by normalised Hebrew name
+    seen_en: set = set()   # by normalised English name (only used when name_he is absent)
     unique_persons = []
     for p in persons:
-        if p.external_ids_json:
-            ext = str(p.external_ids_json)
-            if ext in seen_ext:
+        he = _norm(p.name_he)
+        en = _norm(p.name_en)
+        if he:
+            if he in seen_he:
                 continue
-            seen_ext.add(ext)
-        name_key = (p.name_en or "").lower().strip() + "|" + (p.name_he or "").lower().strip()
-        if name_key and name_key in seen_names:
-            continue
-        seen_names.add(name_key)
+            seen_he.add(he)
+        elif en:
+            if en in seen_en:
+                continue
+            seen_en.add(en)
         unique_persons.append(p)
 
     # Sort by Hebrew name, fallback English

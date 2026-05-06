@@ -147,6 +147,44 @@ def seed_simulation_only() -> None:
         db.close()
 
 
+def patch_brand_names() -> None:
+    """
+    Ensure all seed political brands have up-to-date names_json (he + ru + en).
+    Safe to run on an already-seeded DB — only updates if a key is missing or wrong.
+    Uses flag_modified so SQLAlchemy detects in-place JSON mutations correctly.
+    """
+    from sqlalchemy.orm.attributes import flag_modified
+
+    db = SessionLocal()
+    try:
+        updated = 0
+        for b in POLITICAL_BRANDS:
+            brand = db.query(PoliticalBrand).filter(PoliticalBrand.id == b["id"]).first()
+            if not brand:
+                continue
+            seed_names = b.get("names_json") or {}
+            existing = brand.names_json or {}
+            changed = any(
+                seed_names.get(k) and existing.get(k) != seed_names[k]
+                for k in ("he", "ru", "en")
+            )
+            if changed:
+                # Replace the whole dict; flag_modified ensures SQLAlchemy persists it
+                merged = {**existing, **{k: v for k, v in seed_names.items() if v}}
+                brand.names_json = merged
+                flag_modified(brand, "names_json")
+                updated += 1
+        if updated:
+            db.commit()
+            print(f"  ✓ Patched names_json for {updated} political brands")
+    except Exception as e:
+        db.rollback()
+        print(f"patch_brand_names failed: {e}", file=sys.stderr)
+        raise
+    finally:
+        db.close()
+
+
 def seed_missing_topics() -> None:
     """
     Insert any topic from TOPICS that does not yet exist in the database (matched by slug).
@@ -301,6 +339,7 @@ def run_seed() -> None:
         if db.query(Topic).first():
             print("Database already seeded. Checking for missing topics...")
             db.close()
+            patch_brand_names()
             seed_missing_topics()
             seed_missing_policy_items()
             return

@@ -17,7 +17,7 @@ export default function PersonsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [sortMode, setSortMode] = useState<SortMode>("name");
+  const [sortMode, setSortMode] = useState<SortMode>("party");
   const [filterMode, setFilterMode] = useState<FilterMode>("current");
 
   const loadPersons = (currentOnly: boolean) => {
@@ -30,7 +30,7 @@ export default function PersonsPage() {
   };
 
   useEffect(() => {
-    loadPersons(true); // default: current members only
+    loadPersons(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -39,11 +39,12 @@ export default function PersonsPage() {
     loadPersons(mode === "current");
   };
 
-  const displayName = (p: PersonListItem) =>
-    lang === "he" ? (p.name_he || p.name_en) : p.name_en;
-
-  const altName = (p: PersonListItem) =>
-    lang === "he" ? p.name_en : p.name_he;
+  /**
+   * Primary: Hebrew name (authoritative for Israeli persons)
+   * Secondary: English name as small transliteration
+   */
+  const hebrewName = (p: PersonListItem) => p.name_he || p.name_en;
+  const englishName = (p: PersonListItem) => p.name_en;
 
   const partyName = (p: PersonListItem) =>
     lang === "he" ? (p.current_party_name_he ?? p.current_party_name) :
@@ -61,18 +62,16 @@ export default function PersonsPage() {
     }
     if (sortMode === "name") {
       list = [...list].sort((a, b) => {
-        const na = (lang === "he" ? a.name_he : a.name_en) || "";
-        const nb = (lang === "he" ? b.name_he : b.name_en) || "";
-        return na.localeCompare(nb);
+        const na = hebrewName(a) || "";
+        const nb = hebrewName(b) || "";
+        return na.localeCompare(nb, "he");
       });
     } else {
       list = [...list].sort((a, b) => {
-        const pa = partyName(a) || "ω"; // no party → sort last
+        const pa = partyName(a) || "ω";
         const pb = partyName(b) || "ω";
         if (pa === pb) {
-          const na = displayName(a) || "";
-          const nb_ = displayName(b) || "";
-          return na.localeCompare(nb_);
+          return (hebrewName(a) || "").localeCompare(hebrewName(b) || "", "he");
         }
         return pa.localeCompare(pb);
       });
@@ -110,7 +109,6 @@ export default function PersonsPage() {
 
       {/* Controls */}
       <div className="flex flex-wrap gap-3 items-center">
-        {/* Filter */}
         <div className="flex gap-1 bg-slate-100 rounded-full p-1">
           {(["current", "all"] as FilterMode[]).map((f) => (
             <button
@@ -128,9 +126,8 @@ export default function PersonsPage() {
           ))}
         </div>
 
-        {/* Sort */}
         <div className="flex gap-1 bg-slate-100 rounded-full p-1">
-          {(["name", "party"] as SortMode[]).map((s) => (
+          {(["party", "name"] as SortMode[]).map((s) => (
             <button
               key={s}
               onClick={() => setSortMode(s)}
@@ -145,7 +142,6 @@ export default function PersonsPage() {
           ))}
         </div>
 
-        {/* Search */}
         <input
           type="search"
           value={query}
@@ -165,18 +161,32 @@ export default function PersonsPage() {
 
       {/* Grouped by party */}
       {!loading && sortMode === "party" && groups && (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {Array.from(groups.entries()).map(([groupKey, members]) => (
             <div key={groupKey}>
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {groupKey || b.noCurrentParty}
-                </span>
+                {groupKey ? (
+                  <>
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
+                    <span className="text-sm font-semibold text-slate-700" dir="rtl">
+                      {groupKey}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-sm font-semibold text-slate-400 italic">{b.noCurrentParty}</span>
+                )}
                 <span className="text-xs text-slate-400">({members.length})</span>
               </div>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {members.map((person) => (
-                  <PersonCard key={person.id} person={person} displayName={displayName(person)} altName={altName(person)} partyName={partyName(person)} showParty={false} b={b} />
+                  <PersonCard
+                    key={person.id}
+                    person={person}
+                    hebrewName={hebrewName(person)}
+                    englishName={englishName(person)}
+                    showParty={false}
+                    b={b}
+                  />
                 ))}
               </div>
             </div>
@@ -186,9 +196,17 @@ export default function PersonsPage() {
 
       {/* Flat list by name */}
       {!loading && sortMode === "name" && (
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((person) => (
-            <PersonCard key={person.id} person={person} displayName={displayName(person)} altName={altName(person)} partyName={partyName(person)} showParty b={b} />
+            <PersonCard
+              key={person.id}
+              person={person}
+              hebrewName={hebrewName(person)}
+              englishName={englishName(person)}
+              showParty
+              partyDisplay={partyName(person)}
+              b={b}
+            />
           ))}
         </div>
       )}
@@ -204,7 +222,10 @@ export default function PersonsPage() {
         <p className="text-xs text-slate-400 text-center">
           {b.countOf(filtered.length, persons.length)}
           {filterMode === "current" && currentCount > 0 && (
-            <span className="ms-1 text-emerald-600">· {currentCount} {lang === "he" ? "פעילים" : lang === "ru" ? "активных" : "active"}</span>
+            <span className="ms-1 text-emerald-600">
+              · {currentCount}{" "}
+              {lang === "he" ? "פעילים" : lang === "ru" ? "активных" : "active"}
+            </span>
           )}
         </p>
       )}
@@ -214,55 +235,57 @@ export default function PersonsPage() {
 
 function PersonCard({
   person,
-  displayName,
-  altName,
-  partyName,
+  hebrewName,
+  englishName,
   showParty,
+  partyDisplay,
   b,
 }: {
   person: PersonListItem;
-  displayName: string | undefined;
-  altName: string | undefined;
-  partyName: string | undefined;
+  hebrewName: string | undefined;
+  englishName: string | undefined;
   showParty: boolean;
+  partyDisplay?: string | undefined | null;
   b: ReturnType<typeof useT>["browser"];
 }) {
   const hasParty = !!person.current_party_instance_id;
+  // Initial for avatar: take first Hebrew char if available
+  const initials = hebrewName?.[0] ?? englishName?.[0] ?? "?";
+
   return (
     <Link
       href={`/persons/${person.id}`}
-      className="group block rounded-xl border border-slate-200 bg-white p-4 hover:border-brand-300 hover:shadow-md transition-all"
+      className="group flex items-center gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 hover:border-brand-300 hover:shadow-sm transition-all"
     >
-      <div className="flex items-start gap-3">
-        {/* Avatar placeholder */}
-        <div className={`shrink-0 h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold ${
-          hasParty ? "bg-brand-100 text-brand-700" : "bg-slate-100 text-slate-400"
-        }`}>
-          {(displayName || "?")[0]?.toUpperCase()}
-        </div>
-        <div className="min-w-0 space-y-0.5">
-          <p className="font-semibold text-slate-900 leading-tight group-hover:text-brand-700 transition-colors truncate">
-            {displayName || "—"}
+      {/* Avatar */}
+      <div className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${
+        hasParty ? "bg-brand-50 text-brand-700" : "bg-slate-100 text-slate-400"
+      }`}>
+        {initials}
+      </div>
+
+      {/* Info */}
+      <div className="min-w-0 flex-1">
+        {/* Hebrew name — primary */}
+        <p
+          className="font-medium text-slate-900 group-hover:text-brand-700 transition-colors truncate text-sm leading-tight"
+          dir="rtl"
+        >
+          {hebrewName || "—"}
+        </p>
+        {/* English name — secondary, only show if has value and differs */}
+        {englishName && englishName !== hebrewName && (
+          <p className="text-xs text-slate-400 truncate leading-tight">{englishName}</p>
+        )}
+        {showParty && (
+          <p className="text-xs truncate leading-tight mt-0.5">
+            {partyDisplay ? (
+              <span className="text-slate-500" dir="rtl">{partyDisplay}</span>
+            ) : (
+              <span className="text-slate-300 italic">{b.noCurrentParty}</span>
+            )}
           </p>
-          {altName && altName !== displayName && (
-            <p className="text-xs text-slate-400 truncate">{altName}</p>
-          )}
-          {showParty && (
-            <p className="text-xs text-slate-500 truncate">
-              {partyName ? (
-                <span className="inline-flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block" />
-                  {partyName}
-                </span>
-              ) : (
-                <span className="text-slate-300 italic">{b.noCurrentParty}</span>
-              )}
-            </p>
-          )}
-          {person.birth_year && (
-            <p className="text-xs text-slate-400">{b.birthYear(person.birth_year)}</p>
-          )}
-        </div>
+        )}
       </div>
     </Link>
   );

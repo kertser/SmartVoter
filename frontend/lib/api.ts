@@ -474,6 +474,7 @@ export interface VoteListItem {
   date?: string;
   knesset_number?: number;
   importance_score?: number;
+  is_procedural_estimate?: boolean;
   source_url?: string;
 }
 
@@ -521,8 +522,11 @@ export async function getVote(id: string): Promise<VoteDetail> {
   return apiFetch<VoteDetail>(`/api/votes/${id}`);
 }
 
-export async function getVotes(knessetNumber?: number): Promise<VoteListItem[]> {
-  const qs = knessetNumber ? `?knesset_number=${knessetNumber}` : "";
+export async function getVotes(knesset_number?: number, hide_procedural = false): Promise<VoteListItem[]> {
+  const params = new URLSearchParams();
+  if (knesset_number) params.set("knesset_number", String(knesset_number));
+  if (hide_procedural) params.set("hide_procedural", "true");
+  const qs = params.toString() ? `?${params}` : "";
   return apiFetch<VoteListItem[]>(`/api/votes${qs}`);
 }
 
