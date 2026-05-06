@@ -34,7 +34,7 @@ export default function PersonDetailPage() {
 
   return (
     <div className="space-y-8 pb-16">
-      <Link href="/parties" className="text-sm text-brand-600 hover:underline">← Parties</Link>
+      <Link href="/persons" className="text-sm text-brand-600 hover:underline">← Persons</Link>
 
       <div className="space-y-1">
         <h1 className="text-3xl font-bold text-slate-900">{displayName}</h1>

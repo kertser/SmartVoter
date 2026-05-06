@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import uuid
+import logging
 
 from backend.app.db import get_db
 from backend.app.models.user_session import UserSession
-from backend.app.models.question import Question
+from backend.app.models.question import Question, AnswerScaleType
 from backend.app.models.user_answer import UserAnswer
 from backend.app.models.policy_item import PolicyItem, ReviewStatus
 from backend.app.models.topic import Topic
@@ -17,7 +18,58 @@ from backend.app.services.questionnaire import (
     PartyPositionSlim,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(tags=["questionnaire"])
+
+# ── Statuses that the questionnaire can serve ─────────────────────────────────
+# approved  = human-curated seed questions (highest quality)
+# llm_generated = auto-generated on-the-fly, pending post-hoc admin review
+_SERVABLE_STATUSES = {ReviewStatus.approved, ReviewStatus.llm_generated}
+
+
+def _auto_generate_question(
+    db: Session, best_pi: PolicyItem
+) -> Question | None:
+    """
+    Generate a question for `best_pi` on-the-fly using the LLM provider.
+    Stores with status=llm_generated for post-hoc admin review.
+    Returns the saved Question, or None if generation fails.
+    """
+    from backend.app.config import get_settings
+    from backend.app.services.llm import get_llm_provider
+    from backend.app.services.llm.audit_service import AuditedLLMService
+
+    try:
+        settings = get_settings()
+        provider = get_llm_provider(settings)
+        svc = AuditedLLMService(provider, db)
+
+        input_data = {
+            "title": best_pi.title,
+            "description": best_pi.description or "",
+            "directional_axis": best_pi.directional_axis or "",
+        }
+        result = svc.generate_question(input_data, entity_id=best_pi.id)
+
+        q = Question(
+            policy_item_id=best_pi.id,
+            question_text_en=result.get("question_en") or result.get("question", ""),
+            question_text_he=result.get("question_he", ""),
+            question_text_ru=result.get("question_ru", ""),
+            answer_scale_type=AnswerScaleType.likert_5,
+            neutrality_score=0.7,
+            llm_prompt_version=result.get("_prompt_version", "v1.0-auto"),
+            human_review_status=ReviewStatus.llm_generated,
+        )
+        db.add(q)
+        db.commit()
+        db.refresh(q)
+        logger.info("Auto-generated question %s for policy_item %s", q.id, best_pi.id)
+        return q
+    except Exception as exc:
+        logger.warning("Auto-generation failed for policy_item %s: %s", best_pi.id, exc)
+        return None
 
 
 @router.post("/sessions", response_model=SessionOut)
@@ -65,15 +117,42 @@ def get_next_question(
     if len(answered_ids) >= 15:
         return None
 
-    # Build candidates from approved questions not yet answered
-    approved_questions = (
+    # Build candidates from servable questions (approved + llm_generated) not yet answered
+    servable_questions = (
         db.query(Question)
-        .filter(Question.human_review_status == ReviewStatus.approved)
+        .filter(Question.human_review_status.in_(list(_SERVABLE_STATUSES)))
         .all()
     )
 
+    # Root questions (is_root_question=True) are always served first,
+    # unless already answered. They cover topics broadly before drilling down.
+    unanswered_root_ids = [
+        q.id for q in servable_questions
+        if q.id not in answered_ids and q.is_root_question
+    ]
+    # If there are unanswered root questions, serve the first one directly
+    # (no need to run the adaptive scoring algorithm yet).
+    if unanswered_root_ids:
+        root_q = db.query(Question).filter(Question.id == unanswered_root_ids[0]).first()
+        if root_q:
+            topic = db.query(Topic).filter(Topic.id == root_q.topic_id).first() if root_q.topic_id else None
+            why_selected = "This is an opening question that helps us understand your general priorities."
+            return QuestionOut(
+                id=root_q.id,
+                question_text_en=root_q.question_text_en,
+                question_text_he=root_q.question_text_he,
+                question_text_ru=root_q.question_text_ru,
+                answer_scale_type=root_q.answer_scale_type.value,
+                policy_item_id=root_q.policy_item_id,
+                topic_slug=topic.slug if topic else "unknown",
+                topic_name_he=topic.name_he if topic else None,
+                topic_name_ru=topic.name_ru if topic else None,
+                context_note=None,
+                why_selected=why_selected,
+            )
+
     candidates: list[QuestionCandidate] = []
-    for q in approved_questions:
+    for q in servable_questions:
         if q.id in answered_ids:
             continue
         pi = db.query(PolicyItem).filter(PolicyItem.id == q.policy_item_id).first()
@@ -124,7 +203,55 @@ def get_next_question(
         answered_topic_counts=answered_topic_counts,
     )
 
+    # ── Auto-generate on-the-fly when no pre-existing question is available ──
     if not best:
+        # Find policy items that have party positions but no servable question yet
+        answered_policy_ids = {a.policy_item_id for a in answered_rows}
+        servable_pi_ids = {q.policy_item_id for q in servable_questions}
+
+        candidate_pis = (
+            db.query(PolicyItem)
+            .filter(PolicyItem.id.notin_(answered_policy_ids | servable_pi_ids))
+            .all()
+        )
+
+        # Pick the policy item with the best average evidence strength
+        best_pi: PolicyItem | None = None
+        best_score = -1.0
+        for pi in candidate_pis:
+            positions = (
+                db.query(PartyPosition).filter(PartyPosition.policy_item_id == pi.id).all()
+            )
+            if not positions:
+                continue
+            score = sum(p.evidence_strength for p in positions) / len(positions)
+            if score > best_score:
+                best_score = score
+                best_pi = pi
+
+        if best_pi:
+            new_q = _auto_generate_question(db, best_pi)
+            if new_q:
+                # Build the response directly from the newly generated question
+                topic = (
+                    db.query(Topic)
+                    .join(PolicyItem, PolicyItem.topic_id == Topic.id)
+                    .filter(PolicyItem.id == best_pi.id)
+                    .first()
+                )
+                return QuestionOut(
+                    id=new_q.id,
+                    question_text_en=new_q.question_text_en,
+                    question_text_he=new_q.question_text_he,
+                    question_text_ru=new_q.question_text_ru,
+                    answer_scale_type=new_q.answer_scale_type.value,
+                    policy_item_id=new_q.policy_item_id,
+                    topic_slug=topic.slug if topic else "unknown",
+                    topic_name_he=topic.name_he if topic else None,
+                    topic_name_ru=topic.name_ru if topic else None,
+                    context_note=None,
+                    why_selected="This question was generated in real time for your questionnaire.",
+                )
         return None
 
     q = db.query(Question).filter(Question.id == best.question_id).first()
@@ -153,5 +280,6 @@ def get_next_question(
         topic_name_ru=topic.name_ru if topic else None,
         context_note=None,
         why_selected=why_selected,
+        is_root_question=q.is_root_question,
     )
 

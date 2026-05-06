@@ -177,6 +177,42 @@ export interface Translations {
     limitations: [string, string, string, string, string];
   };
 
+  browser: {
+    evidenceBrowser: string;
+    methodologyLink: string;
+    loading: string;
+    source: string;
+    noItemsFound: string;
+
+    // Parties page
+    partiesHeading: string;
+    partiesDesc: string;
+    filterActive: string;
+    filterAll: string;
+    knessetLabel: (n: number) => string;
+    electionCycleLabel: (cycle: string) => string;
+
+    // Votes page
+    votesHeading: string;
+    votesDesc: string;
+    searchVotes: string;
+    allKnessets: string;
+    knessetN: (n: number) => string;
+    importanceLabel: (pct: number) => string;
+
+    // Bills page
+    billsHeading: string;
+    billsDesc: string;
+    searchBills: string;
+
+    // Persons page
+    personsHeading: string;
+    personsDesc: string;
+    searchPersons: string;
+    birthYear: (year: number) => string;
+    countOf: (shown: number, total: number) => string;
+  };
+
   admin: {
     passwordGateHeading: string;
     passwordGateSubtext: string;
@@ -210,6 +246,8 @@ export interface Translations {
     reviewNeutrality: string;
     reviewPrompt: string;
     generateHeading: string;
+    generateSeedNote: string;
+    generateRuntimeNote: string;
     generateSelectAll: string;
     generateClearAll: string;
     generateBtn: (n: number) => string;
@@ -268,6 +306,38 @@ export interface Translations {
     pipelineWizardKnessetRunning: (kn: number) => string;
     pipelineWizardKnessetDone: (kn: number) => string;
     pipelineWizardVotesSkipped: string;
+    pipelineWizardCurrentKnessetLabel: string;
+    pipelineWizardCurrentKnessetNote: (n: number) => string;
+    pipelineWizardVotesApiNote: string;
+    pipelineWizardLlmCostWarning: string;
+    ingestManualTitle: string;
+    ingestManualSubtext: string;
+    ingestManualShowBtn: string;
+    ingestManualHideBtn: string;
+    // Question tree (Generate tab)
+    generateTopicHeading: string;
+    generateTopicSubtext: string;
+    generateRootBtn: string;
+    generateRootGenerating: string;
+    generateRootUpdateBtn: string;
+    generateRootExists: string;
+    generateRootNone: string;
+    generatePolicyItemCount: (n: number) => string;
+    generateFollowupCount: (n: number) => string;
+    generateRootStatus: (s: string) => string;
+    // Backup / Restore tab
+    tabBackup: string;
+    backupHeading: string;
+    backupSubtext: string;
+    backupDownloadBtn: string;
+    backupDownloading: string;
+    backupRestoreHeading: string;
+    backupRestoreSubtext: string;
+    backupRestoreBtn: string;
+    backupRestoring: string;
+    backupSkipExistingLabel: string;
+    backupRestoreSuccess: (inserted: number, skipped: number) => string;
+    backupRestoreError: string;
   };
 
   simulation: {

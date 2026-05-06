@@ -17,37 +17,37 @@ export function NavHeader() {
           {l.siteTitle}
         </a>
         <nav className="flex items-center gap-5 text-sm text-slate-500 flex-wrap">
-          <Tooltip content={l.navPartiesTitle}>
+          <Tooltip content={l.navPartiesTitle} position="bottom">
             <a href="/parties" className="hover:text-slate-800 transition-colors">
               {l.navParties}
             </a>
           </Tooltip>
-          <Tooltip content={l.navPersonsTitle}>
+          <Tooltip content={l.navPersonsTitle} position="bottom">
             <a href="/persons" className="hover:text-slate-800 transition-colors">
               {l.navPersons}
             </a>
           </Tooltip>
-          <Tooltip content={l.navVotesTitle}>
+          <Tooltip content={l.navVotesTitle} position="bottom">
             <a href="/votes" className="hover:text-slate-800 transition-colors">
               {l.navVotes}
             </a>
           </Tooltip>
-          <Tooltip content={l.navBillsTitle}>
+          <Tooltip content={l.navBillsTitle} position="bottom">
             <a href="/bills" className="hover:text-slate-800 transition-colors">
               {l.navBills}
             </a>
           </Tooltip>
-          <Tooltip content={l.navSimulationTitle}>
+          <Tooltip content={l.navSimulationTitle} position="bottom">
             <a href="/simulation" className="hover:text-slate-800 transition-colors">
               {l.navSimulation}
             </a>
           </Tooltip>
-          <Tooltip content={l.navMethodologyTitle}>
+          <Tooltip content={l.navMethodologyTitle} position="bottom">
             <a href="/methodology" className="hover:text-slate-800 transition-colors">
               {l.navMethodology}
             </a>
           </Tooltip>
-          <Tooltip content={l.navAdminTitle}>
+          <Tooltip content={l.navAdminTitle} position="bottom">
             <a href="/admin" className="hover:text-slate-800 transition-colors text-orange-600 hover:text-orange-700">
               {l.navAdmin}
             </a>

@@ -184,29 +184,23 @@ def _create_policy_item_from_source(
     review_status = ReviewStatus.draft
 
     if llm:
-        # Step 1: Classify topic
+        # Single combined call: classify topic + extract axis (1 LLM call instead of 2)
         try:
-            cls_result = llm.classify_policy_item(
+            combined = llm.classify_and_extract(
                 {"title": title, "description": description}
             )
-            primary_topic = cls_result.get("primary_topic", "")
-            llm_confidence = cls_result.get("classification_confidence")
+            primary_topic = combined.get("primary_topic", "")
+            llm_confidence = combined.get("classification_confidence")
             topic_id = _resolve_topic(db, primary_topic)
             review_status = ReviewStatus.needs_review
-        except Exception as exc:
-            logger.warning("classify_policy_item failed for '%s': %s", title[:80], exc)
 
-        # Step 2: Extract directional axis
-        try:
-            axis_result = llm.extract_policy_axis(
-                {"title": title, "description": description}
-            )
-            neg = axis_result.get("negative_pole", "")
-            pos = axis_result.get("positive_pole", "")
-            axis_name = axis_result.get("axis_name", "")
-            directional_axis = f"{axis_name}: -1={neg}, +1={pos}"
+            neg = combined.get("negative_pole", "")
+            pos = combined.get("positive_pole", "")
+            axis_name = combined.get("axis_name", "")
+            if axis_name or neg or pos:
+                directional_axis = f"{axis_name}: -1={neg}, +1={pos}"
         except Exception as exc:
-            logger.warning("extract_policy_axis failed for '%s': %s", title[:80], exc)
+            logger.warning("classify_and_extract failed for '%s': %s", title[:80], exc)
 
     # Fallback: use any topic
     if not topic_id:

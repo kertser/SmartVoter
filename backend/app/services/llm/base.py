@@ -28,6 +28,17 @@ class LLMProvider(ABC):
     def extract_policy_axis(self, input_data: dict) -> dict:
         """Returns: axis_name, negative_pole, positive_pole, direction_explanation"""
 
+    def classify_and_extract(self, input_data: dict) -> dict:
+        """
+        OPTIMISATION: Combined classify_policy_item + extract_policy_axis in a single LLM call.
+        Saves one HTTP round-trip per vote/bill processed.
+        Returns the merged output of both methods under a single prompt.
+        Default: calls both methods separately (2 calls). Override in concrete providers.
+        """
+        cls = self.classify_policy_item(input_data)
+        axis = self.extract_policy_axis(input_data)
+        return {**cls, **axis}
+
     @abstractmethod
     def generate_question(self, input_data: dict) -> dict:
         """Returns: question, answer_scale, neutrality_risk, loaded_terms, source_refs"""
@@ -36,6 +47,14 @@ class LLMProvider(ABC):
     def critique_question(self, input_data: dict) -> dict:
         """Returns: is_loaded, bias_direction, suggested_revision, reading_level,
         requires_context, context_note"""
+
+    @abstractmethod
+    def generate_question_with_critique(self, input_data: dict) -> dict:
+        """
+        OPTIMISATION: Combined generate + critique in a single LLM call.
+        Returns merged output including a computed neutrality_score (float 0–1).
+        Default: calls both methods separately (2 calls). Override in concrete providers.
+        """
 
     @abstractmethod
     def infer_party_position(self, input_data: dict) -> dict:

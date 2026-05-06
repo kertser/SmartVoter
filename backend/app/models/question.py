@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import ForeignKey, Float, String, Text, Enum as SAEnum
+from sqlalchemy import ForeignKey, Float, String, Text, Boolean, Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column
 from backend.app.db.base import Base
 from backend.app.models.policy_item import ReviewStatus
@@ -16,8 +16,15 @@ class Question(Base):
     __tablename__ = "questions"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    policy_item_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("policy_items.id"), nullable=False, index=True
+    policy_item_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("policy_items.id"), nullable=True, index=True
+    )
+    # Root questions are topic-level entry points in the question tree.
+    # They have is_root_question=True and topic_id set.
+    # Follow-up questions (is_root_question=False) are adaptive and policy-item-level.
+    is_root_question: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    topic_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("topics.id"), nullable=True, index=True
     )
     question_text_he: Mapped[str] = mapped_column(Text, nullable=False)
     question_text_en: Mapped[str] = mapped_column(Text, nullable=False)

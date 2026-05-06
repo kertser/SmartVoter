@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getParties, PartyListItem } from "@/lib/api";
-import { useLang } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n";
 const STATUS_COLOR: Record<string, string> = {
   active: "bg-green-100 text-green-700",
   dissolved: "bg-slate-100 text-slate-500",
@@ -14,6 +14,8 @@ const STATUS_COLOR: Record<string, string> = {
 
 export default function PartiesPage() {
   const { lang } = useLang();
+  const t = useT();
+  const b = t.browser;
   const [parties, setParties] = useState<PartyListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,8 +24,9 @@ export default function PartiesPage() {
   useEffect(() => {
     getParties()
       .then(setParties)
-      .catch(() => setError("Failed to load parties."))
+      .catch(() => setError(b.noItemsFound))
       .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const displayed = filter === "active"
@@ -36,11 +39,11 @@ export default function PartiesPage() {
   return (
     <div className="space-y-6 pb-16">
       <div className="space-y-1">
-        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Evidence Browser</p>
-        <h1 className="text-3xl font-bold text-slate-900">Parties</h1>
+        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{b.evidenceBrowser}</p>
+        <h1 className="text-3xl font-bold text-slate-900">{b.partiesHeading}</h1>
         <p className="text-slate-500 text-sm">
-          All political party instances tracked by SmartVoter.{" "}
-          <Link href="/methodology" className="text-brand-600 hover:underline">Methodology</Link>
+          {b.partiesDesc}{" "}
+          <Link href="/methodology" className="text-brand-600 hover:underline">{b.methodologyLink}</Link>
         </p>
       </div>
 
@@ -56,7 +59,7 @@ export default function PartiesPage() {
                 : "border-slate-200 text-slate-600 hover:border-slate-300"
             }`}
           >
-            {f === "active" ? "Active parties" : "All instances"}
+            {f === "active" ? b.filterActive : b.filterAll}
           </button>
         ))}
       </div>
@@ -64,7 +67,7 @@ export default function PartiesPage() {
       {loading && (
         <div className="flex items-center gap-3 py-12 text-slate-500">
           <div className="h-5 w-5 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
-          Loading…
+          {b.loading}
         </div>
       )}
       {error && <p className="text-red-600">{error}</p>}
@@ -84,8 +87,8 @@ export default function PartiesPage() {
                 )}
                 <p className="text-xs text-slate-500">
                   {party.official_name}
-                  {party.knesset_number && ` · Knesset ${party.knesset_number}`}
-                  {party.election_cycle && ` · ${party.election_cycle}`}
+                  {party.knesset_number && ` · ${b.knessetLabel(party.knesset_number)}`}
+                  {party.election_cycle && ` · ${b.electionCycleLabel(party.election_cycle)}`}
                 </p>
               </div>
               <span
@@ -101,12 +104,9 @@ export default function PartiesPage() {
       </div>
 
       {!loading && displayed.length === 0 && (
-        <p className="text-slate-500 py-8 text-center">No parties found.</p>
+        <p className="text-slate-500 py-8 text-center">{b.noItemsFound}</p>
       )}
     </div>
   );
 }
-
-
-
 

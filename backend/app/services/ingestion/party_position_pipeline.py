@@ -106,7 +106,7 @@ def run_party_position_pipeline(
     settings: "Settings",
     knesset_number: int | None = None,
     limit_policy_items: int = 100,
-    enrich_with_llm: bool = True,
+    enrich_with_llm: bool = False,  # DEFAULT OFF: formula handles math; LLM adds only explanation text.
     overwrite_existing: bool = False,
 ) -> dict[str, int]:
     """
@@ -116,11 +116,14 @@ def run_party_position_pipeline(
     Steps:
     1. Load policy items that have source_refs of type "vote".
     2. For each party instance in the target knesset, aggregate vote_results.
-    3. Call LLM to infer position mean + explanation (or use formula only).
-    4. Upsert PartyPosition with human_review_status = "needs_review".
+    3. Formula (AGENTS.MD §8.3) computes position_mean, uncertainty, evidence_strength.
+    4. OPTIONAL (enrich_with_llm=True): Call LLM to add a human-readable explanation.
+       This is OFF by default — use the lazy /explain endpoint instead when users
+       actually open the EvidenceDrawer for a specific party+policy combination.
+    5. Upsert PartyPosition with human_review_status = "needs_review".
 
     Returns {"pairs_evaluated": N, "positions_created": N, "positions_updated": N,
-             "skipped_no_evidence": N}.
+             "skipped_no_evidence": N, "llm_enriched": N}.
     """
     llm_raw = get_llm_provider(settings) if enrich_with_llm else None
     llm = AuditedLLMService(llm_raw, db) if llm_raw else None
@@ -139,7 +142,7 @@ def run_party_position_pipeline(
         .all()
     )
 
-    pairs_evaluated = positions_created = positions_updated = skipped_no_evidence = 0
+    pairs_evaluated = positions_created = positions_updated = skipped_no_evidence = llm_enriched = 0
 
     for policy_item in policy_items:
         # Extract vote UUIDs referenced by this policy item
@@ -202,6 +205,7 @@ def run_party_position_pipeline(
                     uncertainty = float(llm_result.get("uncertainty", uncertainty))
                     evidence_strength = float(llm_result.get("evidence_strength", evidence_strength))
                     explanation = llm_result.get("explanation")
+                    llm_enriched += 1
                 except Exception as exc:
                     logger.warning(
                         "infer_party_position failed party=%s policy=%s: %s",
@@ -237,6 +241,7 @@ def run_party_position_pipeline(
         "positions_created": positions_created,
         "positions_updated": positions_updated,
         "skipped_no_evidence": skipped_no_evidence,
+        "llm_enriched": llm_enriched,
     }
     logger.info("party_position_pipeline → %s", stats)
     return stats

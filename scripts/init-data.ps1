@@ -20,23 +20,23 @@
     Skip LLM enrichment (default: true). Set to $false to enable.
 
 .PARAMETER CurrentKnesset
-    Override the most-recent Knesset number (default: from settings, currently 25).
+    Override the most-recent Knesset number (default: from settings, currently 26).
 
 .EXAMPLE
-    # Standard initialisation (last 2 Knessets, no LLM):
+    # Standard initialisation (last 2 Knessets = K25 + K26, no LLM):
     .\scripts\init-data.ps1
 
     # Import last 4 Knessets with LLM enabled:
     .\scripts\init-data.ps1 -LastN 4 -NoLlm:$false
 
-    # After a new election (Knesset 26 just started):
-    .\scripts\init-data.ps1 -CurrentKnesset 26 -LastN 2
+    # After a new election (Knesset 27 just started):
+    .\scripts\init-data.ps1 -CurrentKnesset 27 -LastN 2
 #>
 
 param(
     [int]    $LastN          = 2,
     [bool]   $NoLlm          = $true,
-    [int]    $CurrentKnesset = 0      # 0 = use settings default
+    [int]    $CurrentKnesset = 0      # 0 = use settings default (26)
 )
 
 Set-StrictMode -Version Latest

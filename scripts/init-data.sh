@@ -14,7 +14,7 @@ set -euo pipefail
 
 LAST_N="${LAST_N:-2}"
 NO_LLM="${NO_LLM:-true}"
-CURRENT_KNESSET="${CURRENT_KNESSET:-0}"
+CURRENT_KNESSET="${CURRENT_KNESSET:-0}"   # 0 = use settings default (currently 26)
 
 BOLD='\033[1m'; CYAN='\033[0;36m'; GREEN='\033[0;32m'; RESET='\033[0m'
 

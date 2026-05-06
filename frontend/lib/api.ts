@@ -622,3 +622,89 @@ export async function adminGetFullPipelineStatus(jobId: string): Promise<FullPip
   return adminApiFetch<FullPipelineJobStatus>(`/api/admin/ingest/status/${jobId}`);
 }
 
+// ── Root question generation (question tree) ───────────────────────────────
+
+export interface TopicWithRootQuestion {
+  topic_id: string;
+  slug: string;
+  name_en: string;
+  name_he: string;
+  name_ru?: string;
+  description?: string;
+  policy_item_count: number;
+  followup_question_count: number;
+  root_question: {
+    id: string;
+    question_text_en: string;
+    question_text_he: string;
+    question_text_ru?: string;
+    status: string;
+    neutrality_score?: number;
+  } | null;
+}
+
+export async function adminGetTopicsWithRootQuestions(): Promise<TopicWithRootQuestion[]> {
+  return adminApiFetch<TopicWithRootQuestion[]>("/api/admin/topics/with-root-questions");
+}
+
+export async function adminGenerateRootQuestion(topicId: string): Promise<{
+  action: string;
+  question_id: string;
+  topic_id: string;
+  topic_name_en: string;
+  question_en: string;
+  question_he: string;
+  question_ru?: string;
+  neutrality_score: number;
+  status: string;
+  provider: string;
+}> {
+  return adminApiFetch("/api/admin/llm/generate-root-question", {
+    method: "POST",
+    body: JSON.stringify({ topic_id: topicId }),
+  });
+}
+
+// ── Database backup and restore ────────────────────────────────────────────
+
+export async function adminDownloadBackup(): Promise<void> {
+  const pw = getStoredAdminPassword();
+  const resp = await fetch(`${BASE_URL}/api/admin/db/backup`, {
+    headers: { "X-Admin-Password": pw },
+  });
+  if (!resp.ok) throw new Error(`Backup failed: ${resp.status}`);
+  const blob = await resp.blob();
+  const cd = resp.headers.get("Content-Disposition") ?? "";
+  const match = cd.match(/filename="([^"]+)"/);
+  const filename = match ? match[1] : "smartvoter_backup.json";
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function adminRestoreBackup(
+  file: File,
+  skipExisting: boolean = true,
+): Promise<{
+  status: string;
+  total_inserted: number;
+  total_skipped: number;
+  backup_created_at?: string;
+  tables: Record<string, { inserted: number; skipped: number }>;
+}> {
+  const pw = getStoredAdminPassword();
+  const form = new FormData();
+  form.append("file", file);
+  const resp = await fetch(
+    `${BASE_URL}/api/admin/db/restore?skip_existing=${skipExisting}`,
+    { method: "POST", headers: { "X-Admin-Password": pw }, body: form }
+  );
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error(`Restore failed ${resp.status}: ${err}`);
+  }
+  return resp.json();
+}

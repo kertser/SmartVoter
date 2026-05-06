@@ -18,27 +18,29 @@ import {
   adminApprove,
   adminReject,
   adminEditQuestion,
-  adminGetPolicyItems,
-  adminGenerateQuestions,
   adminGetLlmOutputs,
   adminTriggerIngestion,
   adminGetIngestionStatus,
   adminListIngestionJobs,
   adminTriggerFullPipeline,
   adminGetFullPipelineStatus,
+  adminGetTopicsWithRootQuestions,
+  adminGenerateRootQuestion,
+  adminDownloadBackup,
+  adminRestoreBackup,
   AdminQuestion,
-  PolicyItemAdmin,
   LlmOutputRecord,
   IngestionJobStatus,
   FullPipelineJobStatus,
   FullPipelineKnessetResult,
+  TopicWithRootQuestion,
   getStoredAdminPassword,
   storeAdminPassword,
   clearAdminPassword,
 } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 
-type Tab = "review" | "generate" | "audit" | "ingestion";
+type Tab = "ingestion" | "generate" | "review" | "audit" | "backup";
 
 // ── Password Gate ─────────────────────────────────────────────────────────────
 
@@ -108,7 +110,7 @@ export default function AdminPage() {
   const t = useT();
   const a = t.admin;
   const [authed, setAuthed] = useState(false);
-  const [tab, setTab] = useState<Tab>("review");
+  const [tab, setTab] = useState<Tab>("ingestion");
 
   // Restore existing session on mount
   useEffect(() => {
@@ -142,7 +144,7 @@ export default function AdminPage() {
 
       {/* Tab bar */}
       <div className="flex gap-1 border-b border-slate-200">
-        {(["review", "generate", "audit", "ingestion"] as Tab[]).map((tabKey) => (
+        {(["ingestion", "generate", "review", "audit", "backup"] as Tab[]).map((tabKey) => (
           <button
             key={tabKey}
             onClick={() => setTab(tabKey)}
@@ -152,18 +154,20 @@ export default function AdminPage() {
                 : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
-            {tabKey === "review" ? a.tabReview
+            {tabKey === "ingestion" ? a.tabIngestion
               : tabKey === "generate" ? a.tabGenerate
+              : tabKey === "review" ? a.tabReview
               : tabKey === "audit" ? a.tabAudit
-              : a.tabIngestion}
+              : a.tabBackup}
           </button>
         ))}
       </div>
 
-      {tab === "review" && <ReviewTab />}
-      {tab === "generate" && <GenerateTab />}
-      {tab === "audit" && <AuditTab />}
       {tab === "ingestion" && <IngestionTab />}
+      {tab === "generate" && <GenerateTab />}
+      {tab === "review" && <ReviewTab />}
+      {tab === "audit" && <AuditTab />}
+      {tab === "backup" && <BackupTab />}
     </div>
   );
 }
@@ -291,83 +295,126 @@ function ReviewTab() {
   );
 }
 
-// ── Generate Tab ──────────────────────────────────────────────────────────────
+// ── Generate Tab — Root Question Tree ─────────────────────────────────────────
 
 function GenerateTab() {
   const a = useT().admin;
-  const [policyItems, setPolicyItems] = useState<PolicyItemAdmin[]>([]);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [topics, setTopics] = useState<TopicWithRootQuestion[]>([]);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const [result, setResult] = useState<{ generated: { question_en?: string; question_id?: string; error?: string; policy_item_id: string; neutrality_score?: number; is_loaded?: boolean; provider?: string }[] } | null>(null);
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => { adminGetPolicyItems().then(setPolicyItems).finally(() => setLoading(false)); }, []);
+  const reload = useCallback(() => {
+    setLoading(true);
+    adminGetTopicsWithRootQuestions()
+      .then(setTopics)
+      .catch((e) => setError(String(e)))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const toggle = (id: string) => setSelected((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+  useEffect(() => { reload(); }, [reload]);
 
-  const handleGenerate = async () => {
-    if (selected.size === 0) return;
-    setGenerating(true);
-    setResult(null);
+  const handleGenerate = async (topicId: string) => {
+    setGeneratingId(topicId);
+    setError(null);
     try {
-      const res = await adminGenerateQuestions([...selected]) as typeof result;
-      setResult(res);
+      await adminGenerateRootQuestion(topicId);
+      reload();
+    } catch (e) {
+      setError(String(e));
     } finally {
-      setGenerating(false);
+      setGeneratingId(null);
     }
   };
 
-  const sourceColors: Record<string, string> = {
-    vote: "bg-green-50 text-green-700",
-    bill: "bg-blue-50 text-blue-700",
-    platform: "bg-purple-50 text-purple-700",
-    statement: "bg-orange-50 text-orange-700",
-    candidate_history: "bg-teal-50 text-teal-700",
+  const statusColors: Record<string, string> = {
+    needs_review: "bg-yellow-50 text-yellow-700 border-yellow-200",
+    draft: "bg-slate-100 text-slate-600",
+    llm_generated: "bg-blue-50 text-blue-700 border-blue-200",
+    approved: "bg-green-50 text-green-700 border-green-200",
+    rejected: "bg-red-50 text-red-600 border-red-200",
   };
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-3">
-        <p className="text-sm text-slate-600 flex-1">{a.generateHeading}</p>
-        <button onClick={handleGenerate} disabled={selected.size === 0 || generating} className="rounded-lg bg-brand-600 px-5 py-2 text-sm text-white font-medium hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
-          {generating ? a.generateGenerating : a.generateBtn(selected.size)}
-        </button>
+      {/* Purpose explanation */}
+      <div className="rounded-xl border border-brand-100 bg-brand-50/60 p-4 space-y-1">
+        <p className="text-sm font-semibold text-brand-800">{a.generateTopicHeading}</p>
+        <p className="text-xs text-slate-600">{a.generateTopicSubtext}</p>
       </div>
 
-      {result && (
-        <div className="rounded-xl border border-brand-100 bg-brand-50 p-4 space-y-2">
-          <p className="text-sm font-medium text-brand-700">{a.generateSuccessMsg(result.generated.length)}</p>
-          {result.generated.map((r, i) => (
-            <div key={i} className="text-xs text-slate-600">
-              {r.error ? <span className="text-red-600">✗ {r.policy_item_id}: {r.error}</span> : (
-                <span>✓ [{r.provider}] neutrality={(((r.neutrality_score ?? 0) * 100).toFixed(0))}%{r.is_loaded ? " ⚠ loaded" : ""} — {r.question_en?.slice(0, 80)}…</span>
-              )}
-            </div>
-          ))}
-        </div>
+      {error && (
+        <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
       )}
 
-      {loading ? <p className="text-slate-400 text-sm py-10 text-center">Loading…</p> : (
-        <div className="space-y-2">
-          <div className="flex gap-2 text-xs text-slate-500">
-            <button onClick={() => setSelected(new Set(policyItems.map((p) => p.id)))} className="hover:underline">{a.generateSelectAll}</button>
-            <span>·</span>
-            <button onClick={() => setSelected(new Set())} className="hover:underline">{a.generateClearAll}</button>
-          </div>
-          {policyItems.map((pi) => (
-            <label key={pi.id} className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${selected.has(pi.id) ? "border-brand-400 bg-brand-50" : "border-slate-200 bg-white hover:bg-slate-50"}`}>
-              <input type="checkbox" checked={selected.has(pi.id)} onChange={() => toggle(pi.id)} className="mt-0.5 accent-brand-600" />
-              <div className="flex-1 space-y-0.5">
-                <p className="text-sm font-medium text-slate-800">{pi.title}</p>
-                {pi.directional_axis && <p className="text-xs text-slate-400">{pi.directional_axis}</p>}
-                <div className="flex gap-2 flex-wrap">
-                  <span className={`rounded-full px-2 py-0.5 text-xs ${sourceColors[pi.source_type] ?? "bg-slate-100 text-slate-600"}`}>{pi.source_type}</span>
-                  {pi.llm_confidence != null && <span className="text-xs text-slate-400">conf {(pi.llm_confidence * 100).toFixed(0)}%</span>}
-                   <span className={`text-xs ${pi.human_review_status === "approved" ? "text-green-600" : "text-slate-400"}`}>{pi.human_review_status}</span>
+      {loading ? (
+        <p className="text-slate-400 text-sm py-10 text-center">Loading…</p>
+      ) : (
+        <div className="space-y-3">
+          {topics.map((topic) => {
+            const rq = topic.root_question;
+            const isGenerating = generatingId === topic.topic_id;
+            return (
+              <div
+                key={topic.topic_id}
+                className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3"
+              >
+                {/* Topic header */}
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="space-y-0.5 flex-1">
+                    <p className="text-sm font-semibold text-slate-800">{topic.name_en}</p>
+                    <div className="flex gap-2 text-xs text-slate-400 flex-wrap">
+                      <span>{a.generatePolicyItemCount(topic.policy_item_count)}</span>
+                      <span>·</span>
+                      <span>{a.generateFollowupCount(topic.followup_question_count)}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleGenerate(topic.topic_id)}
+                    disabled={isGenerating}
+                    className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+                  >
+                    {isGenerating
+                      ? a.generateRootGenerating
+                      : rq
+                      ? a.generateRootUpdateBtn
+                      : a.generateRootBtn}
+                  </button>
                 </div>
+
+                {/* Root question */}
+                {rq ? (
+                  <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 space-y-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                        {a.generateRootExists}
+                      </span>
+                      <span className={`rounded-full border px-2 py-0.5 text-xs ${statusColors[rq.status] ?? "bg-slate-100"}`}>
+                        {a.generateRootStatus(rq.status)}
+                      </span>
+                      {rq.neutrality_score != null && (
+                        <span className={`text-xs rounded-full px-2 py-0.5 ${
+                          rq.neutrality_score >= 0.75 ? "bg-green-50 text-green-700"
+                          : rq.neutrality_score >= 0.5 ? "bg-yellow-50 text-yellow-700"
+                          : "bg-red-50 text-red-600"
+                        }`}>
+                          neutrality {(rq.neutrality_score * 100).toFixed(0)}%
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-800">{rq.question_text_en}</p>
+                    {rq.question_text_he && (
+                      <p dir="rtl" className="text-xs text-slate-500">{rq.question_text_he}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/50 p-3 text-xs text-slate-400 text-center">
+                    {a.generateRootNone}
+                  </div>
+                )}
               </div>
-            </label>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -378,14 +425,15 @@ function GenerateTab() {
 
 function FullPipelineWizardSection() {
   const a = useT().admin;
-  const [lastN, setLastN] = useState(2);
+  const [lastN, setLastN] = useState(4);
   const [noLlm, setNoLlm] = useState(true);
+  const [currentKn, setCurrentKn] = useState(26);
   const [submitting, setSubmitting] = useState(false);
   const [job, setJob] = useState<FullPipelineJobStatus | null>(null);
   const ivRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Preview which Knessets would be imported based on lastN
-  const previewKnessets = Array.from({ length: lastN }, (_, i) => 25 - i);
+  // Preview which Knessets would be imported based on lastN and currentKn.
+  const previewKnessets = Array.from({ length: lastN }, (_, i) => currentKn - i);
 
   const stopPolling = () => {
     if (ivRef.current) { clearInterval(ivRef.current); ivRef.current = null; }
@@ -413,7 +461,7 @@ function FullPipelineWizardSection() {
     setSubmitting(true);
     setJob(null);
     try {
-      const res = await adminTriggerFullPipeline({ last_n_knessets: lastN, no_llm: noLlm });
+      const res = await adminTriggerFullPipeline({ last_n_knessets: lastN, no_llm: noLlm, current_knesset: currentKn });
       const initial: FullPipelineJobStatus = {
         job_id: res.job_id,
         status: "queued",
@@ -458,6 +506,21 @@ function FullPipelineWizardSection() {
 
       {/* Controls */}
       <div className="flex flex-wrap items-end gap-4">
+        {/* Current Knesset input */}
+        <div className="space-y-1">
+          <label className="block text-xs font-medium text-slate-600">
+            {a.pipelineWizardCurrentKnessetLabel}
+          </label>
+          <input
+            type="number"
+            min={1}
+            max={40}
+            value={currentKn}
+            onChange={(e) => setCurrentKn(Math.max(1, Math.min(40, Number(e.target.value))))}
+            className="w-20 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-center"
+          />
+        </div>
+
         {/* Last N input */}
         <div className="space-y-1">
           <label className="block text-xs font-medium text-slate-600">
@@ -501,11 +564,20 @@ function FullPipelineWizardSection() {
         </button>
       </div>
 
-      {/* LLM note and preview */}
-      {noLlm && (
-        <p className="text-xs text-slate-400">{a.pipelineWizardNoLlmNote}</p>
-      )}
-      <p className="text-xs text-slate-500">{a.pipelineWizardKnessetsLabel(previewKnessets)}</p>
+      {/* Notes */}
+      <div className="space-y-1.5">
+        <p className="text-xs text-slate-500">{a.pipelineWizardKnessetsLabel(previewKnessets)}</p>
+        <p className="text-xs rounded-lg bg-sky-50 border border-sky-200 text-sky-800 px-3 py-2 leading-relaxed">
+          {a.pipelineWizardCurrentKnessetNote(currentKn)}
+        </p>
+        {noLlm ? (
+          <p className="text-xs text-slate-400">{a.pipelineWizardNoLlmNote}</p>
+        ) : (
+          <p className="text-xs rounded-lg bg-amber-50 border border-amber-300 text-amber-800 px-3 py-2 font-medium">
+            {a.pipelineWizardLlmCostWarning}
+          </p>
+        )}
+      </div>
 
       {/* Progress display */}
       {job && (
@@ -546,7 +618,7 @@ function FullPipelineWizardSection() {
                           )}
                         </p>
                       )}
-                      {kr && kr.votes && !("skipped" in (kr.votes as Record<string, unknown>)) && (
+                      {kr && kr.votes && !("reason" in (kr.votes as Record<string, unknown>)) && (
                         <p className="ps-4 text-xs opacity-70">
                           ✓ {a.ingestResultVotes(
                             (kr.votes as Record<string, number>).inserted ?? 0,
@@ -555,7 +627,7 @@ function FullPipelineWizardSection() {
                           )}
                         </p>
                       )}
-                      {kr && kr.votes && "skipped" in (kr.votes as Record<string, unknown>) && (
+                      {kr && kr.votes && "reason" in (kr.votes as Record<string, unknown>) && (
                         <p className="ps-4 text-xs opacity-60">⚠ {a.pipelineWizardVotesSkipped}</p>
                       )}
                       {kr && kr.bills && (
@@ -643,6 +715,7 @@ function IngestionTab() {
   const [activeJob, setActiveJob] = useState<IngestionJobStatus | null>(null);
   const [jobs, setJobs] = useState<IngestionJobStatus[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
+  const [showManual, setShowManual] = useState(false);
   // Store the interval ID in a ref so polling callbacks always see the latest
   // value without creating circular useCallback dependencies.
   const ivRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -719,99 +792,210 @@ function IngestionTab() {
       {/* ── Full Pipeline Wizard ────────────────────────────────────────── */}
       <FullPipelineWizardSection />
 
-      {/* ── Divider ─────────────────────────────────────────────────────── */}
+      {/* ── Divider / Manual section toggle ────────────────────────────── */}
       <div className="border-t border-slate-200 pt-4">
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-slate-700">{a.ingestHeading}</p>
-          <p className="text-xs text-slate-400">{a.ingestSubtext}</p>
-        </div>
+        <button
+          onClick={() => setShowManual((v) => !v)}
+          className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+        >
+          {showManual ? a.ingestManualHideBtn : a.ingestManualShowBtn}
+        </button>
+        {showManual && (
+          <p className="text-xs text-slate-400 mt-1">{a.ingestManualSubtext}</p>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4 max-w-sm">
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-slate-600">{a.ingestKnessetLabel}</label>
-          <input
-            type="number" min={1} max={30} value={knessetNum}
-            onChange={(e) => setKnessetNum(Number(e.target.value))}
-            className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm"
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-slate-600">{a.ingestLimitLabel}</label>
-          <input
-            type="number" min={10} max={5000} step={50} value={limit}
-            onChange={(e) => setLimit(Number(e.target.value))}
-            className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm"
-          />
-        </div>
-      </div>
-
-      {/* K25+ warning: official Votes.svc does not yet have data for Knesset 25+ */}
-      {knessetNum >= 25 && (
-        <p className="text-xs rounded-lg bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 leading-relaxed">
-          {a.ingestKnesset25Warning}
-        </p>
-      )}
-
-      <div className="flex flex-wrap gap-4 text-sm">
-        {([
-          [noLlm,      setNoLlm,      a.ingestNoLlmLabel],
-          [votesOnly,  setVotesOnly,  a.ingestVotesOnlyLabel],
-          [billsOnly,  setBillsOnly,  a.ingestBillsOnlyLabel],
-        ] as [boolean, (v: boolean) => void, string][]).map(([val, setter, label], i) => (
-          <label key={i} className="flex items-center gap-2 cursor-pointer text-slate-600">
-            <input type="checkbox" checked={val} onChange={(e) => setter(e.target.checked)} className="accent-brand-600" />
-            {label}
-          </label>
-        ))}
-      </div>
-
-      <button
-        onClick={handleStart}
-        disabled={submitting || isRunning}
-        className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        {submitting ? a.ingestRunning : a.ingestRunBtn}
-      </button>
-
-      {activeJob && (
-        <div className={`rounded-xl border p-4 space-y-1 text-sm ${statusColors[activeJob.status] ?? "bg-slate-50"}`}>
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="font-medium">{statusLabel(activeJob.status)}</span>
-            {isRunning && (
-              <span className="inline-block h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" aria-hidden="true" />
-            )}
-            <span className="text-xs opacity-60">{a.ingestJobId}: {activeJob.job_id}</span>
-            {!isRunning && (
-              <button
-                onClick={() => adminGetIngestionStatus(activeJob.job_id).then(setActiveJob).catch(() => {})}
-                className="text-xs underline opacity-70 hover:opacity-100"
-              >
-                {a.ingestPollBtn}
-              </button>
-            )}
-          </div>
-          <JobStepDetails job={activeJob} a={a} />
-        </div>
-      )}
-
-      {!loadingJobs && jobs.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Previous jobs (this session)</p>
+      {showManual && (
+        <>
           <div className="space-y-1">
-            {jobs.slice().reverse().map((job) => (
-              <div key={job.job_id} className="rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs text-slate-600">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className={`rounded-full px-2 py-0.5 ${statusColors[job.status] ?? ""}`}>{statusLabel(job.status)}</span>
-                  <span>Knesset {job.knesset_number} · limit {job.limit}</span>
-                  <span className="text-slate-400">{job.job_id}</span>
-                </div>
-                <JobStepDetails job={job} a={a} />
-              </div>
+            <p className="text-sm font-medium text-slate-700">{a.ingestManualTitle}</p>
+            <p className="text-xs text-slate-400">{a.ingestSubtext}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 max-w-sm">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{a.ingestKnessetLabel}</label>
+              <input
+                type="number" min={1} max={30} value={knessetNum}
+                onChange={(e) => setKnessetNum(Number(e.target.value))}
+                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{a.ingestLimitLabel}</label>
+              <input
+                type="number" min={10} max={5000} step={50} value={limit}
+                onChange={(e) => setLimit(Number(e.target.value))}
+                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm"
+              />
+            </div>
+          </div>
+
+          {/* K25+ warning: official Votes.svc does not yet have data for Knesset 25+ */}
+          {knessetNum >= 25 && (
+            <p className="text-xs rounded-lg bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 leading-relaxed">
+              {a.ingestKnesset25Warning}
+            </p>
+          )}
+
+          <div className="flex flex-wrap gap-4 text-sm">
+            {([
+              [noLlm,      setNoLlm,      a.ingestNoLlmLabel],
+              [votesOnly,  setVotesOnly,  a.ingestVotesOnlyLabel],
+              [billsOnly,  setBillsOnly,  a.ingestBillsOnlyLabel],
+            ] as [boolean, (v: boolean) => void, string][]).map(([val, setter, label], i) => (
+              <label key={i} className="flex items-center gap-2 cursor-pointer text-slate-600">
+                <input type="checkbox" checked={val} onChange={(e) => setter(e.target.checked)} className="accent-brand-600" />
+                {label}
+              </label>
             ))}
           </div>
-        </div>
+
+          <button
+            onClick={handleStart}
+            disabled={submitting || isRunning}
+            className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {submitting ? a.ingestRunning : a.ingestRunBtn}
+          </button>
+
+          {activeJob && (
+            <div className={`rounded-xl border p-4 space-y-1 text-sm ${statusColors[activeJob.status] ?? "bg-slate-50"}`}>
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="font-medium">{statusLabel(activeJob.status)}</span>
+                {isRunning && (
+                  <span className="inline-block h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" aria-hidden="true" />
+                )}
+                <span className="text-xs opacity-60">{a.ingestJobId}: {activeJob.job_id}</span>
+                {!isRunning && (
+                  <button
+                    onClick={() => adminGetIngestionStatus(activeJob.job_id).then(setActiveJob).catch(() => {})}
+                    className="text-xs underline opacity-70 hover:opacity-100"
+                  >
+                    {a.ingestPollBtn}
+                  </button>
+                )}
+              </div>
+              <JobStepDetails job={activeJob} a={a} />
+            </div>
+          )}
+
+          {!loadingJobs && jobs.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Previous jobs (this session)</p>
+              <div className="space-y-1">
+                {jobs.slice().reverse().map((job) => (
+                  <div key={job.job_id} className="rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs text-slate-600">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className={`rounded-full px-2 py-0.5 ${statusColors[job.status] ?? ""}`}>{statusLabel(job.status)}</span>
+                      <span>Knesset {job.knesset_number} · limit {job.limit}</span>
+                      <span className="text-slate-400">{job.job_id}</span>
+                    </div>
+                    <JobStepDetails job={job} a={a} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
+    </div>
+  );
+}
+
+// ── Backup Tab ────────────────────────────────────────────────────────────────
+
+function BackupTab() {
+  const a = useT().admin;
+  const [downloading, setDownloading] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [skipExisting, setSkipExisting] = useState(true);
+  const [restoreResult, setRestoreResult] = useState<{ total_inserted: number; total_skipped: number } | null>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      await adminDownloadBackup();
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    const file = fileRef.current?.files?.[0];
+    if (!file) return;
+    setRestoring(true);
+    setRestoreResult(null);
+    setRestoreError(null);
+    try {
+      const result = await adminRestoreBackup(file, skipExisting);
+      setRestoreResult(result);
+    } catch (e) {
+      setRestoreError(String(e));
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8 max-w-lg">
+      {/* Download */}
+      <div className="space-y-3">
+        <h2 className="text-base font-semibold text-slate-800">{a.backupHeading}</h2>
+        <p className="text-xs text-slate-500">{a.backupSubtext}</p>
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {downloading ? a.backupDownloading : a.backupDownloadBtn}
+        </button>
+      </div>
+
+      <hr className="border-slate-200" />
+
+      {/* Restore */}
+      <div className="space-y-3">
+        <h2 className="text-base font-semibold text-slate-800">{a.backupRestoreHeading}</h2>
+        <p className="text-xs text-slate-500">{a.backupRestoreSubtext}</p>
+        <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={skipExisting}
+            onChange={(e) => setSkipExisting(e.target.checked)}
+            className="accent-brand-600 h-4 w-4"
+          />
+          {a.backupSkipExistingLabel}
+        </label>
+        <div className="flex items-center gap-3 flex-wrap">
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".json,application/json"
+            className="text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-brand-700 hover:file:bg-brand-100"
+          />
+          <button
+            onClick={handleRestore}
+            disabled={restoring}
+            className="rounded-lg bg-slate-700 px-5 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {restoring ? a.backupRestoring : a.backupRestoreBtn}
+          </button>
+        </div>
+        {restoreResult && (
+          <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+            ✓ {a.backupRestoreSuccess(restoreResult.total_inserted, restoreResult.total_skipped)}
+          </p>
+        )}
+        {restoreError && (
+          <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            ✗ {a.backupRestoreError}
+            <span className="block mt-1 text-slate-500 break-all">{restoreError}</span>
+          </p>
+        )}
+      </div>
     </div>
   );
 }

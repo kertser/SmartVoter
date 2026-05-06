@@ -28,9 +28,13 @@ class Settings(BaseSettings):
     knesset_votes_api_base_url: str = "https://knesset.gov.il/Odata/Votes.svc"
     oknesset_api_base_url: str = "https://oknesset.org/api/v2"
     # Most recent Knesset number. Bump this when a new election occurs.
-    # Knessets >= this value have no vote data in Votes.svc yet.
-    current_knesset: int = 25
-    # Highest Knesset number with full vote data in Votes.svc
+    # Knesset 26 was sworn in ~November 2025.
+    current_knesset: int = 26
+    # Highest Knesset number with confirmed vote data in Votes.svc.
+    # As of May 2026 the service only contains Knessets 1–24 (last vote 2021-07-13).
+    # Knessets 25 and 26 data are NOT yet published to this endpoint.
+    # The importer will also dynamically probe knessets above this value in case the
+    # API is updated — no manual bump needed in that case.
     last_knesset_with_votes: int = 24
 
     @property

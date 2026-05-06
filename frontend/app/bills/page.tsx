@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getBills, BillDetail } from "@/lib/api";
-import { useLang } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n";
 
 export default function BillsPage() {
   const { lang } = useLang();
+  const t = useT();
+  const b = t.browser;
   const [bills, setBills] = useState<BillDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -15,39 +17,40 @@ export default function BillsPage() {
   useEffect(() => {
     getBills()
       .then(setBills)
-      .catch(() => setError("Failed to load bills."))
+      .catch(() => setError(b.noItemsFound))
       .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const billTitle = (b: BillDetail) =>
+  const billTitle = (bi: BillDetail) =>
     lang === "he"
-      ? b.title_he
-      : (b.title_en ?? b.title_he);
+      ? bi.title_he
+      : (bi.title_en ?? bi.title_he);
 
-  const filtered = bills.filter((b) => {
+  const filtered = bills.filter((bi) => {
     if (!search) return true;
     const s = search.toLowerCase();
     return (
-      b.title_he?.toLowerCase().includes(s) ||
-      b.title_en?.toLowerCase().includes(s) ||
-      b.status?.toLowerCase().includes(s)
+      bi.title_he?.toLowerCase().includes(s) ||
+      bi.title_en?.toLowerCase().includes(s) ||
+      bi.status?.toLowerCase().includes(s)
     );
   });
 
   return (
     <div className="space-y-6 pb-16">
       <div className="space-y-1">
-        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Evidence Browser</p>
-        <h1 className="text-3xl font-bold text-slate-900">Bills</h1>
+        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{b.evidenceBrowser}</p>
+        <h1 className="text-3xl font-bold text-slate-900">{b.billsHeading}</h1>
         <p className="text-slate-500 text-sm">
-          Legislative bills tracked by SmartVoter.{" "}
-          <Link href="/methodology" className="text-brand-600 hover:underline">Methodology</Link>
+          {b.billsDesc}{" "}
+          <Link href="/methodology" className="text-brand-600 hover:underline">{b.methodologyLink}</Link>
         </p>
       </div>
 
       <input
         type="search"
-        placeholder="Search bills…"
+        placeholder={b.searchBills}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="w-full max-w-sm rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
@@ -56,7 +59,7 @@ export default function BillsPage() {
       {loading && (
         <div className="flex items-center gap-3 py-12 text-slate-500">
           <div className="h-5 w-5 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
-          Loading…
+          {b.loading}
         </div>
       )}
       {error && <p className="text-red-600">{error}</p>}
@@ -87,7 +90,7 @@ export default function BillsPage() {
                   onClick={(e) => e.stopPropagation()}
                   className="shrink-0 text-xs text-brand-600 hover:underline whitespace-nowrap"
                 >
-                  Source ↗
+                  {b.source}
                 </a>
               )}
             </div>
@@ -96,7 +99,7 @@ export default function BillsPage() {
       </div>
 
       {!loading && filtered.length === 0 && (
-        <p className="text-slate-500 py-8 text-center">No bills found.</p>
+        <p className="text-slate-500 py-8 text-center">{b.noItemsFound}</p>
       )}
     </div>
   );

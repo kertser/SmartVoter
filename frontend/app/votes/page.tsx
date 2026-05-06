@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getVotes, VoteListItem } from "@/lib/api";
-import { useLang } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n";
 
 export default function VotesPage() {
   const { lang } = useLang();
+  const t = useT();
+  const b = t.browser;
   const [votes, setVotes] = useState<VoteListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -16,8 +18,9 @@ export default function VotesPage() {
   useEffect(() => {
     getVotes(knessetFilter)
       .then(setVotes)
-      .catch(() => setError("Failed to load votes."))
+      .catch(() => setError(b.noItemsFound))
       .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [knessetFilter]);
 
   const voteTitle = (v: VoteListItem) =>
@@ -44,18 +47,18 @@ export default function VotesPage() {
   return (
     <div className="space-y-6 pb-16">
       <div className="space-y-1">
-        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Evidence Browser</p>
-        <h1 className="text-3xl font-bold text-slate-900">Votes</h1>
+        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{b.evidenceBrowser}</p>
+        <h1 className="text-3xl font-bold text-slate-900">{b.votesHeading}</h1>
         <p className="text-slate-500 text-sm">
-          Plenary votes tracked by SmartVoter.{" "}
-          <Link href="/methodology" className="text-brand-600 hover:underline">Methodology</Link>
+          {b.votesDesc}{" "}
+          <Link href="/methodology" className="text-brand-600 hover:underline">{b.methodologyLink}</Link>
         </p>
       </div>
 
       <div className="flex flex-wrap gap-3">
         <input
           type="search"
-          placeholder="Search votes…"
+          placeholder={b.searchVotes}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full max-w-xs rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
@@ -68,9 +71,9 @@ export default function VotesPage() {
           }}
           className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700"
         >
-          <option value="">All Knessets</option>
+          <option value="">{b.allKnessets}</option>
           {[25, 24, 23, 22, 21].map((n) => (
-            <option key={n} value={n}>Knesset {n}</option>
+            <option key={n} value={n}>{b.knessetN(n)}</option>
           ))}
         </select>
       </div>
@@ -78,7 +81,7 @@ export default function VotesPage() {
       {loading && (
         <div className="flex items-center gap-3 py-12 text-slate-500">
           <div className="h-5 w-5 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
-          Loading…
+          {b.loading}
         </div>
       )}
       {error && <p className="text-red-600">{error}</p>}
@@ -98,10 +101,10 @@ export default function VotesPage() {
                 )}
                 <p className="text-xs text-slate-500">
                   {vote.date && <span>{vote.date.slice(0, 10)}</span>}
-                  {vote.knesset_number && <span className="ms-2">Knesset {vote.knesset_number}</span>}
+                  {vote.knesset_number && <span className="ms-2">{b.knessetN(vote.knesset_number)}</span>}
                   {vote.importance_score != null && (
                     <span className={`ms-2 ${importanceColor(vote.importance_score)}`}>
-                      importance {(vote.importance_score * 100).toFixed(0)}%
+                      {b.importanceLabel(Math.round(vote.importance_score * 100))}
                     </span>
                   )}
                 </p>
@@ -114,7 +117,7 @@ export default function VotesPage() {
                   onClick={(e) => e.stopPropagation()}
                   className="shrink-0 text-xs text-brand-600 hover:underline whitespace-nowrap"
                 >
-                  Source ↗
+                  {b.source}
                 </a>
               )}
             </div>
@@ -123,7 +126,7 @@ export default function VotesPage() {
       </div>
 
       {!loading && filtered.length === 0 && (
-        <p className="text-slate-500 py-8 text-center">No votes found.</p>
+        <p className="text-slate-500 py-8 text-center">{b.noItemsFound}</p>
       )}
     </div>
   );

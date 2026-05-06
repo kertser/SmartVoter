@@ -92,6 +92,56 @@ class OpenAIProvider(LLMProvider):
             "_input_hash": _input_hash(input_data),
         }
 
+    # ── OPTIMISED: classify + extract_axis in one call ────────────────────────
+
+    def classify_and_extract(self, input_data: dict) -> dict:
+        """
+        Single prompt that returns topic classification AND directional axis.
+        Replaces two separate classify_policy_item + extract_policy_axis calls.
+        ~50% cost reduction for the policy_item_pipeline step.
+        """
+        topics_list = ", ".join([
+            "security", "judiciary", "religion_state", "settlements", "economy_taxes",
+            "healthcare", "education", "civil_rights", "housing", "welfare",
+            "military_service", "governance_corruption", "environment", "transport",
+            "cost_of_living",
+        ])
+        messages = [
+            {"role": "system", "content": SYSTEM_NEUTRAL},
+            {
+                "role": "user",
+                "content": (
+                    "Analyze this Israeli policy item and return BOTH topic classification "
+                    "AND directional policy axis in a single JSON response.\n\n"
+                    f"Title: {input_data.get('title', '')}\n"
+                    f"Description: {input_data.get('description', '')}\n\n"
+                    f"Available topics: {topics_list}\n\n"
+                    "Return JSON with ALL of these keys:\n"
+                    "  topics (list of objects with 'topic' and 'confidence' float 0–1),\n"
+                    "  primary_topic (string from available topics),\n"
+                    "  classification_confidence (float 0–1),\n"
+                    "  axis_name (snake_case identifier for the policy axis),\n"
+                    "  negative_pole (string — what -1 means on this axis),\n"
+                    "  positive_pole (string — what +1 means on this axis),\n"
+                    "  direction_explanation (string — 1 sentence explaining scale direction)."
+                ),
+            },
+        ]
+        result = _call(self.client, self.model, messages)
+        return {
+            # classification fields
+            "topics": result.get("topics", []),
+            "primary_topic": result.get("primary_topic", ""),
+            "classification_confidence": float(result.get("classification_confidence", 0.5)),
+            # axis fields
+            "axis_name": result.get("axis_name", ""),
+            "negative_pole": result.get("negative_pole", ""),
+            "positive_pole": result.get("positive_pole", ""),
+            "direction_explanation": result.get("direction_explanation", ""),
+            "_prompt_version": PROMPT_VERSION,
+            "_input_hash": _input_hash(input_data),
+        }
+
     # ── 7.2 Topic classification ───────────────────────────────────────────────
 
     def classify_policy_item(self, input_data: dict) -> dict:
@@ -200,6 +250,91 @@ class OpenAIProvider(LLMProvider):
             "neutrality_risk": result.get("neutrality_risk", "medium"),
             "loaded_terms": result.get("loaded_terms", []),
             "source_refs": result.get("source_refs", []),
+            "_prompt_version": PROMPT_VERSION,
+            "_input_hash": _input_hash(input_data),
+        }
+
+    # ── OPTIMISED: generate + critique in one call ────────────────────────────
+
+    def generate_question_with_critique(self, input_data: dict) -> dict:
+        """
+        Single prompt that generates a neutral question AND self-critiques it.
+        Replaces two separate generate_question + critique_question calls.
+        ~50% cost reduction for question_pipeline step.
+        """
+        messages = [
+            {"role": "system", "content": SYSTEM_NEUTRAL},
+            {
+                "role": "user",
+                "content": (
+                    "Generate a neutral survey question for the SmartVoter app AND immediately "
+                    "self-critique it for bias or loaded wording — all in one JSON response.\n\n"
+                    f"Policy item: {input_data.get('title', '')}\n"
+                    f"Description: {input_data.get('description', '')}\n"
+                    f"Directional axis: {input_data.get('directional_axis', '')}\n\n"
+                    "Rules:\n"
+                    "- The question must be factual and non-loaded.\n"
+                    "- Do not name specific parties in the question.\n"
+                    "- Use a 5-point Likert scale (Strongly oppose → Strongly support).\n"
+                    "- Keep the reading level accessible to the general public.\n\n"
+                    "Return JSON with ALL of these keys:\n"
+                    "  question_en (string),\n"
+                    "  question_he (string, Hebrew),\n"
+                    "  question_ru (string, Russian),\n"
+                    "  context_note_en (string, 1–2 neutral sentences),\n"
+                    "  answer_scale (list of 5 English strings),\n"
+                    "  neutrality_risk (low|medium|high),\n"
+                    "  loaded_terms (list of strings, empty if none),\n"
+                    "  source_refs (list of strings),\n"
+                    "  is_loaded (boolean — is the question biased?),\n"
+                    "  bias_direction (string or null),\n"
+                    "  suggested_revision (string or null — only if is_loaded=true),\n"
+                    "  reading_level (general public|educated|expert),\n"
+                    "  requires_context (boolean),\n"
+                    "  context_note (string or null)."
+                ),
+            },
+        ]
+        result = _call(self.client, self.model, messages)
+
+        question_en = result.get("question_en", "")
+        is_loaded = bool(result.get("is_loaded", False))
+        neutrality_risk = result.get("neutrality_risk", "medium")
+
+        # Apply revision if suggested
+        if is_loaded and result.get("suggested_revision"):
+            question_en = result["suggested_revision"]
+
+        # Derive neutrality_score
+        if is_loaded:
+            neutrality_score = 0.4
+        elif neutrality_risk == "low":
+            neutrality_score = 0.9
+        elif neutrality_risk == "high":
+            neutrality_score = 0.5
+        else:
+            neutrality_score = 0.7
+
+        return {
+            "question": question_en,
+            "question_en": question_en,
+            "question_he": result.get("question_he", ""),
+            "question_ru": result.get("question_ru", ""),
+            "context_note_en": result.get("context_note_en", ""),
+            "answer_scale": result.get("answer_scale", [
+                "Strongly oppose", "Somewhat oppose", "Neutral / unsure",
+                "Somewhat support", "Strongly support",
+            ]),
+            "neutrality_risk": neutrality_risk,
+            "loaded_terms": result.get("loaded_terms", []),
+            "source_refs": result.get("source_refs", []),
+            "is_loaded": is_loaded,
+            "bias_direction": result.get("bias_direction"),
+            "suggested_revision": result.get("suggested_revision"),
+            "reading_level": result.get("reading_level", "general public"),
+            "requires_context": bool(result.get("requires_context", False)),
+            "context_note": result.get("context_note"),
+            "neutrality_score": neutrality_score,
             "_prompt_version": PROMPT_VERSION,
             "_input_hash": _input_hash(input_data),
         }

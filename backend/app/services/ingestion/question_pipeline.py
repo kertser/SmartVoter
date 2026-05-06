@@ -106,7 +106,7 @@ def _generate_question_for_item(
     pi: PolicyItem,
 ) -> Question | None:
     """
-    Generate + critique a single question for a PolicyItem.
+    Generate + critique a single question for a PolicyItem in one LLM call.
     Returns the created Question row (not yet committed), or None.
     """
     input_data = {
@@ -115,43 +115,26 @@ def _generate_question_for_item(
         "directional_axis": pi.directional_axis or "",
     }
 
-    # Step 1: Generate
-    gen = llm.generate_question(input_data, entity_id=pi.id)
+    # Single combined call: generate + critique (1 LLM call instead of 2)
+    result = llm.generate_question_with_critique(input_data, entity_id=pi.id)
 
-    question_en = gen.get("question_en") or gen.get("question", "")
-    question_he = gen.get("question_he", "")
-    question_ru = gen.get("question_ru", "")
-
+    question_en = result.get("question_en") or result.get("question", "")
     if not question_en:
         logger.warning("LLM returned empty question for policy_item %s", pi.id)
         return None
 
-    # Step 2: Critique
-    neutrality_score = 0.7  # default
-    try:
-        critique = llm.critique_question({"question": question_en}, entity_id=pi.id)
-        if critique.get("is_loaded"):
-            neutrality_score = 0.4
-            # Use suggested revision if available
-            revised = critique.get("suggested_revision")
-            if revised:
-                question_en = revised
-        elif gen.get("neutrality_risk") == "low":
-            neutrality_score = 0.9
-        elif gen.get("neutrality_risk") == "high":
-            neutrality_score = 0.5
-    except Exception as exc:
-        logger.warning("critique_question failed for policy_item %s: %s", pi.id, exc)
+    # neutrality_score already computed inside generate_question_with_critique
+    neutrality_score = float(result.get("neutrality_score", 0.7))
 
     q = Question(
         id=uuid.uuid4(),
         policy_item_id=pi.id,
         question_text_en=question_en,
-        question_text_he=question_he,
-        question_text_ru=question_ru,
+        question_text_he=result.get("question_he", ""),
+        question_text_ru=result.get("question_ru", ""),
         answer_scale_type=AnswerScaleType.likert_5,
         neutrality_score=neutrality_score,
-        llm_prompt_version=gen.get("_prompt_version", "v1.0"),
+        llm_prompt_version=result.get("_prompt_version", "v1.0"),
         human_review_status=ReviewStatus.needs_review,
     )
     db.add(q)

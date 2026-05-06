@@ -27,12 +27,15 @@ Usage examples:
   uv run python -m backend.app.seed.ingest_knesset --knesset 25 --volatility
   uv run python -m backend.app.seed.ingest_knesset --migrate-mock
 
-KNOWN LIMITATIONS (as of May 2026):
-  - The Knesset Votes.svc OData endpoint (View_vote_rslts_hdr_Approved) historically
-    only contained data for Knessets 1-24. Knesset 25 data became partially available
-    in 2025. Use --probe-votes to verify availability before a full import.
-  - Alternatively Hasadna / Open Knesset (oknesset.org) may have more current vote data.
-  - Knesset 26 started in 2025; update party seed data to reflect current parties.
+KNOWN LIMITATIONS (confirmed May 2026):
+  - The Knesset Votes.svc OData endpoint (View_vote_rslts_hdr_Approved) only
+    contains vote data for Knessets 1–24 (last vote 2021-07-13).  Knessets 25
+    and 26 return an empty result set — the Knesset has not published this data
+    to the public OData service yet.
+  - Open Knesset / Hasadna (oknesset.org/api/v2) is currently offline.
+  - The importer probes availability dynamically before fetching votes, so it
+    will pick up K25/K26 data automatically whenever the Knesset publishes it.
+  - Bills, factions, and persons for K25/K26 ARE available and will be imported.
 """
 import argparse
 import sys
@@ -54,11 +57,12 @@ def main() -> None:  # noqa: C901
     parser.add_argument("--last-n", type=int, default=0, dest="last_n",
                         help=(
                             "Run the full pipeline for the last N Knessets automatically.\n"
-                            "E.g. --last-n 2 imports Knessets 24 and 25 (using --current-knesset).\n"
-                            "Votes are skipped for Knessets >= --last-knesset-with-votes+1."
+                            "E.g. --last-n 2 imports Knessets 25 and 26 (using --current-knesset).\n"
+                            "Vote import is skipped for knessets where Votes.svc returns no data\n"
+                            "(currently K25 and K26 have no vote data in the API)."
                         ))
     parser.add_argument("--current-knesset", type=int, default=None, dest="current_knesset",
-                        help="Most recent Knesset number (default: from settings.current_knesset)")
+                        help="Most recent Knesset number (default: from settings, currently 26)")
 
     parser.add_argument("--factions",        action="store_true", help="Import factions/party instances")
     parser.add_argument("--votes",           action="store_true", help="Import plenary votes")
@@ -130,14 +134,34 @@ def main() -> None:  # noqa: C901
                     import_factions, import_votes, import_bills,
                     import_persons, import_vote_results,
                 )
+                from backend.app.services.ingestion.knesset_odata import probe_votes_availability
+
                 _step(f"[K{_kn}] factions",      import_factions,      _db, _kn, _settings)
+
+                # Determine vote availability: fast-path from config, then dynamic probe
+                # for knessets newer than the last known knesset with votes.
                 if _kn <= _last_votes:
-                    _step(f"[K{_kn}] votes",     import_votes,         _db, _kn, _settings,
+                    _votes_available = True
+                else:
+                    _votes_available = probe_votes_availability(
+                        _settings.knesset_votes_api_base_url, _kn
+                    )
+
+                if _votes_available:
+                    _step(f"[K{_kn}] votes",        import_votes,         _db, _kn, _settings,
                           limit=args.limit, enrich_with_llm=not args.no_llm)
-                    _step(f"[K{_kn}] vote_results", import_vote_results, _db, _kn, _settings,
+                    _step(f"[K{_kn}] vote_results",  import_vote_results,  _db, _kn, _settings,
                           vote_limit=args.limit)
                 else:
-                    print(f"  ⚠  Knesset {_kn} vote data not yet in Votes.svc — skipping votes+vote_results")
+                    print(
+                        f"\n  ⚠  Knesset {_kn}: votes skipped — Votes.svc has no data for "
+                        f"this Knesset yet.\n"
+                        f"     (Votes.svc currently only contains Knessets 1–{_last_votes};\n"
+                        f"      last available vote: 2021-07-13, end of Knesset {_last_votes}.)\n"
+                        f"     Bills, factions, and persons will still be imported.\n"
+                        f"     Re-run with --votes after the Knesset publishes new data."
+                    )
+
                 _step(f"[K{_kn}] bills",          import_bills,         _db, _kn, _settings,
                       limit=args.limit, enrich_with_llm=not args.no_llm)
                 _step(f"[K{_kn}] persons",        import_persons,       _db, _kn, _settings,
@@ -197,8 +221,17 @@ def main() -> None:  # noqa: C901
         else:
             print(
                 f"❌ Knesset {args.knesset} vote data is NOT available in the OData API.\n"
-                f"   Consider: --knesset {args.knesset - 1} for previous Knesset data,\n"
-                f"   or use Open Knesset (https://oknesset.org/api/v2/vote/) for current data."
+                f"\n"
+                f"   Root cause (confirmed May 2026):\n"
+                f"   The Knesset Votes.svc (View_vote_rslts_hdr_Approved) only contains\n"
+                f"   data for Knessets 1–24.  The last available vote is 2021-07-13.\n"
+                f"   Knessets 25 and 26 return an empty result set.\n"
+                f"\n"
+                f"   What you can do:\n"
+                f"   • Use --knesset 24 to import the last available complete Knesset.\n"
+                f"   • Bills, factions, and persons for K{args.knesset} ARE available.\n"
+                f"   • Monitor https://knesset.gov.il/Odata/Votes.svc for updates.\n"
+                f"   • Open Knesset (oknesset.org/api/v2) is currently offline.\n"
             )
         sys.exit(0 if available else 1)
 

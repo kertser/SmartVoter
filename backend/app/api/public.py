@@ -6,10 +6,14 @@ GET /api/parties/{id}             — party profile with positions + members + l
 GET /api/persons/{id}             — MK/candidate profile with membership history
 GET /api/votes/{id}               — vote detail with per-party breakdown
 GET /api/bills/{id}               — bill detail
+GET /api/parties/{id}/positions/{policy_item_id}/explain
+                                  — lazy LLM explanation for EvidenceDrawer
+                                    (LLM called only on first request; cached after)
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import uuid
+import logging
 
 from backend.app.db import get_db
 from backend.app.models.party_instance import PartyInstance
@@ -24,6 +28,7 @@ from backend.app.models.vote import Vote
 from backend.app.models.vote_result import VoteResult
 from backend.app.models.bill import Bill
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["public-browser"])
 
 
@@ -316,4 +321,111 @@ def list_persons(limit: int = 50, db: Session = Depends(get_db)) -> list[dict]:
         }
         for p in persons
     ]
+
+
+# ── Lazy LLM explanation endpoint ─────────────────────────────────────────────
+
+@router.get("/parties/{party_id}/positions/{policy_item_id}/explain")
+def explain_party_position(
+    party_id: str,
+    policy_item_id: str,
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    Returns (or lazily generates) an LLM explanation for why a party holds a
+    given position on a policy item. Used by the EvidenceDrawer component.
+
+    Cost optimisation strategy:
+    - The party_position_pipeline runs WITHOUT LLM by default (enrich_with_llm=False).
+    - The LLM explanation is generated HERE, only when a user actually clicks
+      "Show evidence" for a specific party+policy pair.
+    - AuditedLLMService caches by input_hash: clicking twice costs nothing extra.
+
+    Response:
+        explanation  — LLM-generated 2–3 sentence neutral explanation
+        position_mean, evidence_strength, uncertainty — from DB
+        from_cache   — true if the explanation was already stored in the DB
+    """
+    try:
+        pid = uuid.UUID(party_id)
+        pol_id = uuid.UUID(policy_item_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid UUID")
+
+    pos = (
+        db.query(PartyPosition)
+        .filter(
+            PartyPosition.party_instance_id == pid,
+            PartyPosition.policy_item_id == pol_id,
+        )
+        .first()
+    )
+    if not pos:
+        raise HTTPException(status_code=404, detail="Party position not found")
+
+    # If we already have an explanation (from a previous lazy call or manual entry), return it.
+    if pos.llm_explanation:
+        return {
+            "explanation": pos.llm_explanation,
+            "position_mean": pos.position_mean,
+            "evidence_strength": pos.evidence_strength,
+            "uncertainty": pos.position_uncertainty,
+            "from_cache": True,
+        }
+
+    # Lazy LLM call — generate explanation on demand
+    party = db.query(PartyInstance).filter(PartyInstance.id == pid).first()
+    policy_item = db.query(PolicyItem).filter(PolicyItem.id == pol_id).first()
+    if not party or not policy_item:
+        raise HTTPException(status_code=404, detail="Party or policy item not found")
+
+    try:
+        from backend.app.config import get_settings
+        from backend.app.services.llm import get_llm_provider
+        from backend.app.services.llm.audit_service import AuditedLLMService
+        from backend.app.services.ingestion.party_position_pipeline import (
+            _parse_axis_pole,
+        )
+
+        settings = get_settings()
+        provider = get_llm_provider(settings)
+        svc = AuditedLLMService(provider, db)
+
+        llm_result = svc.infer_party_position(
+            {
+                "party_name": party.official_name,
+                "policy_title": policy_item.title,
+                "directional_axis": policy_item.directional_axis or "",
+                "negative_pole": _parse_axis_pole(policy_item.directional_axis, "neg"),
+                "positive_pole": _parse_axis_pole(policy_item.directional_axis, "pos"),
+                "evidence": [
+                    {
+                        "type": "stored_position",
+                        "position_mean": pos.position_mean,
+                        "evidence_strength": pos.evidence_strength,
+                        "evidence_type": pos.evidence_type or "vote",
+                    }
+                ],
+            },
+            entity_id=pol_id,
+        )
+        explanation = llm_result.get("explanation", "")
+
+        # Persist so the next request is free
+        pos.llm_explanation = explanation
+        db.commit()
+
+        return {
+            "explanation": explanation,
+            "position_mean": pos.position_mean,
+            "evidence_strength": pos.evidence_strength,
+            "uncertainty": pos.position_uncertainty,
+            "from_cache": False,
+        }
+
+    except Exception as exc:
+        logger.warning(
+            "Lazy explain failed party=%s policy=%s: %s", party_id, policy_item_id, exc
+        )
+        raise HTTPException(status_code=503, detail="LLM explanation temporarily unavailable")
 

@@ -67,11 +67,17 @@ class FallbackLLMProvider(LLMProvider):
     def extract_policy_axis(self, input_data: dict) -> dict:
         return self._call_with_fallback("extract_policy_axis", input_data)
 
+    def classify_and_extract(self, input_data: dict) -> dict:
+        return self._call_with_fallback("classify_and_extract", input_data)
+
     def generate_question(self, input_data: dict) -> dict:
         return self._call_with_fallback("generate_question", input_data)
 
     def critique_question(self, input_data: dict) -> dict:
         return self._call_with_fallback("critique_question", input_data)
+
+    def generate_question_with_critique(self, input_data: dict) -> dict:
+        return self._call_with_fallback("generate_question_with_critique", input_data)
 
     def infer_party_position(self, input_data: dict) -> dict:
         return self._call_with_fallback("infer_party_position", input_data)

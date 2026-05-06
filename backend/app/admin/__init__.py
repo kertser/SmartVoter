@@ -8,8 +8,11 @@ No question is ever surfaced to users until human_review_status = 'approved'.
 """
 
 import uuid
+import json
 import logging
-from fastapi import APIRouter, Depends, Header, HTTPException, status, BackgroundTasks
+from datetime import datetime
+from fastapi import APIRouter, Depends, Header, HTTPException, status, BackgroundTasks, UploadFile, File
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Annotated
@@ -18,6 +21,7 @@ from backend.app.db import get_db
 from backend.app.config import get_settings, Settings
 from backend.app.models.question import Question, AnswerScaleType
 from backend.app.models.policy_item import PolicyItem, ReviewStatus
+from backend.app.models.topic import Topic
 from backend.app.models.llm_audit import LlmRun, LlmOutput
 from backend.app.services.llm import get_llm_provider
 from backend.app.services.llm.audit_service import AuditedLLMService
@@ -817,5 +821,362 @@ def trigger_volatility_pipeline(
 
     background_tasks.add_task(_run)
     return {"job_id": job_id, "status": "queued"}
+
+
+# ── Root question generation ──────────────────────────────────────────────────
+
+class GenerateRootQuestionBody(BaseModel):
+    topic_id: str
+
+
+@admin_router.post("/llm/generate-root-question")
+def generate_root_question(
+    body: GenerateRootQuestionBody,
+    db: Session = Depends(get_db),
+    settings=Depends(get_settings),
+) -> dict:
+    """
+    Generate a broad, topic-level root question for the question tree.
+    Root questions are the entry point of the questionnaire (is_root_question=True).
+    They cover a whole topic, not a specific bill or vote.
+    Human approval still required before going public.
+    """
+    try:
+        tid = uuid.UUID(body.topic_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid topic UUID")
+
+    topic = db.query(Topic).filter(Topic.id == tid).first()
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    # Check if a root question already exists for this topic
+    existing = db.query(Question).filter(
+        Question.topic_id == tid,
+        Question.is_root_question.is_(True),
+    ).first()
+
+    provider = get_llm_provider(settings)
+    svc = AuditedLLMService(provider, db)
+
+    input_data = {
+        "title": f"[ROOT] {topic.name_en}",
+        "description": topic.description or f"Broad question covering the topic: {topic.name_en}",
+        "directional_axis": (
+            "This is a broad topic-level question. Do not reference specific bills. "
+            "Ask about the user's general stance on this policy area."
+        ),
+    }
+
+    result = svc.generate_question_with_critique(input_data, entity_id=tid)
+    neutrality_score = float(result.get("neutrality_score", 0.7))
+    question_en = result.get("question_en") or result.get("question", "")
+
+    if not question_en:
+        raise HTTPException(status_code=500, detail="LLM returned empty question")
+
+    if existing:
+        # Update existing root question
+        existing.question_text_en = question_en
+        existing.question_text_he = result.get("question_he", existing.question_text_he)
+        existing.question_text_ru = result.get("question_ru")
+        existing.neutrality_score = neutrality_score
+        existing.llm_prompt_version = result.get("_prompt_version", "v1.0")
+        existing.human_review_status = ReviewStatus.needs_review
+        db.commit()
+        db.refresh(existing)
+        q = existing
+        action = "updated"
+    else:
+        q = Question(
+            id=uuid.uuid4(),
+            is_root_question=True,
+            topic_id=tid,
+            policy_item_id=None,
+            question_text_en=question_en,
+            question_text_he=result.get("question_he", ""),
+            question_text_ru=result.get("question_ru"),
+            answer_scale_type=AnswerScaleType.likert_5,
+            neutrality_score=neutrality_score,
+            llm_prompt_version=result.get("_prompt_version", "v1.0"),
+            human_review_status=ReviewStatus.needs_review,
+        )
+        db.add(q)
+        db.commit()
+        db.refresh(q)
+        action = "created"
+
+    return {
+        "action": action,
+        "question_id": str(q.id),
+        "topic_id": str(tid),
+        "topic_name_en": topic.name_en,
+        "question_en": q.question_text_en,
+        "question_he": q.question_text_he,
+        "question_ru": q.question_text_ru,
+        "neutrality_score": neutrality_score,
+        "status": q.human_review_status.value,
+        "provider": provider.provider,
+    }
+
+
+@admin_router.get("/topics/with-root-questions")
+def list_topics_with_root_questions(db: Session = Depends(get_db)) -> list[dict]:
+    """
+    List all topics with their root questions (if they exist).
+    Used by the Generate tab to show the question tree overview.
+    """
+    topics = db.query(Topic).order_by(Topic.slug).all()
+    result = []
+    for topic in topics:
+        root_q = db.query(Question).filter(
+            Question.topic_id == topic.id,
+            Question.is_root_question.is_(True),
+        ).first()
+
+        policy_item_count = db.query(PolicyItem).filter(
+            PolicyItem.topic_id == topic.id
+        ).count()
+
+        followup_count = db.query(Question).filter(
+            Question.topic_id.is_(None),
+        ).join(PolicyItem, Question.policy_item_id == PolicyItem.id).filter(
+            PolicyItem.topic_id == topic.id,
+        ).count()
+
+        result.append({
+            "topic_id": str(topic.id),
+            "slug": topic.slug,
+            "name_en": topic.name_en,
+            "name_he": topic.name_he,
+            "name_ru": topic.name_ru,
+            "description": topic.description,
+            "policy_item_count": policy_item_count,
+            "followup_question_count": followup_count,
+            "root_question": {
+                "id": str(root_q.id),
+                "question_text_en": root_q.question_text_en,
+                "question_text_he": root_q.question_text_he,
+                "question_text_ru": root_q.question_text_ru,
+                "status": root_q.human_review_status.value,
+                "neutrality_score": root_q.neutrality_score,
+            } if root_q else None,
+        })
+    return result
+
+
+# ── Database backup and restore ───────────────────────────────────────────────
+
+@admin_router.get("/db/backup")
+def backup_database(db: Session = Depends(get_db)) -> Response:
+    """
+    Export the entire database as a JSON snapshot.
+    Returns a downloadable JSON file that can be used to restore the database
+    on a fresh deployment (avoids losing data when redeploying).
+
+    The backup includes all tables in insertion order.
+    Sensitive data (admin passwords) is NOT included.
+    """
+    from backend.app.models.political_brand import PoliticalBrand
+    from backend.app.models.party_instance import PartyInstance
+    from backend.app.models.party_lineage_edge import PartyLineageEdge
+    from backend.app.models.party_position import PartyPosition
+    from backend.app.models.person import Person
+    from backend.app.models.person_party_membership import PersonPartyMembership
+    from backend.app.models.bill import Bill
+    from backend.app.models.vote import Vote
+    from backend.app.models.vote_result import VoteResult
+    from backend.app.models.policy_item import PolicyItem
+    from backend.app.models.question import Question
+    from backend.app.models.user_session import UserSession
+    from backend.app.models.user_answer import UserAnswer
+    from backend.app.models.recommendation_run import RecommendationRun
+
+    def _serialize_row(row) -> dict:
+        """Convert a SQLAlchemy model instance to a JSON-safe dict."""
+        result = {}
+        for col in row.__table__.columns:
+            val = getattr(row, col.name)
+            if val is None:
+                result[col.name] = None
+            elif isinstance(val, uuid.UUID):
+                result[col.name] = str(val)
+            elif isinstance(val, datetime):
+                result[col.name] = val.isoformat()
+            elif hasattr(val, "value"):  # Enum
+                result[col.name] = val.value
+            else:
+                result[col.name] = val
+        return result
+
+    def _dump_table(model) -> list[dict]:
+        try:
+            return [_serialize_row(row) for row in db.query(model).all()]
+        except Exception as exc:
+            logger.warning("Backup: failed to dump %s: %s", model.__tablename__, exc)
+            return []
+
+    snapshot = {
+        "version": "1.0",
+        "created_at": datetime.utcnow().isoformat() + "Z",
+        "tables": {
+            "topics":                  _dump_table(Topic),
+            "political_brands":        _dump_table(PoliticalBrand),
+            "party_instances":         _dump_table(PartyInstance),
+            "party_lineage_edges":     _dump_table(PartyLineageEdge),
+            "persons":                 _dump_table(Person),
+            "person_party_memberships": _dump_table(PersonPartyMembership),
+            "bills":                   _dump_table(Bill),
+            "votes":                   _dump_table(Vote),
+            "vote_results":            _dump_table(VoteResult),
+            "policy_items":            _dump_table(PolicyItem),
+            "party_positions":         _dump_table(PartyPosition),
+            "questions":               _dump_table(Question),
+        },
+        "stats": {},
+    }
+    # Add row counts
+    for table_name, rows in snapshot["tables"].items():
+        snapshot["stats"][table_name] = len(rows)
+
+    json_bytes = json.dumps(snapshot, ensure_ascii=False, indent=2).encode("utf-8")
+    filename = f"smartvoter_backup_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+    return Response(
+        content=json_bytes,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+class RestoreOptions(BaseModel):
+    skip_existing: bool = True   # if True, only insert rows that don't exist yet
+    tables: list[str] | None = None  # if None, restore all tables
+
+
+@admin_router.post("/db/restore")
+async def restore_database(
+    file: UploadFile = File(...),
+    skip_existing: bool = True,
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    Restore the database from a JSON backup file.
+
+    By default (skip_existing=True), only inserts rows that don't exist yet
+    (safe merge — does NOT delete existing data). This is the recommended mode
+    for recovering after a redeploy.
+
+    To do a full replacement, set skip_existing=False — all existing rows in
+    the included tables will be deleted first, then the backup is restored.
+
+    WARNING: skip_existing=False is destructive. Back up current data first.
+    """
+    from backend.app.models.political_brand import PoliticalBrand
+    from backend.app.models.party_instance import PartyInstance
+    from backend.app.models.party_lineage_edge import PartyLineageEdge
+    from backend.app.models.party_position import PartyPosition
+    from backend.app.models.person import Person
+    from backend.app.models.person_party_membership import PersonPartyMembership
+    from backend.app.models.bill import Bill
+    from backend.app.models.vote import Vote
+    from backend.app.models.vote_result import VoteResult
+    from backend.app.models.policy_item import PolicyItem
+    from backend.app.models.question import Question
+
+    raw = await file.read()
+    try:
+        snapshot = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON: {exc}")
+
+    if snapshot.get("version") != "1.0":
+        raise HTTPException(status_code=400, detail="Unsupported backup version")
+
+    # Table restore order matters for FK constraints
+    TABLE_MODELS = [
+        ("topics",                   Topic),
+        ("political_brands",         PoliticalBrand),
+        ("party_instances",          PartyInstance),
+        ("party_lineage_edges",      PartyLineageEdge),
+        ("persons",                  Person),
+        ("person_party_memberships", PersonPartyMembership),
+        ("bills",                    Bill),
+        ("votes",                    Vote),
+        ("vote_results",             VoteResult),
+        ("policy_items",             PolicyItem),
+        ("party_positions",          PartyPosition),
+        ("questions",                Question),
+    ]
+
+    tables_data = snapshot.get("tables", {})
+    stats: dict[str, dict] = {}
+
+    for table_name, Model in TABLE_MODELS:
+        rows = tables_data.get(table_name, [])
+        if not rows:
+            stats[table_name] = {"inserted": 0, "skipped": 0}
+            continue
+
+        inserted = skipped = 0
+
+        if not skip_existing:
+            # Full replace: delete all existing rows first
+            try:
+                db.query(Model).delete()
+                db.flush()
+            except Exception as exc:
+                logger.warning("Restore: failed to clear %s: %s", table_name, exc)
+
+        for row_data in rows:
+            try:
+                pk = row_data.get("id")
+                if pk and skip_existing:
+                    existing = db.query(Model).filter(Model.id == pk).first()
+                    if existing:
+                        skipped += 1
+                        continue
+
+                # Parse UUID fields back
+                parsed = {}
+                for col in Model.__table__.columns:
+                    if col.name not in row_data:
+                        continue
+                    val = row_data[col.name]
+                    if val is None:
+                        parsed[col.name] = None
+                    elif str(col.type) in ("UUID", "VARCHAR(36)") and val:
+                        try:
+                            parsed[col.name] = uuid.UUID(str(val))
+                        except (ValueError, AttributeError):
+                            parsed[col.name] = val
+                    else:
+                        parsed[col.name] = val
+
+                db.add(Model(**parsed))
+                inserted += 1
+            except Exception as exc:
+                logger.warning("Restore: failed to insert row in %s: %s", table_name, exc)
+                db.rollback()
+                skipped += 1
+
+        try:
+            db.commit()
+        except Exception as exc:
+            db.rollback()
+            logger.error("Restore: commit failed for %s: %s", table_name, exc)
+
+        stats[table_name] = {"inserted": inserted, "skipped": skipped}
+
+    total_inserted = sum(v["inserted"] for v in stats.values())
+    total_skipped = sum(v["skipped"] for v in stats.values())
+    return {
+        "status": "ok",
+        "skip_existing": skip_existing,
+        "total_inserted": total_inserted,
+        "total_skipped": total_skipped,
+        "backup_created_at": snapshot.get("created_at"),
+        "tables": stats,
+    }
+
 
 

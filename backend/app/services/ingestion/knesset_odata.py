@@ -18,6 +18,16 @@ Bills remain at the original ParliamentInfo service:
   Bills service: https://knesset.gov.il/Odata/ParliamentInfo.svc
   Entity: KNS_Bill
     Key date field: LastUpdatedDate (SubmitDate does NOT exist in the schema)
+
+KNOWN LIMITATION (confirmed May 2026):
+  The Votes.svc endpoint currently contains data only for Knessets 1–24.
+  The last available vote is from 2021-07-13 (end of Knesset 24).
+  Knessets 25 and 26 return an empty result set — the data has not been
+  published to this service.  Open Knesset (oknesset.org/api/v2) is also
+  currently offline (redirects to the website home page).
+
+  Use probe_votes_availability() before any large import to detect if new
+  data has become available without changing configuration.
 """
 import logging
 from typing import Any
@@ -53,16 +63,24 @@ def _get_json(client: httpx.Client, url: str) -> dict[str, Any]:
         raise
 
 
-def probe_votes_availability(votes_base_url: str, knesset_number: int) -> bool:
+def probe_votes_availability(
+    votes_base_url: str,
+    knesset_number: int,
+) -> bool:
     """
     Probe whether the Knesset Votes.svc endpoint has data for this Knesset number.
 
     Returns True if at least one vote record exists for this Knesset.
-    This is useful to detect whether Knesset 25/26 data is available yet.
 
-    NOTE: As of 2025, Knesset 25 data became partially available.
-    Knesset 26 (sworn in 2025) may still be pending.
-    Always check availability before running large imports on new Knessets.
+    Two distinct failure modes are possible — both return False but are logged
+    at different levels so the caller can distinguish them:
+      - API reachable but no data (empty value array) → WARNING
+      - API unreachable / HTTP error / timeout        → ERROR
+
+    As of May 2026, Knessets 25 and 26 return an empty result — the Knesset
+    has not published their vote records to Votes.svc yet.  Probe dynamically
+    rather than relying solely on the ``last_knesset_with_votes`` setting so
+    the importer reacts automatically when the API is updated.
     """
     try:
         url = _odata_url(
@@ -78,14 +96,26 @@ def probe_votes_availability(votes_base_url: str, knesset_number: int) -> bool:
             logger.info("Knesset %d vote data IS available in Votes.svc", knesset_number)
         else:
             logger.warning(
-                "Knesset %d vote data is NOT available in Votes.svc. "
-                "Consider using Open Knesset (Hasadna) as an alternative: "
-                "https://oknesset.org/api/v2/vote/",
+                "Knesset %d: Votes.svc returned an empty result — vote data has not "
+                "been published to this endpoint yet.  "
+                "Votes.svc currently only contains Knessets 1–24 (last vote 2021-07-13).  "
+                "Check https://oknesset.org or the Knesset data portal for updates.",
                 knesset_number,
             )
         return available
+    except httpx.HTTPError as exc:
+        logger.error(
+            "Knesset %d: Votes.svc HTTP error — API may be down or blocked: %s",
+            knesset_number,
+            exc,
+        )
+        return False
     except Exception as exc:
-        logger.error("Failed to probe Knesset %d votes availability: %s", knesset_number, exc)
+        logger.error(
+            "Knesset %d: unexpected error probing Votes.svc availability: %s",
+            knesset_number,
+            exc,
+        )
         return False
 
 
@@ -99,13 +129,11 @@ def fetch_votes(
     Return up to `limit` plenary vote records for the given Knesset.
     Uses the Votes.svc service (View_vote_rslts_hdr_Approved entity).
 
-    NOTE: As of 2024, only Knesset 1–24 had vote data in this endpoint.
-    Knesset 25 data became partially available in 2025.
-    Knesset 26+ data may still be pending — call probe_votes_availability()
-    first if you are unsure.
-
-    Pass probe_first=True to automatically skip fetching if no data is available
-    (avoids unnecessary API calls for new Knessets).
+    KNOWN LIMITATION (May 2026):
+      Votes.svc only contains Knessets 1–24 (last vote 2021-07-13).
+      Knessets 25 and 26 return empty results.  Pass probe_first=True (the
+      default for knesset >= 25) to skip the fetch gracefully when no data is
+      available.
 
     Each returned dict maps to the Vote model fields:
       external_id, title_he, date, knesset_number, vote_type, source_url, raw_json
@@ -113,8 +141,8 @@ def fetch_votes(
     if probe_first and knesset_number >= 25:
         if not probe_votes_availability(votes_base_url, knesset_number):
             logger.warning(
-                "Skipping vote fetch for Knesset %d — no data found in Votes.svc. "
-                "Run import_votes with a lower knesset_number or use Open Knesset.",
+                "Skipping vote fetch for Knesset %d — Votes.svc has no data for this "
+                "Knesset yet.  Import will continue without votes for this Knesset.",
                 knesset_number,
             )
             return []
@@ -271,11 +299,17 @@ def fetch_persons(
     Return all persons (MKs and leaders) for the given Knesset via KNS_PersonToPosition.
     Includes faction membership.
 
-    MK PositionIDs: 43 (male), 61 (female), 48 (faction chair).
+    MK PositionIDs: 43 (male), 61 (female), 48 (faction chair), 54 (faction member).
     Returns list of dicts with person + membership info.
+
+    NOTE: OData v3 (used by the Knesset API) does NOT support the `in` operator.
+    We use explicit `or` conditions instead.
     """
-    # Positions that indicate Knesset membership
-    mk_positions = "43,61,48,54"
+    # Positions that indicate Knesset membership — use 'or' (OData v3 has no 'in')
+    pos_filter = (
+        "PositionID eq 43 or PositionID eq 61 "
+        "or PositionID eq 48 or PositionID eq 54"
+    )
     results: list[dict[str, Any]] = []
     skip = 0
     seen_persons: set[int] = set()
@@ -288,7 +322,7 @@ def fetch_persons(
                 "KNS_PersonToPosition",
                 (
                     f"$filter=KnessetNum eq {knesset_number} "
-                    f"and PositionID in ({mk_positions})"
+                    f"and ({pos_filter})"
                     f"&$expand=KNS_Person"
                     f"&$top={take}&$skip={skip}"
                     f"&$orderby=PersonID"
