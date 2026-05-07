@@ -63,7 +63,7 @@ export interface Translations {
   };
 
   questionnaire: {
-    progressLabel: (current: number, max: number) => string;
+    progressLabel: (current: number) => string;
     showResultsNow: string;
     positionLabel: string;
     positionTooltip: string;
@@ -143,6 +143,23 @@ export interface Translations {
     tooltipVolatility: string;
     tooltipNewParty: string;
     tooltipScoreBar: string;
+    // Section subtitles (hardcoded → i18n)
+    radarSubtitle: string;
+    heatmapSubtitle: string;
+    heatmapClickHint: string;
+    evidenceCompositionSubtitle: string;
+    confidenceBreakdownSubtitle: string;
+    viewEvidence: string;
+    lineageNote: string;
+    confidenceOverall: (pct: number) => string;
+    confidenceDashedNote: (pct: number) => string;
+    // Summary bar
+    summaryAnswered: (n: number) => string;
+    summaryTopMatch: string;
+    summaryAvgConfidence: string;
+    summaryRepGap: string;
+    summaryRepGapYes: string;
+    summaryRepGapNo: string;
   };
 
   methodology: {

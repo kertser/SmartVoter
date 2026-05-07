@@ -128,7 +128,7 @@ export default function QuestionnairePage() {
       {/* Progress bar */}
       <div className="space-y-1">
         <div className="flex justify-between text-xs text-slate-500">
-          <span>{q.progressLabel(answeredCount + 1, 15)}</span>
+          <span>{q.progressLabel(answeredCount + 1)}</span>
           {answeredCount >= 8 && (
             <button
               onClick={handleViewResults}
@@ -141,7 +141,7 @@ export default function QuestionnairePage() {
         <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
           <div
             className="h-full bg-brand-500 rounded-full transition-all duration-300"
-            style={{ width: `${(answeredCount / 15) * 100}%` }}
+            style={{ width: `${Math.min((answeredCount / 15) * 100, 100)}%` }}
           />
         </div>
       </div>

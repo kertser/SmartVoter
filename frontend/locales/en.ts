@@ -64,7 +64,7 @@ const en: Translations = {
   },
 
   questionnaire: {
-    progressLabel: (current, max) => `Question ${current} of up to ${max}`,
+    progressLabel: (current) => `Question ${current}`,
     showResultsNow: "Show results now \u2192",
     positionLabel: "Your position",
     positionTooltip: "Select the option that best reflects your view. Strongly oppose = \u22121, Strongly support = +1. Your answer is weighted by the importance you select below.",
@@ -80,11 +80,11 @@ const en: Translations = {
     errorSubmit: "Failed to submit answer. Please try again.",
     tryAgain: "Try again",
     likert: {
-      stronglyOppose: "Strongly oppose",
-      somewhatOppose: "Somewhat oppose",
+      stronglyOppose: "Definitely no",
+      somewhatOppose: "Rather no",
       neutral: "Neutral / unsure",
-      somewhatSupport: "Somewhat support",
-      stronglySupport: "Strongly support",
+      somewhatSupport: "Rather yes",
+      stronglySupport: "Definitely yes",
     },
     salience: {
       notImportant: "Not important",
@@ -130,6 +130,23 @@ const en: Translations = {
     tooltipVolatility: "This party has changed significantly in leadership, membership, or platform. Treat its match score with extra caution.",
     tooltipNewParty: "This party has no Knesset voting history. Its score is inferred from candidate backgrounds, lineage, and declared platform.",
     tooltipScoreBar: "Visual representation of the match percentage.",
+    // Section subtitles
+    radarSubtitle: "Topic radar — top 3 parties",
+    heatmapSubtitle: "Agreement heatmap",
+    heatmapClickHint: "click a cell to see evidence",
+    evidenceCompositionSubtitle: "Evidence source composition by party",
+    confidenceBreakdownSubtitle: "Confidence breakdown",
+    viewEvidence: "View evidence ↗",
+    lineageNote: "Israeli parties frequently split, merge, rename, and rebrand. This section shows known relationships. Continuity % indicates how much policy overlap is expected.",
+    confidenceOverall: (pct: number) => `Overall: ${pct}%`,
+    confidenceDashedNote: (pct: number) => `Dashed line = final confidence score (${pct}%).`,
+    // Summary bar
+    summaryAnswered: (n: number) => `${n} questions answered`,
+    summaryTopMatch: "Top match",
+    summaryAvgConfidence: "Avg. confidence",
+    summaryRepGap: "Representation gap",
+    summaryRepGapYes: "Detected",
+    summaryRepGapNo: "None detected",
     // Sections
     topicComparisonHeading: "Topic comparison",
     evidenceQualityHeading: "Evidence quality",

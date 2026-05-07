@@ -78,6 +78,41 @@ function ResultsContent() {
         </p>
       </div>
 
+      {/* ── Summary statistics bar ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 text-center">
+          <p className="text-2xl font-bold text-brand-600">
+            {formatPercent(results.parties[0]?.match_score ?? 0)}
+          </p>
+          <p className="text-xs text-slate-500 mt-0.5">{r.summaryTopMatch}</p>
+          <p className="text-xs font-medium text-slate-700 truncate mt-0.5">
+            {results.parties[0]?.name_he ?? results.parties[0]?.name ?? "—"}
+          </p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 text-center">
+          <p className="text-2xl font-bold text-teal-600">
+            {formatPercent(
+              results.parties.length > 0
+                ? results.parties.reduce((s, p) => s + p.confidence, 0) / results.parties.length
+                : 0
+            )}
+          </p>
+          <p className="text-xs text-slate-500 mt-0.5">{r.summaryAvgConfidence}</p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 text-center">
+          <p className="text-2xl font-bold text-slate-700">{results.parties.length}</p>
+          <p className="text-xs text-slate-500 mt-0.5">
+            {lang === "he" ? "מפלגות מנותחות" : lang === "ru" ? "партий изучено" : "parties analysed"}
+          </p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 text-center">
+          <p className={`text-2xl font-bold ${results.representation_gap.has_gap ? "text-amber-600" : "text-teal-600"}`}>
+            {results.representation_gap.has_gap ? r.summaryRepGapYes : r.summaryRepGapNo}
+          </p>
+          <p className="text-xs text-slate-500 mt-0.5">{r.summaryRepGap}</p>
+        </div>
+      </div>
+
       {/* ── Section 1: Party match cards ── */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">{r.partyMatchesHeading}</h2>
@@ -97,13 +132,13 @@ function ResultsContent() {
           <h2 className="text-lg font-semibold text-slate-800">{r.topicComparisonHeading}</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
-              <p className="text-sm font-medium text-slate-700 mb-3">Topic radar — top 3 parties</p>
+              <p className="text-sm font-medium text-slate-700 mb-3">{r.radarSubtitle}</p>
               <TopicRadarChart parties={results.parties} maxParties={3} lang={lang} />
             </div>
             <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
               <p className="text-sm font-medium text-slate-700 mb-3">
-                Agreement heatmap{" "}
-                <span className="text-xs text-slate-400 font-normal">— click a cell to see evidence</span>
+                {r.heatmapSubtitle}{" "}
+                <span className="text-xs text-slate-400 font-normal">— {r.heatmapClickHint}</span>
               </p>
               <PartyPolicyHeatmap
                 parties={results.parties}
@@ -123,12 +158,12 @@ function ResultsContent() {
         <h2 className="text-lg font-semibold text-slate-800">{r.evidenceQualityHeading}</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
-            <p className="text-sm font-medium text-slate-700 mb-3">Evidence source composition by party</p>
+            <p className="text-sm font-medium text-slate-700 mb-3">{r.evidenceCompositionSubtitle}</p>
             <EvidenceCompositionBar parties={results.parties} lang={lang} />
           </div>
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-medium text-slate-700">Confidence breakdown</p>
+              <p className="text-sm font-medium text-slate-700">{r.confidenceBreakdownSubtitle}</p>
               {/* Party selector tabs */}
               <div className="flex gap-1">
                 {results.parties.slice(0, 4).map((p) => (
@@ -146,7 +181,7 @@ function ResultsContent() {
                 ))}
               </div>
             </div>
-            {selectedConfParty && <ConfidenceBreakdownBar party={selectedConfParty} />}
+            {selectedConfParty && <ConfidenceBreakdownBar party={selectedConfParty} lang={lang} />}
           </div>
         </div>
       </section>
@@ -175,10 +210,7 @@ function ResultsContent() {
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">{r.partyLineageHeading}</h2>
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
-          <p className="text-xs text-slate-400 mb-4">
-            Israeli parties frequently split, merge, rename, and rebrand. This section shows known relationships.
-            Continuity % indicates how much policy overlap is expected.
-          </p>
+          <p className="text-xs text-slate-400 mb-4">{r.lineageNote}</p>
           <PartyLineageTimeline lang={lang} />
         </div>
       </section>
@@ -255,7 +287,7 @@ function PartyMatchCard({
                 onClick={() => onEvidenceClick(party.party_id, displayName)}
                 className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors shrink-0"
               >
-                View evidence ↗
+                {r.viewEvidence}
               </button>
             </div>
 

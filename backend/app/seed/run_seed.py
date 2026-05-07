@@ -386,6 +386,54 @@ def patch_simulation_data() -> None:
         db.close()
 
 
+def patch_question_translations() -> None:
+    """
+    Backfill question_text_ru (and question_text_he) for existing questions that have
+    an empty or NULL translation, using the seed data (questions.json) as the source
+    of truth. Matching is done by question_text_en (English text is stable).
+
+    Safe to run on any already-seeded DB — only updates rows where the translation
+    field is NULL or empty string.
+    """
+    from backend.app.models.question import Question as _Q3
+
+    db = SessionLocal()
+    try:
+        # Build lookup: english text → (he, ru) from seed JSON
+        seed_map: dict[str, tuple[str, str]] = {}
+        for q_tuple in QUESTIONS_DATA:
+            item_slug, text_en, text_he = q_tuple[0], q_tuple[1], q_tuple[2]
+            text_ru = q_tuple[3] if len(q_tuple) > 3 else ""
+            seed_map[text_en] = (text_he or "", text_ru or "")
+
+        updated = 0
+        for q in db.query(_Q3).all():
+            if q.question_text_en not in seed_map:
+                continue
+            he, ru = seed_map[q.question_text_en]
+            changed = False
+            if ru and not q.question_text_ru:
+                q.question_text_ru = ru
+                changed = True
+            if he and not q.question_text_he:
+                q.question_text_he = he
+                changed = True
+            if changed:
+                updated += 1
+
+        if updated:
+            db.commit()
+            print(f"  ✓ patch_question_translations: filled translations for {updated} questions")
+        else:
+            print("  patch_question_translations: all translations already present")
+    except Exception as e:
+        db.rollback()
+        print(f"patch_question_translations failed: {e}", file=sys.stderr)
+        raise
+    finally:
+        db.close()
+
+
 def seed_missing_topics() -> None:
     """
     Insert any topic from TOPICS that does not yet exist in the database (matched by slug).
@@ -499,10 +547,27 @@ def seed_missing_policy_items() -> None:
         from backend.app.models.question import AnswerScaleType as AST
         from backend.app.models.policy_item import ReviewStatus as RS2
 
+        # Build lookup of existing questions by English text for translation updates
+        existing_question_by_en: dict[str, _Q2] = {
+            q.question_text_en: q for q in db.query(_Q2).all()
+        }
+
         for q_tuple in QUESTIONS_DATA:
             item_slug, text_en, text_he = q_tuple[0], q_tuple[1], q_tuple[2]
             text_ru = q_tuple[3] if len(q_tuple) > 3 else None
             if text_en in existing_questions_text:
+                # Question exists — patch missing translations if needed
+                existing_q = existing_question_by_en.get(text_en)
+                if existing_q:
+                    changed = False
+                    if text_ru and not existing_q.question_text_ru:
+                        existing_q.question_text_ru = text_ru
+                        changed = True
+                    if text_he and not existing_q.question_text_he:
+                        existing_q.question_text_he = text_he
+                        changed = True
+                    if changed:
+                        added_questions += 1  # reuse counter to count patches
                 continue
             policy_item_id = pi_slug_to_id.get(item_slug)
             if not policy_item_id:
@@ -648,6 +713,7 @@ def run_seed() -> None:
             patch_party_colors_and_lr()
             seed_missing_topics()
             seed_missing_policy_items()
+            patch_question_translations()
             return
 
         print("Seeding database...")
@@ -897,6 +963,7 @@ if __name__ == "__main__":
     parser.add_argument("--simulation-reset", action="store_true", help="Reset + reseed simulation data (polls, constraints, historical)")
     parser.add_argument("--topics-only", action="store_true", help="Add missing topics (safe on existing DB)")
     parser.add_argument("--patch-colors", action="store_true", help="Add color_hex and left_right_score to existing DB (safe)")
+    parser.add_argument("--patch-translations", action="store_true", help="Fill question_text_ru / question_text_he where empty (safe)")
     args = parser.parse_args()
     if args.simulation_only:
         seed_simulation_only()
@@ -907,8 +974,11 @@ if __name__ == "__main__":
         seed_missing_topics()
     elif args.patch_colors:
         patch_party_colors_and_lr()
+    elif args.patch_translations:
+        patch_question_translations()
     else:
         run_seed()
         patch_party_colors_and_lr()
+        patch_question_translations()
         patch_simulation_data()
 

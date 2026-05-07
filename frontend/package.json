@@ -14,7 +14,7 @@
     "next": "^16.2.5",
     "react": "^19",
     "react-dom": "^19",
-    "recharts": "^3.8.1",
+    "recharts": "^2.15.4",
     "tailwind-merge": "^2.3.0"
   },
   "devDependencies": {
