@@ -26,6 +26,7 @@ from backend.app.models.policy_item import PolicyItem, ReviewStatus
 from backend.app.models.question import Question, AnswerScaleType
 from backend.app.services.llm import get_llm_provider
 from backend.app.services.llm.audit_service import AuditedLLMService
+from backend.app.services.llm.question_format import check_question_format
 
 if TYPE_CHECKING:
     from backend.app.config import Settings
@@ -130,6 +131,23 @@ def run_question_pipeline(
             if not question_en:
                 logger.warning("LLM returned empty question for policy_item %s", pi_id)
                 return {"created": False, "policy_item_id": str(pi_id)}
+
+            # ── Format validation: reject open-ended questions before they reach the DB ──
+            fmt = check_question_format(
+                question_en=question_en,
+                question_he=result.get("question_he", ""),
+                question_ru=result.get("question_ru", ""),
+            )
+            if not fmt["is_valid"]:
+                logger.warning(
+                    "question_pipeline: open-ended question rejected for policy_item %s — %s",
+                    pi_id, fmt["issue"],
+                )
+                return {
+                    "created": False,
+                    "format_error": fmt["issue"],
+                    "policy_item_id": str(pi_id),
+                }
 
             neutrality_score = float(result.get("neutrality_score", 0.7))
 

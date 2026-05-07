@@ -60,15 +60,34 @@ class LLMProvider(ABC):
     def generate_root_question(self, input_data: dict) -> dict:
         """
         Generate a BROAD TOPIC-LEVEL opening question for the questionnaire.
-        Uses a dedicated prompt — NOT the same as generate_question_with_critique.
+        Uses a dedicated VALUES-FIRST prompt — NOT the same as generate_question_with_critique.
+
+        The goal is to discover what the user genuinely values in this policy area,
+        starting from everyday-life experience rather than abstract policy positions.
 
         input_data keys:
             topic_name_en, topic_name_he, topic_name_ru, topic_description
 
         Returns: question_en, question_he, question_ru, context_note_en,
                  answer_scale, neutrality_risk, neutrality_score, is_loaded,
-                 bias_direction, suggested_revision, requires_context, context_note
+                 bias_direction, suggested_revision, requires_context, context_note,
+                 everyday_life_hook
         """
+
+    def generate_follow_up_from_salience(self, input_data: dict) -> dict:
+        """
+        Generate a targeted follow-up question for a topic the user rated as
+        highly important (high salience). Helps discover WHICH SPECIFIC ASPECT
+        of the topic the user cares about.
+
+        Default: raises NotImplementedError. Override in concrete providers.
+
+        input_data keys:
+            topic_name_en, topic_description, policy_items_summary (list of dicts)
+        """
+        raise NotImplementedError(
+            "generate_follow_up_from_salience not implemented by this provider."
+        )
 
     @abstractmethod
     def infer_party_position(self, input_data: dict) -> dict:

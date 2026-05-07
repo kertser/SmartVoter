@@ -25,6 +25,7 @@ from backend.app.models.topic import Topic
 from backend.app.models.llm_audit import LlmRun, LlmOutput
 from backend.app.services.llm import get_llm_provider
 from backend.app.services.llm.audit_service import AuditedLLMService
+from backend.app.services.llm.question_format import check_question_format
 
 logger = logging.getLogger(__name__)
 
@@ -230,6 +231,24 @@ def generate_questions(
                 0.9 if result.get("neutrality_risk") == "low" else
                 0.7 if result.get("neutrality_risk") == "medium" else 0.5
             )
+
+            # ── Format validation: block open-ended questions before DB insert ──
+            question_en_text = result.get("question_en") or result.get("question", "")
+            fmt = check_question_format(
+                question_en=question_en_text,
+                question_he=result.get("question_he", ""),
+                question_ru=result.get("question_ru", ""),
+            )
+            if not fmt["is_valid"]:
+                logger.warning(
+                    "generate_questions: open-ended question rejected for policy_item %s — %s",
+                    pid_str, fmt["issue"],
+                )
+                return {
+                    "policy_item_id": pid_str,
+                    "error": f"open_ended_question: {fmt['issue']}",
+                    "format_check": fmt,
+                }
 
             q = Question(
                 policy_item_id=pid,
@@ -1012,6 +1031,22 @@ def _generate_root_question_for_topic(
 
     if not question_en:
         raise ValueError(f"LLM returned empty question for topic {topic.slug!r}")
+
+    # ── Format validation: root questions must also be closed propositions ──
+    fmt = check_question_format(
+        question_en=question_en,
+        question_he=result.get("question_he", ""),
+        question_ru=result.get("question_ru", ""),
+    )
+    if not fmt["is_valid"]:
+        logger.warning(
+            "_generate_root_question_for_topic: open-ended root question rejected "
+            "for topic %r — %s", topic.slug, fmt["issue"],
+        )
+        raise ValueError(
+            f"LLM generated an open-ended root question for topic {topic.slug!r}: "
+            f"{fmt['issue']}"
+        )
 
     neutrality_score = float(result.get("neutrality_score", 0.7))
 

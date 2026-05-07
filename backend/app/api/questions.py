@@ -14,6 +14,7 @@ from backend.app.schemas.question import QuestionOut
 from backend.app.schemas.session import SessionCreate, SessionOut
 from backend.app.services.questionnaire import (
     select_next_question,
+    aggregate_salience_by_topic,
     QuestionCandidate,
     PartyPositionSlim,
 )
@@ -124,6 +125,9 @@ def get_next_question(
     )
     answered_ids = [a.question_id for a in answered_rows]
     answered_topic_counts: dict[str, int] = {}
+    # Build salience signal: (topic_slug, salience) pairs from all previous answers.
+    # Used by select_next_question to follow the user's expressed priorities.
+    answer_salience_pairs: list[tuple[str, float]] = []
     for answer in answered_rows:
         pi = db.query(PolicyItem).filter(PolicyItem.id == answer.policy_item_id).first()
         if pi:
@@ -132,6 +136,10 @@ def get_next_question(
                 answered_topic_counts[topic.slug] = (
                     answered_topic_counts.get(topic.slug, 0) + 1
                 )
+                answer_salience_pairs.append((topic.slug, answer.salience))
+    # Aggregate per-topic salience: use max salience seen for each topic so that
+    # a single "Very important" answer drives follow-up even if others were neutral.
+    user_salience_by_topic = aggregate_salience_by_topic(answer_salience_pairs)
 
     if len(answered_ids) >= 15:
         return None
@@ -220,6 +228,7 @@ def get_next_question(
         candidates=candidates,
         top_party_positions=top_party_positions,
         answered_topic_counts=answered_topic_counts,
+        user_salience_by_topic=user_salience_by_topic,
     )
 
     # ── Auto-generate on-the-fly when no pre-existing question is available ──

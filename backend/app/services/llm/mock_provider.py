@@ -44,5 +44,6 @@ class MockLLMProvider:
     critique_question = _not_available
     generate_question_with_critique = _not_available
     generate_root_question = _not_available
+    generate_follow_up_from_salience = _not_available
     infer_party_position = _not_available
     infer_party_lineage = _not_available
