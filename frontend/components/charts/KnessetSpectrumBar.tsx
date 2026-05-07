@@ -129,12 +129,9 @@ export function KnessetSpectrumBar({ parties }: Props) {
               className="w-3 h-3 rounded-sm shrink-0 border border-black/10"
               style={{ backgroundColor: party.color_hex }}
             />
-            <span className="text-xs font-medium text-slate-700 truncate">
-              {party.name_en}
+            <span className="text-xs font-medium text-slate-700 truncate" dir="rtl">
+              {party.name_he || party.official_name}
             </span>
-            {party.name_he && (
-              <span className="text-xs text-slate-400 truncate">{party.name_he}</span>
-            )}
             <span className="ms-auto text-xs font-bold text-slate-600 shrink-0">
               {party.seats}
             </span>
@@ -154,7 +151,4 @@ export function KnessetSpectrumBar({ parties }: Props) {
     </div>
   );
 }
-
-
-
 

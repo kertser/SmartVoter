@@ -48,12 +48,13 @@ function ThresholdRiskBars({
       {sorted.map((p) => {
         const pct = Math.round(p.threshold_pass_probability * 100);
         const color = p.color_hex || "#94a3b8";
+        const displayName = p.name_he || p.party_name;
         const riskLevel =
           pct >= 90 ? "text-emerald-700" : pct >= 50 ? "text-amber-700" : "text-red-700";
         return (
           <div key={p.party_name} className="flex items-center gap-3">
-            <span className="w-28 text-xs font-semibold text-slate-700 text-right truncate shrink-0">
-              {p.party_name}
+            <span className="w-32 text-xs font-semibold text-slate-700 text-right truncate shrink-0" dir="rtl">
+              {displayName}
             </span>
             <div className="flex-1 h-5 bg-slate-100 rounded overflow-hidden">
               <div
@@ -71,7 +72,7 @@ function ThresholdRiskBars({
           <strong>⚠ At threshold risk:</strong>{" "}
           {sorted
             .filter((p) => p.threshold_pass_probability < 0.65)
-            .map((p) => p.party_name)
+            .map((p) => p.name_he || p.party_name)
             .join(", ")}
           {" — "}below 65% probability of passing the 3.25% threshold in simulations.
         </div>
@@ -101,7 +102,7 @@ function CoalitionCard({
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-3">
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold text-slate-800 leading-snug">
+        <h3 className="text-sm font-semibold text-slate-800 leading-snug" dir="rtl">
           {scenario.scenario_name}
         </h3>
         <span className="shrink-0 rounded-full bg-brand-50 border border-brand-200 text-brand-700 text-xs font-bold px-2 py-0.5">
@@ -125,8 +126,9 @@ function CoalitionCard({
             key={m.party_name}
             className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-white"
             style={{ backgroundColor: m.color_hex || "#94a3b8" }}
+            dir="rtl"
           >
-            {m.party_name}
+            {m.name_he || m.party_name}
             <span className="opacity-80">({Math.round(m.expected_seats)})</span>
           </span>
         ))}
@@ -272,13 +274,13 @@ export default function SimulationPage() {
     .slice()
     .sort((a, b) => (a.left_right_score ?? 0) - (b.left_right_score ?? 0))
     .map((p) => ({
-      name: p.party_name,
+      name: p.name_he || p.party_name,
       seats: p.seats_median,
       color: p.color_hex,
     }));
 
   const distributionParties = sortedParties.map((p) => ({
-    name: p.party_name,
+    name: p.name_he || p.party_name,
     seats_p10: p.seats_p10,
     seats_p25: p.seats_p25,
     seats_median: p.seats_median,

@@ -323,6 +323,8 @@ export async function getPartyEvidence(partyId: string): Promise<PartyEvidenceIt
 
 export interface SimulationPartyResult {
   party_name: string;
+  /** Hebrew name from political_brands.names_json['he'] */
+  name_he?: string;
   party_instance_id: string | null;
   seats_mean: number;
   seats_median: number;
@@ -338,6 +340,8 @@ export interface SimulationPartyResult {
 
 export interface CoalitionScenarioMember {
   party_name: string;
+  /** Hebrew name from political_brands.names_json['he'] */
+  name_he?: string;
   expected_seats: number;
   role?: string;
   color_hex?: string;

@@ -149,7 +149,7 @@ export function CoalitionBuilder({ parties, useForecastSeats = false }: Props) {
               style={{ backgroundColor: chip.color_hex }}
               title={`${chip.name_en} — ${chip.seats} seats (L/R: ${chip.left_right_score?.toFixed(2)})`}
             >
-              <span className="max-w-[90px] truncate">{chip.name_en}</span>
+              <span className="max-w-[100px] truncate" dir="rtl">{chip.name_he || chip.name_en}</span>
               <span className="rounded-full bg-black/20 px-1.5 py-0.5 text-[10px] font-bold">
                 {chip.seats || "—"}
               </span>
@@ -252,8 +252,9 @@ export function CoalitionBuilder({ parties, useForecastSeats = false }: Props) {
                         key={name}
                         className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-white"
                         style={{ backgroundColor: chip?.color_hex || "#94a3b8" }}
+                        dir="rtl"
                       >
-                        {chip?.name_en || name} ({seats})
+                        {chip?.name_he || chip?.name_en || name} ({seats})
                       </span>
                     );
                   })}

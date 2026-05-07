@@ -95,6 +95,20 @@ def _get_party_lr_map(db: Session) -> dict[str, float | None]:
     return {name: lr for name, lr in rows}
 
 
+def _get_party_he_name_map(db: Session) -> dict[str, str]:
+    """Return official_name → Hebrew name (from political_brands.names_json['he'])."""
+    rows = (
+        db.query(PartyInstance.official_name, PoliticalBrand.names_json)
+        .join(PoliticalBrand, PartyInstance.political_brand_id == PoliticalBrand.id)
+        .all()
+    )
+    result: dict[str, str] = {}
+    for official_name, names_json in rows:
+        if names_json and names_json.get("he"):
+            result[official_name] = names_json["he"]
+    return result
+
+
 def _run_and_persist(db: Session, n_iterations: int = 5000) -> SimulationRun:
     polls = _load_polls(db)
     if not polls:
@@ -185,7 +199,7 @@ def _run_and_persist(db: Session, n_iterations: int = 5000) -> SimulationRun:
     return run
 
 
-def _serialize_run(run: SimulationRun, color_map: dict[str, str] | None = None, lr_map: dict[str, float | None] | None = None) -> dict:
+def _serialize_run(run: SimulationRun, color_map: dict[str, str] | None = None, lr_map: dict[str, float | None] | None = None, he_name_map: dict[str, str] | None = None) -> dict:
     return {
         "run_id": str(run.id),
         "created_at": run.created_at.isoformat() if run.created_at else None,
@@ -196,6 +210,7 @@ def _serialize_run(run: SimulationRun, color_map: dict[str, str] | None = None, 
         "parties": [
             {
                 "party_name": r.party_name,
+                "name_he": (he_name_map or {}).get(r.party_name),
                 "party_instance_id": str(r.party_instance_id) if r.party_instance_id else None,
                 "seats_mean": r.seats_mean,
                 "seats_median": r.seats_median,
@@ -213,7 +228,10 @@ def _serialize_run(run: SimulationRun, color_map: dict[str, str] | None = None, 
         "coalitions": [
             {
                 "scenario_id": str(sc.id),
-                "scenario_name": sc.scenario_name,
+                "scenario_name": " + ".join(
+                    (he_name_map or {}).get(m.party_name, m.party_name)
+                    for m in sc.members
+                ),
                 "probability_estimate": sc.probability_estimate,
                 "seat_mean": sc.seat_mean,
                 "seat_p10": sc.seat_p10,
@@ -225,6 +243,7 @@ def _serialize_run(run: SimulationRun, color_map: dict[str, str] | None = None, 
                 "members": [
                     {
                         "party_name": m.party_name,
+                        "name_he": (he_name_map or {}).get(m.party_name),
                         "expected_seats": m.expected_seats,
                         "role": m.role,
                         "color_hex": (color_map or {}).get(m.party_name, "#94a3b8"),
@@ -267,7 +286,8 @@ def get_latest_simulation(db: Session = Depends(get_db)) -> dict:
         )
     color_map = _get_party_color_map(db)
     lr_map = _get_party_lr_map(db)
-    return _serialize_run(run, color_map, lr_map)
+    he_name_map = _get_party_he_name_map(db)
+    return _serialize_run(run, color_map, lr_map, he_name_map)
 
 
 @router.post("/run")
@@ -287,7 +307,8 @@ def trigger_simulation(
     )
     color_map = _get_party_color_map(db)
     lr_map = _get_party_lr_map(db)
-    return _serialize_run(run, color_map, lr_map)
+    he_name_map = _get_party_he_name_map(db)
+    return _serialize_run(run, color_map, lr_map, he_name_map)
 
 
 @router.get("/knesset/current")
@@ -493,7 +514,8 @@ def get_simulation_run(run_id: str, db: Session = Depends(get_db)) -> dict:
         raise HTTPException(status_code=404, detail="Simulation run not found")
     color_map = _get_party_color_map(db)
     lr_map = _get_party_lr_map(db)
-    return _serialize_run(run, color_map, lr_map)
+    he_name_map = _get_party_he_name_map(db)
+    return _serialize_run(run, color_map, lr_map, he_name_map)
 
 
 @router.get("/{run_id}/coalitions")
@@ -521,6 +543,8 @@ def get_coalition_scenarios(run_id: str, db: Session = Depends(get_db)) -> list[
         }
         for sc in scenarios
     ]
+
+
 
 
 
