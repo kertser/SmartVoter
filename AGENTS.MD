@@ -8,17 +8,90 @@ This document is the authoritative instruction set for any coding agent working 
 
 ## 0. Current Implementation Status
 
-**Phase: 0 — Bare skeleton only. Nothing from Sections 4–19 has been built yet.**
+**Phase: Phases 1–8 and 14B substantially complete. Phases 14C (partial) and remaining polish ongoing.**
 
-The repository currently contains:
+### What is built
+
+Phases 1–8 and 14B (Knesset simulation) are all implemented. The app runs end-to-end locally with mock data, real Knesset data imports, live Polish via OpenAI web search, and a production Docker Compose stack.
+
+Current repository structure:
 
 ```text
-smartvoter/          ← project name (pyproject.toml)
-  pyproject.toml     ← uv-managed Python 3.14 project, no dependencies yet
-  uv.lock            ← uv lockfile
-  .python-version    ← pins Python 3.14
-  .cadence/configs/  ← empty placeholder directory
-  README.md          ← empty
+SmartVoter/                       ← project root
+  pyproject.toml                  ← uv-managed Python 3.14 backend
+  uv.lock
+  alembic.ini                     ← Alembic config (migrations at this level)
+  alembic/                        ← root-level alembic dir (mounted by Docker)
+  docker-compose.yml              ← dev stack: postgres + redis + backend + frontend + data-init
+  docker-compose.prod.yml         ← production variant
+  run.bat                         ← Windows convenience launcher
+
+  backend/
+    Dockerfile
+    app/
+      main.py                     ← FastAPI app, lifespan, rate limiting, startup poll refresh
+      config.py                   ← Settings (pydantic-settings), reads .env
+      admin/
+        __init__.py               ← ALL admin endpoints (1600+ lines, single file for MVP)
+      api/                        ← Public API routers
+        answers.py   questions.py   sessions.py   results.py
+        topics.py    simulation.py  lineage.py    methodology.py  public.py
+      db/
+        base.py   session.py
+      models/
+        political_brand.py   party_instance.py   party_lineage_edge.py
+        party_position.py    person.py            person_party_membership.py
+        bill.py              vote.py              vote_result.py
+        topic.py             policy_item.py       question.py
+        user_session.py      user_answer.py       recommendation_run.py
+        simulation.py        llm_audit.py
+      services/
+        ingestion/            ← knesset_odata.py, oknesset.py, importers.py,
+                                 policy_item_pipeline.py, party_position_pipeline.py,
+                                 question_pipeline.py
+        llm/                  ← base.py, openai_provider.py, mock_provider.py,
+                                 fallback_provider.py, audit_service.py, prompts.json
+        scoring/engine.py
+        questionnaire/
+        lineage/lineage_service.py
+        volatility/volatility_service.py
+        simulation/           ← simulator.py, seat_allocator.py, poll_aggregator.py,
+                                 coalition_simulator.py
+        polling/web_polling.py
+      seed/
+        run_seed.py   seed_data.py   ingest_knesset.py   migrate_mock.py
+      tests/
+        test_scoring.py   test_questionnaire.py   test_seat_allocator.py
+        test_pipelines.py
+    alembic/
+      env.py
+      versions/               ← 5 migrations applied
+
+  frontend/
+    app/
+      page.tsx          (/)             ← onboarding / home
+      questionnaire/    (/questionnaire)
+      results/          (/results)
+      methodology/      (/methodology)
+      admin/            (/admin)
+      parties/          (/parties, /parties/[id])
+      persons/          (/persons/[id])
+      votes/            (/votes/[id])
+      bills/            (/bills/[id])
+      simulation/       (/simulation)
+    components/
+      NavHeader.tsx   EvidenceDrawer.tsx   CoalitionBuilder.tsx
+      LanguageSwitcher.tsx   PrivacyBanner.tsx   Tooltip.tsx
+      charts/
+        TopicRadarChart.tsx    PartyPolicyHeatmap.tsx
+        EvidenceCompositionBar.tsx   ConfidenceBreakdownBar.tsx
+        PartyLineageTimeline.tsx     SeatDistributionChart.tsx
+        KnessetSemicircleChart.tsx   KnessetSpectrumBar.tsx
+        MatchScoreRing.tsx
+    lib/
+      api.ts    i18n.tsx   session.ts   utils.ts
+    locales/
+      types.ts   en.ts   he.ts   ru.ts   glossary.ts
 ```
 
 ### Development environment
@@ -39,11 +112,61 @@ uv sync
 uv add <package>
 
 # Run a script / command inside the managed environment
-uv run python hello.py
-uv run pytest
+uv run python backend/app/main.py
+uv run pytest backend/app/tests/
 ```
 
-No backend, frontend, database, or Docker configuration exists yet. Start from **Phase 1** in Section 18.
+### Local startup
+
+```powershell
+# 1. Start infrastructure (postgres + redis + backend + frontend)
+docker compose up
+
+# 2. First-time data initialisation (run once; applies migrations, seeds mock data,
+#    imports Knesset 24/25 raw data without LLM):
+docker compose --profile init up data-init
+
+# 3. Backend only (outside Docker, for development)
+uv run uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Environment variables are read from `.env` (copy `.env.example` and fill values).
+Key variables:
+```text
+DATABASE_URL        postgresql+psycopg://smartvoter:smartvoter@localhost:5432/smartvoter
+REDIS_URL           redis://localhost:6379/0
+OPENAI_API_KEY      sk-...  (optional; enables LLM enrichment and live poll refresh)
+OPENAI_MODEL        gpt-5-nano  (default; change to gpt-4o-mini etc.)
+ADMIN_PASSWORD      (must change in production)
+APP_ENV             development | production
+```
+
+### Alembic migrations
+
+Migrations live in **both** `alembic/versions/` (project root) and `backend/alembic/versions/`.
+Docker mounts `./alembic` into the container. Always run:
+```powershell
+uv run alembic upgrade head
+```
+after pulling changes that add new migrations. Generate a new migration with:
+```powershell
+uv run alembic revision --autogenerate -m "describe_change"
+```
+
+### Knesset data source limitations (as of May 2026)
+
+- **Votes.svc** (`knesset.gov.il/Odata/Votes.svc`) contains data only for Knessets 1–24. The last vote in the service is from 2021-07-13. Knessets 25 and 26 return empty results.
+- **ParliamentInfo.svc** (`knesset.gov.il/Odata/ParliamentInfo.svc`) is used for bills, persons, and factions (KNS_Bill, KNS_Person, KNS_Faction).
+- **Open Knesset** (`oknesset.org/api/v2`) is currently offline (redirects to homepage).
+- The importer automatically probes higher Knesset numbers in case the API is updated. Use `GET /api/admin/ingest/probe-votes/{knesset_number}` to check availability before triggering a large import.
+- `settings.current_knesset = 26` and `settings.last_knesset_with_votes = 24` control this behaviour.
+
+### Live polling (OpenAI web search)
+
+When `OPENAI_API_KEY` is configured, the app automatically fetches current Israeli opinion polls on startup (at most once per calendar day) via OpenAI Responses API with `web_search_preview` (model `gpt-4o`). Results are stored in the `polls` / `poll_party_results` tables and used by the simulation engine.
+
+To refresh manually: `POST /api/admin/polling/refresh` (admin auth required).
+To disable: leave `OPENAI_API_KEY` empty.
 
 ---
 
@@ -187,17 +310,19 @@ Historical Lineage
 - Python 3.14 (pinned via `.python-version`; do not downgrade)
 - uv (package and virtual-environment manager — replaces pip/poetry; see Section 0)
 - FastAPI
-- PostgreSQL
-- SQLAlchemy or SQLModel
+- PostgreSQL (driver: `psycopg` — psycopg3, not psycopg2)
+- SQLAlchemy (ORM; uses Mapped / mapped_column style)
 - Alembic
-- Pydantic
-- Redis
-- Celery or RQ for background jobs
+- Pydantic / pydantic-settings (for `Settings` in `config.py`)
+- Redis (used for rate-limiting storage only in MVP; **no Celery/RQ** — background jobs run in-process via FastAPI `BackgroundTasks`)
+- slowapi (rate limiting: 300 req/minute default)
+- python-json-logger (structured JSON log output)
+- httpx (Knesset OData client)
 - pytest
 
 ### Frontend
 
-- Next.js
+- Next.js (App Router)
 - TypeScript
 - Tailwind CSS
 - shadcn/ui preferred

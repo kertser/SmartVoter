@@ -18,7 +18,7 @@ const en: Translations = {
     navBillsTitle: "Browse proposed bills",
     navPersonsTitle: "Browse MKs and candidates",
     navAdminTitle: "Admin review panel (password required)",
-    navSimulationTitle: "Knesset seat distribution probabilistic simulator",
+    navSimulationTitle: "Knesset Simulator",
     navMethodologyTitle: "Scoring methodology, evidence weights, and confidence model",
     footerDisclaimer:
       "SmartVoter does not tell you whom to vote for. It shows similarity, disagreement, evidence, and uncertainty.",
