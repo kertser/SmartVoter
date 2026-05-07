@@ -17,8 +17,8 @@
     "election_cycle": "2022",
     "knesset_number": 25,
     "start_date": "2022-11-01",
-    "end_date": null,
-    "status": "active",
+    "end_date": "2025-01-01",
+    "status": "merged",
     "left_right_score": -0.45
   },
   {
@@ -129,9 +129,21 @@
     "election_cycle": "2022",
     "knesset_number": 25,
     "start_date": "2022-11-01",
-    "end_date": "2022-11-01",
-    "status": "dissolved",
+    "end_date": "2025-01-01",
+    "status": "merged",
     "left_right_score": -0.75
+  },
+  {
+    "_comment": "הדמוקרטים — new party for 26th Knesset, formed by merger of Labor + Meretz, led by Yair Golan",
+    "id": "20000000-0000-0000-0000-000000000013",
+    "brand_canonical_name": "The Democrats",
+    "official_name": "HaDemokratim",
+    "election_cycle": "2026",
+    "knesset_number": 26,
+    "start_date": "2025-01-01",
+    "end_date": null,
+    "status": "active",
+    "left_right_score": -0.60
   },
   {
     "_comment": "Dissolved predecessor for lineage demo — see lineage_edges.json",

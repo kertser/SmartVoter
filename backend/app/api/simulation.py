@@ -142,7 +142,7 @@ def _run_and_persist(db: Session, n_iterations: int = 5000) -> SimulationRun:
             "surplus_agreements": "not modelled in MVP",
             "poll_weighting": "recency+sample+quality",
             "half_life_days": 14,
-            "note": "Estimates based on Israeli polling data 2025-2026. Not official election results.",
+            "note": "נתוני סקרים הם אמדנים ידניים בהשראת מגמות 2025-2026 — לא נמשכו ממחברות סקרים ממשיות. לא תוצאות בחירות רשמיות.",
         },
         input_snapshot_hash=_snapshot_hash(polls),
     )

@@ -192,10 +192,10 @@ function AssumptionsPanel({
 type Tab = "current" | "forecast" | "builder";
 
 function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
-  const tabs: { id: Tab; label: string }[] = [
-    { id: "current", label: "Current Knesset (25th)" },
-    { id: "forecast", label: "Election Forecast" },
-    { id: "builder", label: "Coalition Builder" },
+  const tabs: { id: Tab; label: string; badge?: string }[] = [
+    { id: "current", label: "כנסת ה-25 (נוכחית)" },
+    { id: "forecast", label: "כנסת ה-26 — תחזית", badge: "נתוני אמדן" },
+    { id: "builder", label: "בניית קואליציה" },
   ];
   return (
     <div className="flex border-b border-slate-200 gap-0">
@@ -203,13 +203,18 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
         <button
           key={tab.id}
           onClick={() => onChange(tab.id)}
-          className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+          className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
             active === tab.id
               ? "border-brand-500 text-brand-700"
               : "border-transparent text-slate-500 hover:text-slate-700"
           }`}
         >
           {tab.label}
+          {tab.badge && (
+            <span className="rounded-full bg-amber-100 text-amber-700 text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+              {tab.badge}
+            </span>
+          )}
         </button>
       ))}
     </div>
@@ -358,6 +363,18 @@ export default function SimulationPage() {
       {/* ── TAB 2: Election Forecast ── */}
       {activeTab === "forecast" && (
         <div className="space-y-6">
+          {/* Data-source notice */}
+          <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-800 space-y-1">
+            <p className="font-semibold">📊 תחזית כנסת ה-26 — לא הכנסת הנוכחית</p>
+            <p className="text-xs leading-relaxed">
+              לשונית זו מציגה <strong>תרחישי בחירות עתידיים לכנסת ה-26</strong>, לא את הרכב הכנסת ה-25 הנוכחית.
+              הרכב הסיעות מבוסס על <strong>נתוני סקרי דעת קהל מוערכים</strong> (ינואר–אפריל 2026) שהוזנו ידנית.
+              המערכת <strong>אינה מחוברת לסקרים בזמן אמת</strong> ממחברות סקרים.
+              הרשימות כוללות מפלגות הצפויות להתמודד בבחירות הבאות — כולל מפלגות חדשות שלא היו בכנסת ה-25.
+              כל הנתונים הם תרחישים הסתברותיים בלבד, לא חיזוי בחירות.
+            </p>
+          </div>
+
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               {data?.data_cutoff_date && (
@@ -394,7 +411,7 @@ export default function SimulationPage() {
                 <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-3">
                   <div>
                     <h2 className="text-base font-semibold text-slate-800">{s.semicircleHeading}</h2>
-                    <p className="text-xs text-slate-500">{s.semicircleDesc}</p>
+                    <p className="text-xs text-slate-500">כנסת ה-26 (תחזית) — {s.semicircleDesc}</p>
                   </div>
                   <KnessetSemicircleChart parties={semicircleParties} />
                 </section>

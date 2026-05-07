@@ -10,7 +10,7 @@
     "id": "10000000-0000-0000-0000-000000000002",
     "canonical_name": "Labor",
     "names_json": { "he": "העבודה", "en": "Labor", "ru": "Авода (Труд)" },
-    "description": "Center-left social-democratic party. 4 seats in 25th Knesset.",
+    "description": "Center-left social-democratic party. 4 seats in 25th Knesset. Merged with Meretz to form The Democrats (הדמוקרטים) ahead of the 26th Knesset election.",
     "color_hex": "#E11D48"
   },
   {
@@ -37,7 +37,7 @@
   {
     "id": "10000000-0000-0000-0000-000000000006",
     "canonical_name": "National Unity",
-    "names_json": { "he": "מחנה המדינה", "en": "National Unity", "ru": "Национальное единство" },
+    "names_json": { "he": "מחנה ממלכתי", "en": "National Unity", "ru": "Национальное единство" },
     "description": "Center-right alliance led by Benny Gantz, formed from Blue and White and New Hope. 12 seats in 25th Knesset.",
     "color_hex": "#0EA5E9"
   },
@@ -80,8 +80,15 @@
     "id": "10000000-0000-0000-0000-000000000012",
     "canonical_name": "Meretz",
     "names_json": { "he": "מרץ", "en": "Meretz", "ru": "Мерец" },
-    "description": "Left-wing social-democratic party. Did not pass 3.25% threshold in 2022 (3.16%), relevant for future election polling.",
+    "description": "Left-wing social-democratic party. Did not pass 3.25% threshold in 2022 (3.16%). Merged with Labor to form The Democrats (הדמוקרטים) ahead of the 26th Knesset election.",
     "color_hex": "#16A34A"
+  },
+  {
+    "id": "10000000-0000-0000-0000-000000000013",
+    "canonical_name": "The Democrats",
+    "names_json": { "he": "הדמוקרטים", "en": "The Democrats", "ru": "Демократы" },
+    "description": "Left-Zionist party formed by merger of Labor (HaAvoda) and Meretz ahead of the 26th Knesset election. Led by Yair Golan (former IDF Deputy Chief of Staff). Combines social-democratic platform with Zionist security credentials.",
+    "color_hex": "#0891B2"
   }
 ]
 
