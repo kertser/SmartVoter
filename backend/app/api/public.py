@@ -84,11 +84,23 @@ def list_parties(
     """
     import unicodedata
 
+    # Map Hebrew final (sofit) letter forms → their regular equivalents so that
+    # רע"ם (final mem) and רע"מ (regular mem) are treated as the same party.
+    _SOFIT_MAP = str.maketrans({
+        "\u05DA": "\u05DB",  # ך → כ  (final kaf → kaf)
+        "\u05DD": "\u05DE",  # ם → מ  (final mem → mem)
+        "\u05DF": "\u05E0",  # ן → נ  (final nun → nun)
+        "\u05E3": "\u05E4",  # ף → פ  (final pe  → pe)
+        "\u05E5": "\u05E6",  # ץ → צ  (final tsadi → tsadi)
+    })
+
     def _norm_he(s: str | None) -> str:
-        """Normalise a Hebrew string for comparison: strip, lowercase, collapse spaces."""
+        """Normalise a Hebrew string for comparison: NFC, strip, lowercase,
+        and collapse final-letter variants (sofit) to their base form so that
+        e.g. רע"ם and רע"מ are treated as duplicates."""
         if not s:
             return ""
-        return unicodedata.normalize("NFC", s).strip().lower()
+        return unicodedata.normalize("NFC", s).translate(_SOFIT_MAP).strip().lower()
 
     def _is_hebrew(s: str | None) -> bool:
         """Return True if most characters in s are Hebrew script."""
