@@ -1587,4 +1587,41 @@ async def restore_database(
     }
 
 
+# ── Live Polling Refresh ───────────────────────────────────────────────────────
 
+@admin_router.post("/polling/refresh")
+def refresh_polling_data(
+    model: str = "gpt-4o",
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    """
+    Fetch current Israeli opinion polls via OpenAI web search and store in DB.
+    Clears stale simulation_runs so the next GET /api/simulation/latest
+    triggers a fresh Monte Carlo run based on the new data.
+
+    Requires OPENAI_API_KEY to be configured.  If not set, returns an error
+    with instructions and leaves existing seed polls untouched.
+    """
+    from backend.app.services.polling.web_polling import fetch_and_store_live_polls
+
+    if not settings.has_openai:
+        return {
+            "source": "no_api_key",
+            "polls_stored": 0,
+            "parties_stored": 0,
+            "warnings": [
+                "OPENAI_API_KEY is not configured. "
+                "Add it to your .env file and restart the server."
+            ],
+            "notes": "Seed poll data was NOT changed.",
+            "refreshed_at": None,
+            "model_used": None,
+        }
+
+    result = fetch_and_store_live_polls(
+        db=db,
+        api_key=settings.openai_api_key,
+        model=model,
+    )
+    return result

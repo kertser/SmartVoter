@@ -50,6 +50,26 @@ def _load_polls(db: Session) -> list[dict]:
     return result
 
 
+def _get_polls_meta(db: Session) -> dict:
+    """Return metadata about the polls currently in the DB (source, freshness)."""
+    polls = db.query(Poll).order_by(Poll.field_end_date.desc()).all()
+    if not polls:
+        return {"count": 0, "latest_date": None, "source": "none"}
+
+    # Detect whether ANY poll came from web_search (method column)
+    sources = {p.method for p in polls if p.method}
+    is_live = "web_search" in sources
+    latest = polls[0].field_end_date
+
+    return {
+        "count": len(polls),
+        "latest_date": latest.isoformat() if latest else None,
+        "source": "live_web_search" if is_live else "seed_estimate",
+        "source_label_he": "סקרים בזמן אמת (חיפוש ווב)" if is_live else "נתוני אמדן (seed)",
+        "source_label_ru": "Живые данные (веб-поиск)" if is_live else "Расчётные данные (seed)",
+    }
+
+
 def _load_constraints(db: Session) -> list[dict]:
     rows = db.query(CoalitionConstraint).all()
     # Map party_instance_id → official_name
@@ -287,7 +307,10 @@ def get_latest_simulation(db: Session = Depends(get_db)) -> dict:
     color_map = _get_party_color_map(db)
     lr_map = _get_party_lr_map(db)
     he_name_map = _get_party_he_name_map(db)
-    return _serialize_run(run, color_map, lr_map, he_name_map)
+    polls_meta = _get_polls_meta(db)
+    result = _serialize_run(run, color_map, lr_map, he_name_map)
+    result["polls_meta"] = polls_meta
+    return result
 
 
 @router.post("/run")
@@ -308,7 +331,10 @@ def trigger_simulation(
     color_map = _get_party_color_map(db)
     lr_map = _get_party_lr_map(db)
     he_name_map = _get_party_he_name_map(db)
-    return _serialize_run(run, color_map, lr_map, he_name_map)
+    polls_meta = _get_polls_meta(db)
+    result = _serialize_run(run, color_map, lr_map, he_name_map)
+    result["polls_meta"] = polls_meta
+    return result
 
 
 @router.get("/knesset/current")

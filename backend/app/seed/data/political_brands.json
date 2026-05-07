@@ -51,9 +51,16 @@
   {
     "id": "10000000-0000-0000-0000-000000000008",
     "canonical_name": "Religious Zionism",
-    "names_json": { "he": "הציונות הדתית / עוצמה יהודית", "en": "Religious Zionism / Otzma Yehudit", "ru": "Религиозный сионизм / Еврейская сила" },
-    "description": "Far-right joint list of Smotrich (Religious Zionism), Ben-Gvir (Otzma Yehudit) and Noam. 14 seats in 25th Knesset.",
+    "names_json": { "he": "הציונות הדתית", "en": "Religious Zionism", "ru": "Религиозный сионизм (Смотрич)" },
+    "description": "Religious Zionist nationalist party led by Bezalel Smotrich (Finance Minister). In 2022 ran as joint list with Otzma Yehudit and Noam (14 seats combined). Expected to run separately in 26th Knesset elections.",
     "color_hex": "#B91C1C"
+  },
+  {
+    "id": "10000000-0000-0000-0000-000000000014",
+    "canonical_name": "Otzma Yehudit",
+    "names_json": { "he": "עוצמה יהודית", "en": "Otzma Yehudit", "ru": "Еврейская сила (Бен-Гвир)" },
+    "description": "Far-right nationalist party led by Itamar Ben-Gvir (National Security Minister). In 2022 ran as joint list with Religious Zionism and Noam. Expected to run separately in 26th Knesset elections.",
+    "color_hex": "#7F1D1D"
   },
   {
     "id": "10000000-0000-0000-0000-000000000009",

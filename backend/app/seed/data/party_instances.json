@@ -78,6 +78,7 @@
     "left_right_score": 0.52
   },
   {
+    "_comment": "2022 joint list of Smotrich+Ben-Gvir+Noam — 14 seats. For 26th Knesset forecast use separate instances below.",
     "id": "20000000-0000-0000-0000-000000000008",
     "brand_canonical_name": "Religious Zionism",
     "official_name": "Hatzionut HaDatit",
@@ -87,6 +88,30 @@
     "end_date": null,
     "status": "active",
     "left_right_score": 0.88
+  },
+  {
+    "_comment": "הציונות הדתית — Smotrich's party running separately in 26th Knesset",
+    "id": "20000000-0000-0000-0000-000000000015",
+    "brand_canonical_name": "Religious Zionism",
+    "official_name": "Hatzionut HaDatit 26",
+    "election_cycle": "2026",
+    "knesset_number": 26,
+    "start_date": "2025-01-01",
+    "end_date": null,
+    "status": "active",
+    "left_right_score": 0.82
+  },
+  {
+    "_comment": "עוצמה יהודית — Ben Gvir's party running separately in 26th Knesset",
+    "id": "20000000-0000-0000-0000-000000000014",
+    "brand_canonical_name": "Otzma Yehudit",
+    "official_name": "OtzmaYehudit",
+    "election_cycle": "2026",
+    "knesset_number": 26,
+    "start_date": "2025-01-01",
+    "end_date": null,
+    "status": "active",
+    "left_right_score": 0.95
   },
   {
     "id": "20000000-0000-0000-0000-000000000009",

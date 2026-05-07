@@ -20,6 +20,7 @@ import {
   getLatestSimulation,
   triggerSimulation,
   getKnessetCurrent,
+  adminRefreshPolling,
   SimulationRun,
   SimulationPartyResult,
   CoalitionScenario,
@@ -187,6 +188,79 @@ function AssumptionsPanel({
   );
 }
 
+// ── Party Registration Panel ───────────────────────────────────────────────────
+
+const FORECAST_PARTIES: Array<{
+  name_he: string;
+  name_ru: string;
+  status: "active_25" | "new_26" | "split_26";
+  note_he: string;
+  note_ru: string;
+  color: string;
+}> = [
+  { name_he: "הליכוד",          name_ru: "Ликуд",               status: "active_25", note_he: "25 מנדטים, פעיל", note_ru: "32 места, действует", color: "#1E3A8A" },
+  { name_he: "יש עתיד",         name_ru: "Еш Атид",             status: "active_25", note_he: "24 מנדטים, פעיל", note_ru: "24 места, действует", color: "#3B82F6" },
+  { name_he: "מחנה ממלכתי",     name_ru: "Нац. единство (Ганц)",status: "active_25", note_he: "12 מנדטים, פעיל", note_ru: "12 мест, действует", color: "#0EA5E9" },
+  { name_he: "ש\"ס",            name_ru: "Шас",                  status: "active_25", note_he: "11 מנדטים, פעיל", note_ru: "11 мест, действует", color: "#C2410C" },
+  { name_he: "יהדות התורה",     name_ru: "Яхадут ха-Тора",      status: "active_25", note_he: "7 מנדטים, פעיל", note_ru: "7 мест, действует",  color: "#7C3AED" },
+  { name_he: "ישראל ביתנו",     name_ru: "Исраэль Бейтейну",    status: "active_25", note_he: "6 מנדטים, פעיל", note_ru: "6 мест, действует",  color: "#1E40AF" },
+  { name_he: "חד\"ש-תע\"ל",     name_ru: "Хадаш-Тааль",         status: "active_25", note_he: "5 מנדטים, פעיל", note_ru: "5 мест, действует",  color: "#DC2626" },
+  { name_he: "רע\"מ",           name_ru: "Раам",                 status: "active_25", note_he: "5 מנדטים, פעיל", note_ru: "5 мест, действует",  color: "#059669" },
+  { name_he: "הדמוקרטים",       name_ru: "Демократы (Голан)",   status: "new_26",    note_he: "חדשה — מיזוג עבודה + מרץ בהנהגת יאיר גולן", note_ru: "Новая — слияние Авода + Мерец под руководством Яира Голана", color: "#0891B2" },
+  { name_he: "עוצמה יהודית",    name_ru: "Евр. сила (Бен-Гвир)",status: "split_26",  note_he: "נפרדת מהציונות הדתית — ב-2022 רצו יחד", note_ru: "Отдельно от Религ. сионизма — в 2022 шли вместе", color: "#7F1D1D" },
+  { name_he: "הציונות הדתית",   name_ru: "Религ. сионизм (Смотрич)", status: "split_26", note_he: "נפרדת מעוצמה יהודית — ב-2022 רצו יחד", note_ru: "Отдельно от Евр. силы — в 2022 шли вместе", color: "#B91C1C" },
+];
+
+const STATUS_LABELS: Record<string, { label_he: string; label_ru: string; cls: string }> = {
+  active_25: { label_he: "פעילה בכנסת 25",  label_ru: "В 25-м Кнессете",   cls: "bg-emerald-100 text-emerald-700" },
+  new_26:    { label_he: "מפלגה חדשה",       label_ru: "Новая партия",       cls: "bg-blue-100 text-blue-700" },
+  split_26:  { label_he: "הפרדה מרשימה משולבת", label_ru: "Разделились",    cls: "bg-amber-100 text-amber-700" },
+};
+
+function PartyRegistrationPanel() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
+      >
+        <span>🗳️ הרכב הרשימות לכנסת ה-26 — מי מתמודד ולמה</span>
+        <span className="text-slate-400 text-xs">{open ? "▲ סגור" : "▼ הצג"}</span>
+      </button>
+      {open && (
+        <div className="border-t border-slate-100 px-5 py-4 space-y-3">
+          <p className="text-xs text-slate-500 leading-relaxed">
+            הרשימה מבוססת על מידע ציבורי זמין נכון למאי 2026. יש לאמת מול מקורות עדכניים.
+            <strong className="text-amber-700"> שינויים בהרכב הרשימות עלולים להשפיע על התוצאות.</strong>
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {FORECAST_PARTIES.map((p) => {
+              const s = STATUS_LABELS[p.status];
+              return (
+                <div key={p.name_he} className="flex items-start gap-2.5 rounded-lg border border-slate-100 px-3 py-2">
+                  <span className="w-3 h-3 rounded-sm shrink-0 mt-0.5 border border-black/10" style={{ backgroundColor: p.color }} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-xs font-semibold text-slate-800" dir="rtl">{p.name_he}</span>
+                      <span className={`text-[10px] font-medium rounded-full px-1.5 py-0.5 leading-none ${s.cls}`}>{s.label_he}</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5 leading-snug" dir="rtl">{p.note_he}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-slate-400 border-t border-slate-100 pt-2">
+            ⚠ נכון למאי 2026. מפלגות יכולות להתמזג, להתפצל או לשנות שם לפני הבחירות.
+            מפלגות לא רשומות לא יכולות להתמודד. מקור חיצוני: ועדת הבחירות המרכזית.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Tab component ─────────────────────────────────────────────────────────────
 
 type Tab = "current" | "forecast" | "builder";
@@ -238,6 +312,36 @@ export default function SimulationPage() {
   const [simLoading, setSimLoading] = useState(false);
   const [triggering, setTriggering] = useState(false);
   const [simError, setSimError] = useState<string | null>(null);
+
+  // Polling refresh state
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshResult, setRefreshResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [adminPw, setAdminPw] = useState("");
+
+  const handleRefreshPolls = async () => {
+    if (!adminPw) { setRefreshResult({ ok: false, msg: "Введите пароль администратора" }); return; }
+    setRefreshing(true);
+    setRefreshResult(null);
+    try {
+      // Store temporarily so adminApiFetch picks it up
+      if (typeof window !== "undefined") sessionStorage.setItem("sv_admin_pw", adminPw);
+      const res = await adminRefreshPolling();
+      if (res.polls_stored > 0) {
+        setRefreshResult({ ok: true, msg: `✓ Загружено ${res.polls_stored} опросов (${res.parties_stored} результатов партий). Источник: ${res.source}` });
+        // Reload simulation data
+        setData(null);
+        setSimLoading(true);
+        getLatestSimulation().then(setData).catch(() => {}).finally(() => setSimLoading(false));
+      } else {
+        const warn = res.warnings.join(" | ");
+        setRefreshResult({ ok: false, msg: warn || "Нет данных. Проверьте OPENAI_API_KEY." });
+      }
+    } catch (e: unknown) {
+      setRefreshResult({ ok: false, msg: String(e) });
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Load current Knesset data on mount
   useEffect(() => {
@@ -370,9 +474,68 @@ export default function SimulationPage() {
               לשונית זו מציגה <strong>תרחישי בחירות עתידיים לכנסת ה-26</strong>, לא את הרכב הכנסת ה-25 הנוכחית.
               הרכב הסיעות מבוסס על <strong>נתוני סקרי דעת קהל מוערכים</strong> (ינואר–אפריל 2026) שהוזנו ידנית.
               המערכת <strong>אינה מחוברת לסקרים בזמן אמת</strong> ממחברות סקרים.
-              הרשימות כוללות מפלגות הצפויות להתמודד בבחירות הבאות — כולל מפלגות חדשות שלא היו בכנסת ה-25.
               כל הנתונים הם תרחישים הסתברותיים בלבד, לא חיזוי בחירות.
             </p>
+          </div>
+
+          {/* Party registration status panel */}
+          <PartyRegistrationPanel />
+
+          {/* Polls source + refresh panel */}
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
+            {/* Source badge */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm font-medium text-slate-700">Источник данных опросов:</span>
+              {data?.polls_meta ? (
+                <span className={`text-xs font-semibold rounded-full px-2.5 py-1 ${
+                  data.polls_meta.source === "live_web_search"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-amber-100 text-amber-700"
+                }`}>
+                  {data.polls_meta.source === "live_web_search" ? "🌐 Живые данные (веб-поиск)" : "⚠ Расчётные данные (seed)"}
+                </span>
+              ) : (
+                <span className="text-xs text-slate-400">загрузка…</span>
+              )}
+              {data?.polls_meta?.latest_date && (
+                <span className="text-xs text-slate-400">актуально на {data.polls_meta.latest_date}</span>
+              )}
+            </div>
+
+            {/* Refresh controls */}
+            <details className="group">
+              <summary className="cursor-pointer text-xs text-brand-600 font-medium select-none">
+                🔄 Обновить опросы через OpenAI (требует admin-пароль)
+              </summary>
+              <div className="mt-3 space-y-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <p className="text-xs text-slate-500">
+                  Запускает веб-поиск через OpenAI Responses API (<code>gpt-4o</code>).
+                  Находит актуальные опросы израильских социологических служб и обновляет базу.
+                  Требует действующий <code>OPENAI_API_KEY</code>.
+                </p>
+                <div className="flex gap-2 flex-wrap">
+                  <input
+                    type="password"
+                    placeholder="Пароль администратора"
+                    value={adminPw}
+                    onChange={(e) => setAdminPw(e.target.value)}
+                    className="flex-1 min-w-0 rounded-lg border border-slate-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-400"
+                  />
+                  <button
+                    onClick={handleRefreshPolls}
+                    disabled={refreshing}
+                    className="shrink-0 rounded-lg bg-brand-600 text-white px-4 py-1.5 text-xs font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                  >
+                    {refreshing ? "Поиск…" : "Обновить опросы"}
+                  </button>
+                </div>
+                {refreshResult && (
+                  <p className={`text-xs font-medium ${refreshResult.ok ? "text-emerald-700" : "text-red-600"}`}>
+                    {refreshResult.msg}
+                  </p>
+                )}
+              </div>
+            </details>
           </div>
 
           <div className="flex items-center justify-between flex-wrap gap-3">

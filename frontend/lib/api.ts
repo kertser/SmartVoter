@@ -370,6 +370,13 @@ export interface SimulationRun {
   assumptions: Record<string, string>;
   parties: SimulationPartyResult[];
   coalitions: CoalitionScenario[];
+  polls_meta?: {
+    count: number;
+    latest_date: string | null;
+    source: "live_web_search" | "seed_estimate" | "none";
+    source_label_he?: string;
+    source_label_ru?: string;
+  };
 }
 
 // Current Knesset (25th, real election results sorted left-to-right)
@@ -422,6 +429,22 @@ export async function getLatestSimulation(): Promise<SimulationRun> {
 
 export async function triggerSimulation(n_iterations = 5000): Promise<SimulationRun> {
   return apiFetch<SimulationRun>(`/api/simulation/run?n_iterations=${n_iterations}`, {
+    method: "POST",
+  });
+}
+
+export interface PollingRefreshResult {
+  source: string;
+  polls_stored: number;
+  parties_stored: number;
+  warnings: string[];
+  notes: string;
+  refreshed_at: string | null;
+  model_used: string | null;
+}
+
+export async function adminRefreshPolling(model = "gpt-4o"): Promise<PollingRefreshResult> {
+  return adminApiFetch<PollingRefreshResult>(`/api/admin/polling/refresh?model=${encodeURIComponent(model)}`, {
     method: "POST",
   });
 }
