@@ -1,16 +1,16 @@
 "use client";
 
 /**
- * CoalitionBuilder — interactive drag-and-drop coalition assembly tool.
+ * CoalitionBuilder — interactive coalition assembly tool.
  *
  * Three zones: Available | Coalition | Opposition
- * Uses HTML5 native DnD (no external library needed).
- * Calls /api/simulation/coalition/evaluate after each change (debounced).
+ * Supports:
+ * - Drag-and-drop (HTML5 native DnD)
+ * - Custom parties added manually with arbitrary name + seat count
+ *   → all other parties rescaled so total stays 120
+ * - Uses forecast (simulation) seat counts, not 2022 election results
  *
- * Per AGENTS.MD 14B.10 and coding rules:
- * - Never presents coalition as voting advice
- * - Shows constraint violations explicitly
- * - Uses "scenario" and "conditional simulation" language
+ * Per AGENTS.MD 14B.10 — never presents as voting advice.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -19,14 +19,67 @@ import { evaluateCoalition } from "@/lib/api";
 
 type Zone = "available" | "coalition" | "opposition";
 
+// A colour palette for custom-added parties
+const CUSTOM_COLORS = [
+  "#6366f1", "#0ea5e9", "#14b8a6", "#f59e0b", "#8b5cf6",
+  "#ec4899", "#10b981", "#f97316", "#06b6d4", "#84cc16",
+];
+
+interface CustomParty {
+  key: string;          // unique identifier
+  name: string;
+  raw_seats: number;    // user-stated seat count
+  color: string;
+}
+
 interface PartyChip extends KnessetParty {
   zone: Zone;
+  /** Seats adjusted for custom-party rescaling */
+  effective_seats: number;
+  isCustom?: boolean;
 }
 
 interface Props {
   parties: KnessetParty[];
-  useForecastSeats?: boolean;
+  /** If true, show "forecast" badge on seat counts */
+  isForecast?: boolean;
 }
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function computeEffectiveSeats(
+  parties: KnessetParty[],
+  customs: CustomParty[],
+): PartyChip[] {
+  const customTotal = customs.reduce((s, c) => s + c.raw_seats, 0);
+  const remaining   = Math.max(0, 120 - customTotal);
+  const partyTotal  = parties.reduce((s, p) => s + (p.seats || 0), 0) || 1;
+  const scale       = remaining / partyTotal;
+
+  const chips: PartyChip[] = parties.map((p) => ({
+    ...p,
+    effective_seats: Math.round((p.seats || 0) * scale),
+    zone: "available" as Zone,
+  }));
+
+  for (const c of customs) {
+    chips.push({
+      official_name: c.key,
+      name_en: c.name,
+      name_he: c.name,
+      seats: c.raw_seats,
+      effective_seats: c.raw_seats,
+      color_hex: c.color,
+      left_right_score: 0,
+      political_bloc: "custom",
+      zone: "available" as Zone,
+      isCustom: true,
+    });
+  }
+  return chips;
+}
+
+// ── Sub-components ─────────────────────────────────────────────────────────────
 
 function ScoreBar({ value, label, color }: { value: number; label: string; color: string }) {
   const pct = Math.round(value * 100);
@@ -48,84 +101,166 @@ function ScoreBar({ value, label, color }: { value: number; label: string; color
   );
 }
 
-export function CoalitionBuilder({ parties, useForecastSeats = false }: Props) {
-  const [chips, setChips] = useState<PartyChip[]>(() =>
-    parties.map((p) => ({ ...p, zone: "available" as Zone }))
+// ── Add Custom Party form ─────────────────────────────────────────────────────
+
+function AddCustomPartyForm({
+  onAdd,
+  colorIndex,
+}: {
+  onAdd: (name: string, seats: number, color: string) => void;
+  colorIndex: number;
+}) {
+  const [name, setName]   = useState("");
+  const [seats, setSeats] = useState(8);
+  const color = CUSTOM_COLORS[colorIndex % CUSTOM_COLORS.length];
+
+  const handleAdd = () => {
+    const trimmed = name.trim();
+    if (!trimmed || seats < 1 || seats > 60) return;
+    onAdd(trimmed, seats, color);
+    setName("");
+    setSeats(8);
+  };
+
+  return (
+    <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/40 p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <span
+          className="w-4 h-4 rounded-full border border-black/10 shrink-0"
+          style={{ backgroundColor: color }}
+        />
+        <h3 className="text-xs font-semibold text-slate-700">הוסף מפלגה מותאמת</h3>
+        <span className="text-xs text-slate-400">— Add custom party</span>
+      </div>
+      <p className="text-[11px] text-slate-500 leading-relaxed">
+        הוסף מפלגה עם מספר מנדטים שרירותי. יתר המפלגות יוקטנו יחסית כך שהסכום יישאר 120.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <input
+          type="text"
+          placeholder="שם המפלגה"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+          className="flex-1 min-w-[140px] rounded-lg border border-slate-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          dir="rtl"
+        />
+        <div className="flex items-center gap-1.5">
+          <input
+            type="number"
+            min={1}
+            max={60}
+            value={seats}
+            onChange={(e) => setSeats(Math.min(60, Math.max(1, Number(e.target.value))))}
+            className="w-16 rounded-lg border border-slate-300 px-2 py-1.5 text-xs text-center focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          />
+          <span className="text-xs text-slate-500">מנדטים</span>
+        </div>
+        <button
+          onClick={handleAdd}
+          disabled={!name.trim() || seats < 1}
+          className="shrink-0 rounded-lg bg-indigo-600 text-white px-4 py-1.5 text-xs font-semibold hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+        >
+          + הוסף
+        </button>
+      </div>
+    </div>
   );
-  const [draggedName, setDraggedName] = useState<string | null>(null);
-  const [evaluation, setEvaluation] = useState<CoalitionEvaluation | null>(null);
-  const [evaluating, setEvaluating] = useState(false);
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+
+export function CoalitionBuilder({ parties, isForecast = false }: Props) {
+  const [customs,     setCustoms]     = useState<CustomParty[]>([]);
+  const [zones,       setZones]       = useState<Record<string, Zone>>({});
+  const [draggedKey,  setDraggedKey]  = useState<string | null>(null);
+  const [evaluation,  setEvaluation]  = useState<CoalitionEvaluation | null>(null);
+  const [evaluating,  setEvaluating]  = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Update chips when parties prop changes
+  // Rebuild chips when parties or customs change
+  const chips: PartyChip[] = computeEffectiveSeats(parties, customs).map((c) => ({
+    ...c,
+    zone: zones[c.official_name] ?? "available",
+  }));
+
+  // Reset unknown zones
   useEffect(() => {
-    setChips(parties.map((p) => {
-      const existing = chips.find((c) => c.official_name === p.official_name);
-      return { ...p, zone: existing?.zone ?? "available" };
-    }));
+    setZones((z) => {
+      const valid = new Set(chips.map((c) => c.official_name));
+      const next = { ...z };
+      let changed = false;
+      for (const k of Object.keys(next)) {
+        if (!valid.has(k)) { delete next[k]; changed = true; }
+      }
+      return changed ? next : z;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parties]);
+  }, [parties, customs]);
 
-  const coalitionParties = chips.filter((c) => c.zone === "coalition");
+  const coalitionChips = chips.filter((c) => c.zone === "coalition");
+  const coalitionSeats = coalitionChips.reduce((s, c) => s + c.effective_seats, 0);
+  const hasMajority    = evaluation?.has_majority ?? coalitionSeats >= 61;
 
-  const triggerEvaluation = useCallback((currentChips: PartyChip[]) => {
+  const triggerEval = useCallback((nextZones: Record<string, Zone>, currentChips: PartyChip[]) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
-      const names = currentChips.filter((c) => c.zone === "coalition").map((c) => c.official_name);
-      if (names.length === 0) {
-        setEvaluation(null);
-        return;
-      }
+      const names = currentChips
+        .filter((c) => (nextZones[c.official_name] ?? "available") === "coalition")
+        .map((c) => c.official_name);
+      if (names.length === 0) { setEvaluation(null); return; }
       setEvaluating(true);
       try {
-        const result = await evaluateCoalition(names, useForecastSeats);
-        setEvaluation(result);
+        const res = await evaluateCoalition(names, false);
+        setEvaluation(res);
       } catch {
-        // silent — UI still works with last evaluation
+        // silent
       } finally {
         setEvaluating(false);
       }
     }, 350);
-  }, [useForecastSeats]);
+  }, []);
 
-  const moveChip = (name: string, zone: Zone) => {
-    setChips((prev) => {
-      const next = prev.map((c) => c.official_name === name ? { ...c, zone } : c);
-      triggerEvaluation(next);
+  const moveChip = (key: string, zone: Zone) => {
+    setZones((z) => {
+      const next = { ...z, [key]: zone };
+      triggerEval(next, chips);
       return next;
     });
   };
 
-  const handleDragStart = (e: React.DragEvent, name: string) => {
-    setDraggedName(name);
+  const addCustom = (name: string, seats: number, color: string) => {
+    const key = `custom_${Date.now()}`;
+    setCustoms((c) => [...c, { key, name, raw_seats: seats, color }]);
+  };
+
+  const removeCustom = (key: string) => {
+    setCustoms((c) => c.filter((x) => x.key !== key));
+    setZones((z) => { const n = { ...z }; delete n[key]; return n; });
+  };
+
+  // DnD
+  const handleDragStart = (e: React.DragEvent, key: string) => {
+    setDraggedKey(key);
     e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", name);
+    e.dataTransfer.setData("text/plain", key);
   };
-
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver  = (e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; };
+  const handleDrop      = (e: React.DragEvent, zone: Zone) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
+    const key = e.dataTransfer.getData("text/plain") || draggedKey;
+    if (key) moveChip(key, zone);
+    setDraggedKey(null);
   };
+  const handleDragEnd   = () => setDraggedKey(null);
 
-  const handleDrop = (e: React.DragEvent, zone: Zone) => {
-    e.preventDefault();
-    const name = e.dataTransfer.getData("text/plain") || draggedName;
-    if (name) moveChip(name, zone);
-    setDraggedName(null);
-  };
-
-  const handleDragEnd = () => setDraggedName(null);
-
-  const coalitionSeats = coalitionParties.reduce((s, p) => s + (p.seats || 0), 0);
-  const hasMajority = (evaluation?.has_majority) ?? (coalitionSeats >= 61);
-
-  const renderZone = (zone: Zone, label: string, bgClass: string, description: string) => {
+  const renderZone = (zone: Zone, label: string, bgClass: string, desc: string) => {
     const zoneChips = chips.filter((c) => c.zone === zone);
     return (
       <div className="flex flex-col min-h-0">
         <div className="mb-2">
           <h3 className="text-sm font-semibold text-slate-700">{label}</h3>
-          <p className="text-xs text-slate-400">{description}</p>
+          <p className="text-xs text-slate-400">{desc}</p>
         </div>
         <div
           className={`flex-1 min-h-32 rounded-xl border-2 border-dashed p-3 flex flex-wrap gap-2 content-start transition-colors ${bgClass}`}
@@ -133,9 +268,7 @@ export function CoalitionBuilder({ parties, useForecastSeats = false }: Props) {
           onDrop={(e) => handleDrop(e, zone)}
         >
           {zoneChips.length === 0 && (
-            <p className="text-xs text-slate-300 italic w-full text-center pt-4">
-              Drop parties here
-            </p>
+            <p className="text-xs text-slate-300 italic w-full text-center pt-4">גרור לכאן</p>
           )}
           {zoneChips.map((chip) => (
             <div
@@ -143,32 +276,44 @@ export function CoalitionBuilder({ parties, useForecastSeats = false }: Props) {
               draggable
               onDragStart={(e) => handleDragStart(e, chip.official_name)}
               onDragEnd={handleDragEnd}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 cursor-grab active:cursor-grabbing select-none shadow-sm border border-black/10 transition-opacity text-white text-xs font-semibold ${
-                draggedName === chip.official_name ? "opacity-40" : "opacity-100"
+              className={`group relative flex items-center gap-1.5 rounded-full px-3 py-1.5 cursor-grab active:cursor-grabbing select-none shadow-sm border border-black/10 transition-opacity text-white text-xs font-semibold ${
+                draggedKey === chip.official_name ? "opacity-40" : "opacity-100"
               }`}
-              style={{ backgroundColor: chip.color_hex }}
-              title={`${chip.name_he || chip.official_name} — ${chip.seats} מנדטים (שמאל/ימין: ${chip.left_right_score?.toFixed(2)})`}
+              style={{ backgroundColor: chip.color_hex || "#94a3b8" }}
+              title={chip.name_he || chip.official_name}
             >
-              <span className="max-w-[100px] truncate" dir="rtl">{chip.name_he || chip.name_en}</span>
-              <span className="rounded-full bg-black/20 px-1.5 py-0.5 text-[10px] font-bold">
-                {chip.seats || "—"}
+              <span className="max-w-[100px] truncate" dir="rtl">
+                {chip.name_he || chip.name_en}
               </span>
+              <span className="rounded-full bg-black/20 px-1.5 py-0.5 text-[10px] font-bold">
+                {chip.effective_seats}
+              </span>
+              {isForecast && (
+                <span className="text-[8px] opacity-70">~</span>
+              )}
+              {chip.isCustom && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); removeCustom(chip.official_name); }}
+                  className="ml-0.5 w-3.5 h-3.5 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center text-white text-[9px] leading-none transition-colors"
+                  title="הסר"
+                >
+                  ×
+                </button>
+              )}
             </div>
           ))}
         </div>
         {zone === "coalition" && (
           <div className="mt-2 flex items-center justify-between">
             <span className="text-xs text-slate-500">
-              {coalitionParties.length} parties · {coalitionSeats} seats
+              {coalitionChips.length} מפלגות · {coalitionSeats} מנדטים
             </span>
             <span
               className={`text-xs font-bold rounded-full px-2 py-0.5 ${
-                hasMajority
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "bg-red-100 text-red-700"
+                hasMajority ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
               }`}
             >
-              {hasMajority ? "✓ Majority" : `${61 - coalitionSeats} more needed`}
+              {hasMajority ? "✓ רוב" : `חסרים ${61 - coalitionSeats}`}
             </span>
           </div>
         )}
@@ -178,151 +323,116 @@ export function CoalitionBuilder({ parties, useForecastSeats = false }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Instruction */}
-      <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 text-xs text-blue-800">
-        <strong>How to use:</strong> Drag parties between the three zones to build a coalition.
-        Results update automatically. Coalition scenarios are conditional simulations — not predictions.
-        Seat counts are from the November 2022 election.
+      {/* Data source notice */}
+      <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 text-xs text-blue-800 space-y-1">
+        <p>
+          <strong>כלי תרחישים בלבד</strong> — גרור מפלגות לאזורים לניתוח קואליציה מיידי.
+          {isForecast
+            ? " מספרי המנדטים מבוססים על תחזית הסימולציה (ממוצע מדגמי)."
+            : " מספרי המנדטים מבוססים על תחזית בחירות."}
+          {" "}תוצאות הניתוח הן תרחישים תנאיים — לא תחזיות ולא המלצות.
+        </p>
       </div>
 
-      {/* Three-column layout */}
+      {/* Custom party form */}
+      <AddCustomPartyForm onAdd={addCustom} colorIndex={customs.length} />
+
+      {/* Custom-party rescaling notice */}
+      {customs.length > 0 && (
+        <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+          <strong>⚖ שינוי יחסי:</strong> המפלגות המקוריות הוקטנו יחסית כדי שסכום כל המנדטים יישאר 120.
+          (<strong>{customs.reduce((s, c) => s + c.raw_seats, 0)}</strong> מנדטים לפי מפלגות מותאמות,{" "}
+          <strong>{120 - customs.reduce((s, c) => s + c.raw_seats, 0)}</strong> לשאר.)
+        </div>
+      )}
+
+      {/* Three-zone layout */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {renderZone(
-          "coalition",
-          "Coalition",
-          "border-emerald-300 bg-emerald-50/30",
-          "Parties forming the government"
-        )}
-        {renderZone(
-          "opposition",
-          "Opposition",
-          "border-red-300 bg-red-50/30",
-          "Parties in opposition"
-        )}
-        {renderZone(
-          "available",
-          "Unassigned",
-          "border-slate-300 bg-slate-50/40",
-          "Drag to coalition or opposition"
-        )}
+        {renderZone("coalition",  "קואליציה",   "border-emerald-300 bg-emerald-50/30", "מפלגות בממשלה")}
+        {renderZone("opposition", "אופוזיציה",   "border-red-300 bg-red-50/30",         "מפלגות באופוזיציה")}
+        {renderZone("available",  "לא מוגדר",   "border-slate-300 bg-slate-50/40",     "גרור לקואליציה או לאופוזיציה")}
       </div>
 
       {/* Evaluation panel */}
-      {coalitionParties.length > 0 && (
+      {coalitionChips.length > 0 && (
         <div className={`rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-4 transition-opacity ${evaluating ? "opacity-60" : "opacity-100"}`}>
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-800">Coalition analysis</h3>
-            {evaluating && (
-              <span className="text-xs text-slate-400 animate-pulse">Evaluating…</span>
-            )}
+            <h3 className="text-sm font-semibold text-slate-800">ניתוח קואליציה</h3>
+            {evaluating && <span className="text-xs text-slate-400 animate-pulse">מחשב…</span>}
+          </div>
+
+          {/* Seat bar */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-slate-600">
+              <span className="font-medium">מנדטים ({coalitionSeats}/120)</span>
+              <span className={`font-bold ${hasMajority ? "text-emerald-700" : "text-red-700"}`}>
+                {hasMajority ? "✓ רוב (≥61)" : `אין רוב — חסרים ${61 - coalitionSeats}`}
+              </span>
+            </div>
+            <div className="h-3 bg-slate-100 rounded-full overflow-hidden relative">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${(coalitionSeats / 120) * 100}%`,
+                  background: hasMajority
+                    ? "linear-gradient(90deg,#10b981,#059669)"
+                    : "linear-gradient(90deg,#f87171,#ef4444)",
+                }}
+              />
+              <div className="absolute top-0 bottom-0 w-0.5 bg-slate-600 opacity-40" style={{ left: `${(61 / 120) * 100}%` }} />
+            </div>
+            {/* chips breakdown */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {coalitionChips.map((c) => (
+                <span
+                  key={c.official_name}
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-white"
+                  style={{ backgroundColor: c.color_hex || "#94a3b8" }}
+                  dir="rtl"
+                >
+                  {c.name_he || c.name_en} ({c.effective_seats})
+                </span>
+              ))}
+            </div>
           </div>
 
           {evaluation && (
-            <>
-              {/* Seat bar */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs text-slate-600">
-                  <span className="font-medium">Seats ({evaluation.seats}/120)</span>
-                  <span className={`font-bold ${evaluation.has_majority ? "text-emerald-700" : "text-red-700"}`}>
-                    {evaluation.has_majority ? "✓ Has majority (≥61)" : `No majority — ${61 - evaluation.seats} short`}
-                  </span>
-                </div>
-                <div className="h-3 bg-slate-100 rounded-full overflow-hidden relative">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{
-                      width: `${(evaluation.seats / 120) * 100}%`,
-                      background: evaluation.has_majority
-                        ? "linear-gradient(90deg, #10b981, #059669)"
-                        : "linear-gradient(90deg, #f87171, #ef4444)",
-                    }}
-                  />
-                  {/* 61-seat mark */}
-                  <div
-                    className="absolute top-0 bottom-0 w-0.5 bg-slate-600 opacity-50"
-                    style={{ left: `${(61 / 120) * 100}%` }}
-                  />
-                </div>
-                {/* Seat breakdown */}
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {Object.entries(evaluation.seat_breakdown).map(([name, seats]) => {
-                    const chip = chips.find((c) => c.official_name === name);
-                    return (
-                      <span
-                        key={name}
-                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-white"
-                        style={{ backgroundColor: chip?.color_hex || "#94a3b8" }}
-                        dir="rtl"
-                      >
-                        {chip?.name_he || chip?.name_en || name} ({seats})
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Score bars */}
-              <div className="space-y-3">
-                <ScoreBar
-                  value={evaluation.feasibility_score}
-                  label="Feasibility (based on declared incompatibilities)"
-                  color="#6366f1"
-                />
-                <ScoreBar
-                  value={evaluation.stability_score}
-                  label="Stability (seat margin and ideological spread)"
-                  color="#0ea5e9"
-                />
-                <ScoreBar
-                  value={evaluation.ideological_coherence_score}
-                  label="Ideological coherence"
-                  color="#f97316"
-                />
-              </div>
-
-              {/* Constraint violations */}
-              {evaluation.constraint_violations.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-xs font-semibold text-slate-700">Declared incompatibilities</h4>
-                  {evaluation.constraint_violations.map((v, i) => (
-                    <div
-                      key={i}
-                      className={`rounded-lg px-3 py-2 text-xs ${
-                        v.strength === "hard"
-                          ? "bg-red-50 border border-red-200 text-red-800"
-                          : "bg-amber-50 border border-amber-200 text-amber-800"
-                      }`}
-                    >
-                      <strong>{v.strength === "hard" ? "⛔ Hard" : "⚠ Soft"} conflict:</strong>{" "}
-                      {v.description}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {evaluation.constraint_violations.length === 0 && (
-                <p className="text-xs text-emerald-700 font-medium">
-                  ✓ No declared incompatibilities between selected coalition members.
-                </p>
-              )}
-            </>
+            <div className="space-y-3">
+              <ScoreBar value={evaluation.feasibility_score}          label="ישימות (הכרזות אי-תאימות)"         color="#6366f1" />
+              <ScoreBar value={evaluation.stability_score}            label="יציבות (שוליים ומרחק אידאולוגי)"   color="#0ea5e9" />
+              <ScoreBar value={evaluation.ideological_coherence_score}label="קוהרנטיות אידאולוגית"              color="#f97316" />
+            </div>
           )}
 
-          {!evaluation && !evaluating && (
-            <p className="text-xs text-slate-400">
-              Add at least one party to the coalition to see analysis.
+          {evaluation?.constraint_violations && evaluation.constraint_violations.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-slate-700">הכרזות אי-תאימות</h4>
+              {evaluation.constraint_violations.map((v, i) => (
+                <div key={i} className={`rounded-lg px-3 py-2 text-xs ${
+                  v.strength === "hard"
+                    ? "bg-red-50 border border-red-200 text-red-800"
+                    : "bg-amber-50 border border-amber-200 text-amber-800"
+                }`}>
+                  <strong>{v.strength === "hard" ? "⛔ חזק" : "⚠ רך"}:</strong> {v.description}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {evaluation?.constraint_violations?.length === 0 && (
+            <p className="text-xs text-emerald-700 font-medium">
+              ✓ אין הכרזות אי-תאימות בין חברי הקואליציה שנבחרו.
             </p>
           )}
         </div>
       )}
 
-      {/* Epistemic disclaimer */}
+      {/* Disclaimer */}
       <p className="text-xs text-slate-400 border-t border-slate-100 pt-3">
-        ⚠ Coalition analysis is a conditional scenario tool, not a political prediction.
-        Feasibility scores are estimates based on declared positions and historical behavior.
-        Seat counts are from the 2022 election — use the &quot;Election Forecast&quot; tab for projected seats.
+        ⚠ ניתוח קואליציה הוא כלי תרחישים תנאיי — לא תחזית פוליטית.
+        ציוני הישימות מבוססים על עמדות מוצהרות והתנהגות היסטורית.
+        {isForecast && " מנדטים מבוססים על חציון הסימולציה המונטה-קרלו — ערכים הסתברותיים בלבד."}
       </p>
     </div>
   );
 }
-

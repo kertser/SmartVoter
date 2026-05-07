@@ -18,7 +18,6 @@ import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
 import {
   getLatestSimulation,
-  triggerSimulation,
   getKnessetCurrent,
   adminRefreshPolling,
   SimulationRun,
@@ -310,7 +309,6 @@ export default function SimulationPage() {
   // Forecast/simulation data
   const [data, setData] = useState<SimulationRun | null>(null);
   const [simLoading, setSimLoading] = useState(false);
-  const [triggering, setTriggering] = useState(false);
   const [simError, setSimError] = useState<string | null>(null);
 
   // Polling refresh state
@@ -362,19 +360,6 @@ export default function SimulationPage() {
     }
   }, [activeTab, data, simLoading, s.errorLoad]);
 
-  const handleRunNew = async () => {
-    setTriggering(true);
-    setSimError(null);
-    try {
-      const result = await triggerSimulation(5000);
-      setData(result);
-    } catch {
-      setSimError(s.errorLoad);
-    } finally {
-      setTriggering(false);
-    }
-  };
-
   const sortedParties = [...(data?.parties ?? [])].sort(
     (a, b) => b.seats_mean - a.seats_mean
   );
@@ -386,6 +371,7 @@ export default function SimulationPage() {
       name: p.name_he || p.party_name,
       seats: p.seats_median,
       color: p.color_hex,
+      lr: p.left_right_score,
     }));
 
   const distributionParties = sortedParties.map((p) => ({
@@ -538,22 +524,11 @@ export default function SimulationPage() {
             </details>
           </div>
 
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              {data?.data_cutoff_date && (
-                <p className="text-xs text-slate-400">{s.dataCutoff(data.data_cutoff_date)}</p>
-              )}
-            </div>
-            <button
-              onClick={handleRunNew}
-              disabled={triggering}
-              className="shrink-0 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
-            >
-              {triggering ? s.running : s.runNewSimulation}
-            </button>
-          </div>
+          {data?.data_cutoff_date && (
+            <p className="text-xs text-slate-400">{s.dataCutoff(data.data_cutoff_date)}</p>
+          )}
 
-          {(simLoading || triggering) && !data && (
+          {simLoading && !data && (
             <div className="flex flex-col items-center gap-4 py-16">
               <div className="h-8 w-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
               <p className="text-slate-500 text-sm">{s.loadingSimulation}</p>
@@ -620,23 +595,57 @@ export default function SimulationPage() {
       {activeTab === "builder" && (
         <div className="space-y-4">
           <div>
-            <h2 className="text-base font-semibold text-slate-800">Interactive Coalition Builder</h2>
+            <h2 className="text-base font-semibold text-slate-800">בניית קואליציה</h2>
             <p className="text-sm text-slate-500">
-              Assemble parties into a coalition and see instant feasibility analysis.
-              This is a scenario exploration tool — not a prediction or voting recommendation.
+              בנה קואליציה אפשרית וקבל ניתוח מיידי. מנדטים מבוססים על תחזית כנסת ה-26 (לא בחירות 2022).
+              ניתן להוסיף מפלגות היפותטיות עם מספר מנדטים שרירותי.
             </p>
           </div>
 
-          {knessetLoading && (
-            <div className="flex items-center gap-3 py-8 justify-center">
-              <div className="h-6 w-6 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
-              <span className="text-slate-400 text-sm">Loading party data…</span>
+          {/* Load simulation data if not loaded yet */}
+          {!data && !simLoading && (
+            <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800">
+              <strong>⚠ טוען נתוני סימולציה...</strong> יש לטעון את לשונית &quot;כנסת ה-26 — תחזית&quot; תחילה, או לחכות.
             </div>
           )}
 
-          {knesset && !knessetLoading && (
-            <CoalitionBuilder parties={knesset.parties} useForecastSeats={false} />
+          {simLoading && (
+            <div className="flex items-center gap-3 py-8 justify-center">
+              <div className="h-6 w-6 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
+              <span className="text-slate-400 text-sm">טוען נתוני תחזית…</span>
+            </div>
           )}
+
+          {/* Convert simulation parties → KnessetParty format for CoalitionBuilder */}
+          {(() => {
+            const forecastParties = (data?.parties ?? []).map((p) => ({
+              official_name: p.party_name,
+              name_en: p.party_name,
+              name_he: p.name_he,
+              seats: Math.round(p.seats_median),
+              vote_share: p.vote_share_mean,
+              left_right_score: p.left_right_score ?? 0,
+              political_bloc: "",
+              color_hex: p.color_hex || "#94a3b8",
+              party_instance_id: p.party_instance_id ?? undefined,
+            }));
+
+            // Fallback to historical knesset if simulation not loaded
+            const builderParties = forecastParties.length > 0
+              ? forecastParties
+              : (knesset?.parties ?? []);
+
+            const usingForecast = forecastParties.length > 0;
+
+            return builderParties.length > 0 ? (
+              <CoalitionBuilder
+                parties={builderParties}
+                isForecast={usingForecast}
+              />
+            ) : (
+              <div className="text-slate-400 text-sm text-center py-8">אין נתוני מפלגות זמינים</div>
+            );
+          })()}
         </div>
       )}
 
