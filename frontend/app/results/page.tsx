@@ -207,13 +207,22 @@ function ResultsContent() {
           <div>
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">{r.bestPartyByTopic}</p>
             <div className="flex flex-wrap gap-2">
-              {results.representation_gap.best_party_by_topic.map((item) => (
-                <div key={item.topic} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs">
-                  <span className="font-medium text-slate-700">{item.topic}</span>
-                  <span className="text-slate-400 mx-1">→</span>
-                  <span className="text-brand-700">{item.party}</span>
-                </div>
-              ))}
+              {results.representation_gap.best_party_by_topic.map((item) => {
+                // Topic name in the user's current language; fallback to English
+                const topicLabel =
+                  lang === "he" ? (item.topic_he ?? item.topic) :
+                  lang === "ru" ? (item.topic_ru ?? item.topic) :
+                  item.topic;
+                // Party name always in Hebrew (proper noun)
+                const partyLabel = item.party_he ?? item.party;
+                return (
+                  <div key={item.topic} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs">
+                    <span className="font-medium text-slate-700">{topicLabel}</span>
+                    <span className="text-slate-400 mx-1">→</span>
+                    <span className="text-brand-700" dir="rtl">{partyLabel}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

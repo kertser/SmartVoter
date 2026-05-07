@@ -31,8 +31,11 @@ class PartyResult(BaseModel):
 
 
 class BestPartyByTopic(BaseModel):
-    topic: str
-    party: str
+    topic: str           # English topic name (canonical key)
+    topic_he: str | None = None
+    topic_ru: str | None = None
+    party: str           # English canonical party name
+    party_he: str | None = None
 
 
 class RepresentationGap(BaseModel):

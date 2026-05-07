@@ -310,48 +310,91 @@ def get_next_question(
     # Root questions are always served before entering adaptive selection.
     # But: respect topic coverage — only serve root questions for topics not yet
     # covered (unless all root questions are done).
+    #
+    # Adjacent-topic coverage: if a topic has no root question in the servable
+    # pool, the best non-root question for that topic is used as a survey entry
+    # so that ALL topics get at least one question during Phase 1.
     from backend.app.services.questionnaire.selector import _determine_phase
     phase = _determine_phase(len(answered_ids), answered_topic_counts, all_topic_slugs)
 
-    unanswered_root_ids = [
-        q.id for q in servable_questions
-        if q.id not in set(answered_ids) and q.is_root_question
+    answered_ids_set = set(answered_ids)
+
+    unanswered_root_qs = [
+        q for q in servable_questions
+        if q.id not in answered_ids_set and q.is_root_question
     ]
 
-    if phase == "survey" and unanswered_root_ids:
-        # During survey phase: prefer root questions for UNCOVERED topics
-        uncovered_root = [
-            q for q in servable_questions
-            if q.id in set(unanswered_root_ids)
-        ]
-        # Sort: uncovered topics first, then by any ordering
+    if phase == "survey":
+        # Determine which topic_slugs already have an available (unanswered) root question
+        slugs_with_avail_root: set[str] = set()
+        for q in unanswered_root_qs:
+            if q.topic_id:
+                t = db.query(Topic).filter(Topic.id == q.topic_id).first()
+                if t:
+                    slugs_with_avail_root.add(t.slug)
+
+        # Uncovered root questions → sort uncovered topics first
         def _root_priority(q: Question) -> int:
             topic = db.query(Topic).filter(Topic.id == q.topic_id).first() if q.topic_id else None
             slug = topic.slug if topic else ""
             return 0 if answered_topic_counts.get(slug, 0) == 0 else 1
 
-        uncovered_root.sort(key=_root_priority)
-        if uncovered_root:
-            root_q = uncovered_root[0]
-            topic = db.query(Topic).filter(Topic.id == root_q.topic_id).first() if root_q.topic_id else None
+        unanswered_root_qs.sort(key=_root_priority)
+
+        # Best non-root question for topics that have NO root question at all
+        # (adjacent-topic coverage — ensures survey spans all topics)
+        non_root_survey_qs: list[Question] = []
+        for q in servable_questions:
+            if q.id in answered_ids_set or q.is_root_question:
+                continue
+            if not q.policy_item_id:
+                continue
+            pi = db.query(PolicyItem).filter(PolicyItem.id == q.policy_item_id).first()
+            if not pi or not pi.topic_id:
+                continue
+            topic = db.query(Topic).filter(Topic.id == pi.topic_id).first()
+            if not topic:
+                continue
+            slug = topic.slug
+            # Only if uncovered AND the topic has no unanswered root question
+            if answered_topic_counts.get(slug, 0) == 0 and slug not in slugs_with_avail_root:
+                non_root_survey_qs.append(q)
+
+        # Choose the best survey question: root first, non-root fallback second
+        survey_q: Question | None = unanswered_root_qs[0] if unanswered_root_qs else None
+        if not survey_q and non_root_survey_qs:
+            # Score non-root fallbacks by evidence quality, prefer highest
+            def _non_root_score(q: Question) -> float:
+                pos = db.query(PartyPosition).filter(PartyPosition.policy_item_id == q.policy_item_id).all()
+                return sum(p.evidence_strength for p in pos) / len(pos) if pos else 0.0
+            non_root_survey_qs.sort(key=_non_root_score, reverse=True)
+            survey_q = non_root_survey_qs[0]
+
+        if survey_q:
+            if survey_q.is_root_question:
+                topic = db.query(Topic).filter(Topic.id == survey_q.topic_id).first() if survey_q.topic_id else None
+            else:
+                pi_lookup = db.query(PolicyItem).filter(PolicyItem.id == survey_q.policy_item_id).first() if survey_q.policy_item_id else None
+                topic = db.query(Topic).filter(Topic.id == pi_lookup.topic_id).first() if pi_lookup and pi_lookup.topic_id else None
+
             t_slug = topic.slug if topic else "unknown"
             conv_meta = _build_convergence_meta(
                 db, session_id, answered_ids, answered_topic_counts,
                 all_topic_slugs, topics_covered, topics_total,
             )
             return QuestionOut(
-                id=root_q.id,
-                question_text_en=root_q.question_text_en,
-                question_text_he=root_q.question_text_he,
-                question_text_ru=root_q.question_text_ru,
-                answer_scale_type=root_q.answer_scale_type.value,
-                policy_item_id=root_q.policy_item_id,
+                id=survey_q.id,
+                question_text_en=survey_q.question_text_en,
+                question_text_he=survey_q.question_text_he,
+                question_text_ru=survey_q.question_text_ru,
+                answer_scale_type=survey_q.answer_scale_type.value,
+                policy_item_id=survey_q.policy_item_id,
                 topic_slug=t_slug,
                 topic_name_he=topic.name_he if topic else None,
                 topic_name_ru=topic.name_ru if topic else None,
                 context_note=None,
                 why_selected=_ui_strings()["why_selected"]["survey_question"],
-                is_root_question=True,
+                is_root_question=survey_q.is_root_question,
                 can_show_results=conv_meta["can_show_results"],
                 phase=conv_meta["phase"],
                 topics_covered=topics_covered,

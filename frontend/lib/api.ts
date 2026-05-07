@@ -100,7 +100,10 @@ export interface PartyResult {
 
 export interface BestPartyByTopic {
   topic: string;
+  topic_he?: string;
+  topic_ru?: string;
   party: string;
+  party_he?: string;
 }
 
 export interface RepresentationGap {

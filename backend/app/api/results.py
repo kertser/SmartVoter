@@ -230,6 +230,11 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
     # Sort by match_score descending
     party_results.sort(key=lambda p: -p.match_score)
 
+    # Build a global topic name_en → (name_he, name_ru) lookup from the bulk cache
+    all_topic_names_i18n: dict[str, tuple[str | None, str | None]] = {
+        t.name_en: (t.name_he, t.name_ru) for t in all_topics.values()
+    }
+
     # Representation gap
     answered_topics: dict[str, list[float]] = {}
     for a in user_answers:
@@ -243,35 +248,35 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
 
     best_by_topic: list[BestPartyByTopic] = []
     for topic_name in answered_topics:
-        best_party_for_topic = None
-        best_score = -1.0
+        best_party_result: PartyResult | None = None
+        best_topic_score = -1.0
         for pr in party_results:
-            topic_agreement = next(
-                (
-                    s
-                    for t, s in zip(
-                        sorted(topic_scores.get(topic_name, []), reverse=True),
-                        [pr.match_score],
-                    )
-                    if t > 0.5
-                ),
-                None,
-            )
-            if pr.match_score > best_score:
-                best_score = pr.match_score
-                best_party_for_topic = pr.name
-        if best_party_for_topic:
+            # Use per-party topic similarity scores (more accurate than match_score)
+            topic_sim = pr.topic_scores.get(topic_name, -1.0)
+            if topic_sim > best_topic_score:
+                best_topic_score = topic_sim
+                best_party_result = pr
+        if best_party_result and best_topic_score >= 0:
+            topic_he, topic_ru = all_topic_names_i18n.get(topic_name, (None, None))
             best_by_topic.append(
-                BestPartyByTopic(topic=topic_name, party=best_party_for_topic)
+                BestPartyByTopic(
+                    topic=topic_name,
+                    topic_he=topic_he,
+                    topic_ru=topic_ru,
+                    party=best_party_result.name,
+                    party_he=best_party_result.name_he,
+                )
             )
 
     max_match = max((p.match_score for p in party_results), default=0.0)
     has_gap = max_match < 0.65
 
+    top_party = party_results[0] if party_results else None
+    top_party_name_he = top_party.name_he or top_party.name if top_party else "N/A"
     gap_explanation = (
         "No party strongly represents all of your high-priority positions."
         if has_gap
-        else f"Your closest party ({party_results[0].name if party_results else 'N/A'}) "
+        else f"Your closest party ({top_party.name if top_party else 'N/A'}) "
         f"aligns well with your preferences."
     )
 
