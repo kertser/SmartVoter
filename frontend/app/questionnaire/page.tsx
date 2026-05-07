@@ -10,6 +10,12 @@ import { Tooltip } from "@/components/Tooltip";
 /**
  * Questionnaire page (AGENTS.MD Sections 13, 14.3).
  * IMPORTANT: party names/scores MUST NOT appear during the questionnaire.
+ *
+ * Stopping logic (backend-driven, not hardcoded):
+ * - When the API returns null → redirect to results immediately.
+ * - When question.can_show_results === true → show convergence banner
+ *   (user may view results now or keep going).
+ * - Hard max is enforced server-side (HARD_MAX = 40).
  */
 export default function QuestionnairePage() {
   const router = useRouter();
@@ -25,6 +31,8 @@ export default function QuestionnairePage() {
   const [submitting, setSubmitting] = useState(false);
   const [showWhy, setShowWhy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Convergence banner state
+  const [showConvergenceBanner, setShowConvergenceBanner] = useState(false);
 
   const loadNextQuestion = useCallback(async (sid: string) => {
     setLoading(true);
@@ -32,13 +40,18 @@ export default function QuestionnairePage() {
     setSalience(1.0);
     setShowWhy(false);
     setError(null);
+    setShowConvergenceBanner(false);
     try {
-      const question = await getNextQuestion(sid);
-      if (!question) {
+      const nextQuestion = await getNextQuestion(sid);
+      if (!nextQuestion) {
         router.push(`/results?session_id=${sid}`);
         return;
       }
-      setQuestion(question);
+      setQuestion(nextQuestion);
+      // Show convergence banner if backend says results are ready (but don't force)
+      if (nextQuestion.can_show_results) {
+        setShowConvergenceBanner(true);
+      }
     } catch {
       setError(q.errorLoad);
     } finally {
@@ -73,10 +86,7 @@ export default function QuestionnairePage() {
       });
       const newCount = answeredCount + 1;
       setAnsweredCount(newCount);
-      if (newCount >= 15) {
-        router.push(`/results?session_id=${sessionId}`);
-        return;
-      }
+      // Backend enforces HARD_MAX; just load next (null → auto-redirect)
       await loadNextQuestion(sessionId);
     } catch {
       setError(q.errorSubmit);
@@ -123,28 +133,99 @@ export default function QuestionnairePage() {
     { label: q.salience.veryImportant, value: 2.0 },
   ];
 
+  // Progress bar: survey phase fills proportionally to topics covered;
+  // depth phase shows answered count / 40 (hard max).
+  const topicsCovered = question?.topics_covered ?? 0;
+  const topicsTotal = question?.topics_total ?? 15;
+  const phase = question?.phase ?? "survey";
+  const rankingStability = question?.ranking_stability ?? 0;
+
+  const progressPct =
+    phase === "survey"
+      ? Math.min((topicsCovered / Math.max(topicsTotal, 1)) * 100, 100)
+      : Math.min((answeredCount / 40) * 100, 100);
+
+  const phaseLabel =
+    phase === "survey" ? q.phaseSurveyLabel : q.phaseDepthLabel;
+
+  const topicsLeftCount = topicsTotal - topicsCovered;
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Progress bar */}
       <div className="space-y-1">
         <div className="flex justify-between text-xs text-slate-500">
           <span>{q.progressLabel(answeredCount + 1)}</span>
-          {answeredCount >= 8 && (
+          <span className="flex items-center gap-3">
+            {/* Topic coverage indicator */}
+            <span className={topicsCovered >= topicsTotal ? "text-green-600 font-medium" : ""}>
+              {q.topicsCoveredLabel(topicsCovered, topicsTotal)}
+            </span>
+            {answeredCount >= 8 && (
+              <button
+                onClick={handleViewResults}
+                className="text-brand-600 hover:underline font-medium"
+              >
+                {q.showResultsNow}
+              </button>
+            )}
+          </span>
+        </div>
+        {/* Dual-stage progress bar */}
+        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-300 ${
+              phase === "survey" ? "bg-brand-500" : "bg-indigo-500"
+            }`}
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+        <div className="flex justify-between text-xs text-slate-400">
+          <span>{phaseLabel}</span>
+          {phase === "depth" && rankingStability > 0 && (
+            <span>
+              {q.stabilityReadyLabel}:{" "}
+              <span
+                className={
+                  rankingStability >= 0.8
+                    ? "text-green-600 font-medium"
+                    : "text-slate-500"
+                }
+              >
+                {Math.round(rankingStability * 100)}%
+              </span>
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Convergence banner — shown when ranking is stable */}
+      {showConvergenceBanner && (
+        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 flex flex-wrap items-center gap-3 text-sm">
+          <span className="text-green-800 flex-1">{q.convergenceOfferResults}</span>
+          <div className="flex gap-2">
             <button
               onClick={handleViewResults}
-              className="text-brand-600 hover:underline font-medium"
+              className="rounded-lg bg-green-600 px-4 py-1.5 text-white font-medium hover:bg-green-700 text-xs transition-colors"
             >
               {q.showResultsNow}
             </button>
-          )}
+            <button
+              onClick={() => setShowConvergenceBanner(false)}
+              className="rounded-lg border border-green-300 px-4 py-1.5 text-green-800 font-medium hover:bg-green-100 text-xs transition-colors"
+            >
+              {q.convergenceKeepGoing}
+            </button>
+          </div>
         </div>
-        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-brand-500 rounded-full transition-all duration-300"
-            style={{ width: `${Math.min((answeredCount / 15) * 100, 100)}%` }}
-          />
-        </div>
-      </div>
+      )}
+
+      {/* Topics left indicator in survey phase */}
+      {phase === "survey" && topicsLeftCount > 0 && (
+        <p className="text-xs text-slate-400 text-center">
+          {q.convergenceTopicsLeft(topicsLeftCount)}
+        </p>
+      )}
 
       {question && (
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-6 space-y-6">

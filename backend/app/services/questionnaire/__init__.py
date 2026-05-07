@@ -3,8 +3,12 @@ from backend.app.services.questionnaire.selector import (
     should_offer_results,
     force_results,
     aggregate_salience_by_topic,
+    aggregate_salience_by_policy_item,
+    compute_ranking_stability,
     QuestionCandidate,
     PartyPositionSlim,
+    HARD_MAX,
+    MIN_QUESTIONS,
 )
 
 __all__ = [
@@ -12,7 +16,10 @@ __all__ = [
     "should_offer_results",
     "force_results",
     "aggregate_salience_by_topic",
+    "aggregate_salience_by_policy_item",
+    "compute_ranking_stability",
     "QuestionCandidate",
     "PartyPositionSlim",
+    "HARD_MAX",
+    "MIN_QUESTIONS",
 ]
-

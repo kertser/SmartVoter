@@ -81,6 +81,13 @@ const ru: Translations = {
     errorLoad: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0432\u043e\u043f\u0440\u043e\u0441. \u041f\u043e\u0436\u0430\u043b\u0443\u0439\u0441\u0442\u0430, \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0443.",
     errorSubmit: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c \u043e\u0442\u0432\u0435\u0442. \u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u0435\u0449\u0451 \u0440\u0430\u0437.",
     tryAgain: "\u041f\u043e\u043f\u0440\u043e\u0431\u043e\u0432\u0430\u0442\u044c \u0441\u043d\u043e\u0432\u0430",
+    topicsCoveredLabel: (covered, total) => `${covered} из ${total} тем охвачено`,
+    phaseSurveyLabel: "Обзор — определение приоритетов",
+    phaseDepthLabel: "Углубление — ключевые темы",
+    stabilityReadyLabel: "Результаты готовы",
+    convergenceOfferResults: "Рейтинг стабилен — можно просмотреть результаты сейчас или продолжить.",
+    convergenceKeepGoing: "Продолжить",
+    convergenceTopicsLeft: (n) => `${n} ${n === 1 ? "тема" : n < 5 ? "темы" : "тем"} не охвачена`,
     likert: {
       stronglyOppose: "Категорически нет",
       somewhatOppose: "Скорее нет",

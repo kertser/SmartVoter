@@ -15,8 +15,14 @@ from backend.app.schemas.session import SessionCreate, SessionOut
 from backend.app.services.questionnaire import (
     select_next_question,
     aggregate_salience_by_topic,
+    aggregate_salience_by_policy_item,
+    compute_ranking_stability,
+    should_offer_results,
+    force_results,
     QuestionCandidate,
     PartyPositionSlim,
+    HARD_MAX,
+    MIN_QUESTIONS,
 )
 
 logger = logging.getLogger(__name__)
@@ -31,9 +37,15 @@ def _ui_strings() -> dict:
             "first_question": (
                 "This is the first question. It helps us understand your general priorities."
             ),
+            "survey_question": (
+                "This question introduces a new topic area, helping us map your overall priorities."
+            ),
             "adaptive_question": (
                 "This question helps distinguish between parties that are currently "
                 "close in your results."
+            ),
+            "depth_question": (
+                "You rated this topic as very important — this question explores it further."
             ),
             "auto_generated": (
                 "This question was automatically generated because no pre-existing "
@@ -92,6 +104,146 @@ def _auto_generate_question(
         return None
 
 
+def _compute_session_state(
+    db: Session,
+    session_id: uuid.UUID,
+    answered_rows: list[UserAnswer],
+) -> dict:
+    """
+    Build the full state dict from existing answers:
+    - answered_ids
+    - answered_topic_counts
+    - answered_policy_item_counts
+    - user_salience_by_topic
+    - salience_by_policy_item
+    - all_topic_slugs
+    - topics_covered
+    """
+    answered_ids: list[uuid.UUID] = []
+    answered_topic_counts: dict[str, int] = {}
+    answered_policy_item_counts: dict[uuid.UUID, int] = {}
+    answer_salience_pairs: list[tuple[str, float]] = []
+    answer_pi_salience_pairs: list[tuple[uuid.UUID, float]] = []
+
+    # Collect all topic slugs from DB to determine total topic universe
+    all_topics = db.query(Topic).all()
+    all_topic_slugs: set[str] = {t.slug for t in all_topics}
+
+    for answer in answered_rows:
+        answered_ids.append(answer.question_id)
+        if answer.policy_item_id:
+            answered_policy_item_counts[answer.policy_item_id] = (
+                answered_policy_item_counts.get(answer.policy_item_id, 0) + 1
+            )
+            answer_pi_salience_pairs.append((answer.policy_item_id, answer.salience))
+
+        pi = db.query(PolicyItem).filter(PolicyItem.id == answer.policy_item_id).first()
+        if pi:
+            topic = db.query(Topic).filter(Topic.id == pi.topic_id).first()
+            if topic:
+                answered_topic_counts[topic.slug] = (
+                    answered_topic_counts.get(topic.slug, 0) + 1
+                )
+                answer_salience_pairs.append((topic.slug, answer.salience))
+
+    user_salience_by_topic = aggregate_salience_by_topic(answer_salience_pairs)
+    salience_by_policy_item = aggregate_salience_by_policy_item(answer_pi_salience_pairs)
+    topics_covered = sum(1 for t in all_topic_slugs if answered_topic_counts.get(t, 0) > 0)
+
+    return {
+        "answered_ids": answered_ids,
+        "answered_topic_counts": answered_topic_counts,
+        "answered_policy_item_counts": answered_policy_item_counts,
+        "user_salience_by_topic": user_salience_by_topic,
+        "salience_by_policy_item": salience_by_policy_item,
+        "all_topic_slugs": all_topic_slugs,
+        "topics_covered": topics_covered,
+        "topics_total": len(all_topic_slugs),
+    }
+
+
+def _build_convergence_meta(
+    db: Session,
+    session_id: uuid.UUID,
+    answered_ids: list[uuid.UUID],
+    answered_topic_counts: dict[str, int],
+    all_topic_slugs: set[str],
+    topics_covered: int,
+    topics_total: int,
+) -> dict:
+    """
+    Compute ranking stability and whether results can be shown.
+    Uses the scoring engine to rank parties with/without the last answer.
+    Returns: {can_show_results, ranking_stability, phase}
+    """
+    from backend.app.services.questionnaire.selector import _determine_phase
+
+    answered_count = len(answered_ids)
+    phase = _determine_phase(answered_count, answered_topic_counts, all_topic_slugs)
+
+    # Lightweight ranking stability: compare rankings with all answers vs. without last
+    ranking_stability = 1.0
+    if answered_count >= 2:
+        try:
+            from backend.app.services.scoring.engine import (
+                compute_match_score,
+                AnswerData,
+                PositionData,
+            )
+            answered_rows_all = (
+                db.query(UserAnswer)
+                .filter(UserAnswer.session_id == session_id)
+                .all()
+            )
+            # Build answer data
+            answer_data_full = [
+                AnswerData(
+                    policy_item_id=a.policy_item_id,
+                    answer_value=a.answer_value,
+                    salience=a.salience,
+                )
+                for a in answered_rows_all
+                if a.policy_item_id is not None
+            ]
+            answer_data_prev = answer_data_full[:-1]
+
+            all_positions = db.query(PartyPosition).all()
+            party_ids = list({p.party_instance_id for p in all_positions})
+
+            def _rank(answer_data):
+                scores = {}
+                for pid in party_ids:
+                    pos_data = [
+                        PositionData(
+                            policy_item_id=p.policy_item_id,
+                            position_mean=p.position_mean,
+                            position_uncertainty=p.position_uncertainty,
+                            evidence_strength=p.evidence_strength,
+                            evidence_type=p.evidence_type or "platform",
+                        )
+                        for p in all_positions
+                        if p.party_instance_id == pid
+                    ]
+                    scores[pid] = compute_match_score(answer_data, pos_data)
+                return sorted(party_ids, key=lambda pid: scores[pid], reverse=True)
+
+            curr_ranking = _rank(answer_data_full)
+            prev_ranking = _rank(answer_data_prev)
+            ranking_stability = compute_ranking_stability(prev_ranking, curr_ranking)
+        except Exception as exc:
+            logger.debug("Ranking stability computation failed: %s", exc)
+            ranking_stability = 0.5  # assume partially stable on error
+
+    all_topics_covered = topics_covered >= topics_total
+    can_show = should_offer_results(answered_count, ranking_stability, all_topics_covered)
+
+    return {
+        "can_show_results": can_show,
+        "ranking_stability": round(ranking_stability, 3),
+        "phase": phase,
+    }
+
+
 @router.post("/sessions", response_model=SessionOut)
 def create_or_get_session(
     body: SessionCreate, db: Session = Depends(get_db)
@@ -113,7 +265,11 @@ def get_next_question(
 ) -> QuestionOut | None:
     """
     Returns the next adaptive question for a session.
-    Returns null when 15 questions have been answered.
+
+    Phase 1 (survey): one question per topic → breadth coverage.
+    Phase 2 (depth):  salience-driven follow-up, avoids repeating same policy item
+                      unless the user rated it Very Important.
+    Returns null when HARD_MAX questions have been answered or no candidates remain.
     Never exposes party scores. (AGENTS.MD Section 13)
     """
     session = db.query(UserSession).filter(UserSession.id == session_id).first()
@@ -123,26 +279,25 @@ def get_next_question(
     answered_rows = (
         db.query(UserAnswer).filter(UserAnswer.session_id == session_id).all()
     )
-    answered_ids = [a.question_id for a in answered_rows]
-    answered_topic_counts: dict[str, int] = {}
-    # Build salience signal: (topic_slug, salience) pairs from all previous answers.
-    # Used by select_next_question to follow the user's expressed priorities.
-    answer_salience_pairs: list[tuple[str, float]] = []
-    for answer in answered_rows:
-        pi = db.query(PolicyItem).filter(PolicyItem.id == answer.policy_item_id).first()
-        if pi:
-            topic = db.query(Topic).filter(Topic.id == pi.topic_id).first()
-            if topic:
-                answered_topic_counts[topic.slug] = (
-                    answered_topic_counts.get(topic.slug, 0) + 1
-                )
-                answer_salience_pairs.append((topic.slug, answer.salience))
-    # Aggregate per-topic salience: use max salience seen for each topic so that
-    # a single "Very important" answer drives follow-up even if others were neutral.
-    user_salience_by_topic = aggregate_salience_by_topic(answer_salience_pairs)
 
-    if len(answered_ids) >= 15:
+    state = _compute_session_state(db, session_id, answered_rows)
+    answered_ids = state["answered_ids"]
+    answered_topic_counts = state["answered_topic_counts"]
+    answered_policy_item_counts = state["answered_policy_item_counts"]
+    user_salience_by_topic = state["user_salience_by_topic"]
+    salience_by_policy_item = state["salience_by_policy_item"]
+    all_topic_slugs = state["all_topic_slugs"]
+    topics_covered = state["topics_covered"]
+    topics_total = state["topics_total"]
+
+    if force_results(len(answered_ids)):
         return None
+
+    # Compute convergence metadata (used for UI hints even though we don't stop here)
+    conv = _build_convergence_meta(
+        db, session_id, answered_ids, answered_topic_counts,
+        all_topic_slugs, topics_covered, topics_total,
+    )
 
     # Build candidates from servable questions (approved + llm_generated) not yet answered
     servable_questions = (
@@ -151,19 +306,39 @@ def get_next_question(
         .all()
     )
 
-    # Root questions (is_root_question=True) are always served first,
-    # unless already answered. They cover topics broadly before drilling down.
+    # ── Phase 1: Root questions (topic survey) ────────────────────────────────
+    # Root questions are always served before entering adaptive selection.
+    # But: respect topic coverage — only serve root questions for topics not yet
+    # covered (unless all root questions are done).
+    from backend.app.services.questionnaire.selector import _determine_phase
+    phase = _determine_phase(len(answered_ids), answered_topic_counts, all_topic_slugs)
+
     unanswered_root_ids = [
         q.id for q in servable_questions
-        if q.id not in answered_ids and q.is_root_question
+        if q.id not in set(answered_ids) and q.is_root_question
     ]
-    # If there are unanswered root questions, serve the first one directly
-    # (no need to run the adaptive scoring algorithm yet).
-    if unanswered_root_ids:
-        root_q = db.query(Question).filter(Question.id == unanswered_root_ids[0]).first()
-        if root_q:
+
+    if phase == "survey" and unanswered_root_ids:
+        # During survey phase: prefer root questions for UNCOVERED topics
+        uncovered_root = [
+            q for q in servable_questions
+            if q.id in set(unanswered_root_ids)
+        ]
+        # Sort: uncovered topics first, then by any ordering
+        def _root_priority(q: Question) -> int:
+            topic = db.query(Topic).filter(Topic.id == q.topic_id).first() if q.topic_id else None
+            slug = topic.slug if topic else ""
+            return 0 if answered_topic_counts.get(slug, 0) == 0 else 1
+
+        uncovered_root.sort(key=_root_priority)
+        if uncovered_root:
+            root_q = uncovered_root[0]
             topic = db.query(Topic).filter(Topic.id == root_q.topic_id).first() if root_q.topic_id else None
-            why_selected = "This is an opening question that helps us understand your general priorities."
+            t_slug = topic.slug if topic else "unknown"
+            conv_meta = _build_convergence_meta(
+                db, session_id, answered_ids, answered_topic_counts,
+                all_topic_slugs, topics_covered, topics_total,
+            )
             return QuestionOut(
                 id=root_q.id,
                 question_text_en=root_q.question_text_en,
@@ -171,24 +346,34 @@ def get_next_question(
                 question_text_ru=root_q.question_text_ru,
                 answer_scale_type=root_q.answer_scale_type.value,
                 policy_item_id=root_q.policy_item_id,
-                topic_slug=topic.slug if topic else "unknown",
+                topic_slug=t_slug,
                 topic_name_he=topic.name_he if topic else None,
                 topic_name_ru=topic.name_ru if topic else None,
                 context_note=None,
-                why_selected=why_selected,
+                why_selected=_ui_strings()["why_selected"]["survey_question"],
+                is_root_question=True,
+                can_show_results=conv_meta["can_show_results"],
+                phase=conv_meta["phase"],
+                topics_covered=topics_covered,
+                topics_total=topics_total,
+                answered_count=len(answered_ids),
+                ranking_stability=conv_meta["ranking_stability"],
             )
 
+    # ── Adaptive candidate scoring ────────────────────────────────────────────
     candidates: list[QuestionCandidate] = []
+    topic_lookup: dict[uuid.UUID, Topic] = {}  # question_id → Topic
+
     for q in servable_questions:
-        if q.id in answered_ids:
+        if q.id in set(answered_ids):
             continue
         pi = db.query(PolicyItem).filter(PolicyItem.id == q.policy_item_id).first()
         if not pi:
             continue
         topic = db.query(Topic).filter(Topic.id == pi.topic_id).first()
         topic_slug = topic.slug if topic else "unknown"
+        topic_lookup[q.id] = topic
 
-        # Evidence quality = avg evidence_strength across all party positions for this item
         positions = (
             db.query(PartyPosition)
             .filter(PartyPosition.policy_item_id == q.policy_item_id)
@@ -209,7 +394,7 @@ def get_next_question(
             )
         )
 
-    # Top-party positions (stub for Phase 1: use all parties)
+    # Top-party positions (use all parties, capped at 5 for performance)
     all_positions = db.query(PartyPosition).all()
     party_ids = list({p.party_instance_id for p in all_positions})
     top_party_positions: list[list[PartyPositionSlim]] = []
@@ -229,11 +414,13 @@ def get_next_question(
         top_party_positions=top_party_positions,
         answered_topic_counts=answered_topic_counts,
         user_salience_by_topic=user_salience_by_topic,
+        answered_policy_item_counts=answered_policy_item_counts,
+        salience_by_policy_item=salience_by_policy_item,
+        all_topic_slugs=all_topic_slugs,
     )
 
     # ── Auto-generate on-the-fly when no pre-existing question is available ──
     if not best:
-        # Find policy items that have party positions but no servable question yet
         answered_policy_ids = {a.policy_item_id for a in answered_rows}
         servable_pi_ids = {q.policy_item_id for q in servable_questions}
 
@@ -243,7 +430,6 @@ def get_next_question(
             .all()
         )
 
-        # Pick the policy item with the best average evidence strength
         best_pi: PolicyItem | None = None
         best_score = -1.0
         for pi in candidate_pis:
@@ -260,7 +446,6 @@ def get_next_question(
         if best_pi:
             new_q = _auto_generate_question(db, best_pi)
             if new_q:
-                # Build the response directly from the newly generated question
                 topic = (
                     db.query(Topic)
                     .join(PolicyItem, PolicyItem.topic_id == Topic.id)
@@ -279,6 +464,12 @@ def get_next_question(
                     topic_name_ru=topic.name_ru if topic else None,
                     context_note=None,
                     why_selected=_ui_strings()["why_selected"]["auto_generated"],
+                    can_show_results=conv["can_show_results"],
+                    phase=conv["phase"],
+                    topics_covered=topics_covered,
+                    topics_total=topics_total,
+                    answered_count=len(answered_ids),
+                    ranking_stability=conv["ranking_stability"],
                 )
         return None
 
@@ -286,15 +477,22 @@ def get_next_question(
     if not q:
         return None
 
-    topic = db.query(Topic).join(PolicyItem, PolicyItem.topic_id == Topic.id).filter(
-        PolicyItem.id == q.policy_item_id
-    ).first()
+    topic = topic_lookup.get(best.question_id)
+    if not topic:
+        topic = db.query(Topic).join(PolicyItem, PolicyItem.topic_id == Topic.id).filter(
+            PolicyItem.id == q.policy_item_id
+        ).first()
 
-    why_selected = (
-        _ui_strings()["why_selected"]["first_question"]
-        if len(answered_ids) == 0
-        else _ui_strings()["why_selected"]["adaptive_question"]
-    )
+    # Determine why-selected message based on phase and salience
+    answered_count = len(answered_ids)
+    if answered_count == 0:
+        why = _ui_strings()["why_selected"]["first_question"]
+    elif conv["phase"] == "survey":
+        why = _ui_strings()["why_selected"]["survey_question"]
+    elif topic and user_salience_by_topic.get(topic.slug if topic else "", 1.0) >= 1.8:
+        why = _ui_strings()["why_selected"]["depth_question"]
+    else:
+        why = _ui_strings()["why_selected"]["adaptive_question"]
 
     return QuestionOut(
         id=q.id,
@@ -307,7 +505,12 @@ def get_next_question(
         topic_name_he=topic.name_he if topic else None,
         topic_name_ru=topic.name_ru if topic else None,
         context_note=None,
-        why_selected=why_selected,
+        why_selected=why,
         is_root_question=q.is_root_question,
+        can_show_results=conv["can_show_results"],
+        phase=conv["phase"],
+        topics_covered=topics_covered,
+        topics_total=topics_total,
+        answered_count=answered_count,
+        ranking_stability=conv["ranking_stability"],
     )
-

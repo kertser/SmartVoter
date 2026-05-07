@@ -80,6 +80,13 @@ const he: Translations = {
     errorLoad: "\u05d8\u05e2\u05d9\u05e0\u05ea \u05d4\u05e9\u05d0\u05dc\u05d4 \u05e0\u05db\u05e9\u05dc\u05d4. \u05e0\u05d0 \u05e8\u05e2\u05e0\u05df.",
     errorSubmit: "\u05e9\u05dc\u05d9\u05d7\u05ea \u05d4\u05ea\u05e9\u05d5\u05d1\u05d4 \u05e0\u05db\u05e9\u05dc\u05d4. \u05e0\u05d0 \u05e0\u05e1\u05d4 \u05e9\u05e0\u05d9\u05ea.",
     tryAgain: "\u05e0\u05e1\u05d4 \u05e9\u05e0\u05d9\u05ea",
+    topicsCoveredLabel: (covered, total) => `${covered} מתוך ${total} נושאים`,
+    phaseSurveyLabel: "סקר — מיפוי סדרי עדיפויות",
+    phaseDepthLabel: "העמקה — בדיקת הנושאים החשובים",
+    stabilityReadyLabel: "התוצאות מוכנות",
+    convergenceOfferResults: "הדירוג יציב — ניתן לראות את התוצאות עכשיו או להמשיך.",
+    convergenceKeepGoing: "המשך",
+    convergenceTopicsLeft: (n) => `${n} נושא${n === 1 ? "" : "ים"} טרם נבדק`,
     likert: {
       stronglyOppose: "בהחלט לא",
       somewhatOppose: "נוטה נגד",

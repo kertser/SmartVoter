@@ -46,6 +46,14 @@ export interface Question {
   topic_name_ru?: string;
   context_note?: string;
   why_selected?: string;
+  is_root_question?: boolean;
+  // Convergence metadata
+  can_show_results?: boolean;
+  phase?: "survey" | "depth";
+  topics_covered?: number;
+  topics_total?: number;
+  answered_count?: number;
+  ranking_stability?: number;
 }
 
 export interface AnswerIn {

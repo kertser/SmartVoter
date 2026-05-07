@@ -79,6 +79,14 @@ export interface Translations {
     errorLoad: string;
     errorSubmit: string;
     tryAgain: string;
+    // Convergence / topic coverage
+    topicsCoveredLabel: (covered: number, total: number) => string;
+    phaseSurveyLabel: string;
+    phaseDepthLabel: string;
+    stabilityReadyLabel: string;
+    convergenceOfferResults: string;
+    convergenceKeepGoing: string;
+    convergenceTopicsLeft: (n: number) => string;
     likert: {
       stronglyOppose: string;
       somewhatOppose: string;

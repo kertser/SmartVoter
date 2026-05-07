@@ -17,6 +17,14 @@ class QuestionOut(BaseModel):
     why_selected: str | None = None
     is_root_question: bool = False
 
+    # Convergence metadata — used by the frontend to decide when to offer results
+    can_show_results: bool = False          # ranking stable + topics covered
+    phase: str = "survey"                   # "survey" | "depth"
+    topics_covered: int = 0                 # how many distinct topics answered so far
+    topics_total: int = 0                   # total topics in the pool
+    answered_count: int = 0                 # questions answered before this one
+    ranking_stability: float = 0.0          # Kendall-τ [0..1]
+
     model_config = {"from_attributes": True}
 
 

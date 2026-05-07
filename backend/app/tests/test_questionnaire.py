@@ -11,6 +11,10 @@ Core design principle being tested:
 
     The selector must use salience (expressed importance) to drive topic selection —
     not just party separation and evidence quality.
+
+Phase-based selection (new in Phase 8+):
+    Phase 1 "survey": covers all topics once before drilling down.
+    Phase 2 "depth": salience-driven follow-up, avoids same policy_item repeats.
 """
 import uuid
 import pytest
@@ -23,6 +27,8 @@ from backend.app.services.questionnaire.selector import (
     _topic_interest_factor,
     QuestionCandidate,
     PartyPositionSlim,
+    HARD_MAX,
+    MIN_QUESTIONS,
 )
 
 
@@ -44,10 +50,10 @@ def make_candidate(
 # ── Section 1: Basic selector behaviour ───────────────────────────────────────
 
 class TestSelectNextQuestionBasics:
-    def test_returns_none_after_15_answers(self):
-        """No question should be returned once 15 answers have been given."""
-        candidates = [make_candidate() for _ in range(20)]
-        answered_ids = [uuid.uuid4() for _ in range(15)]
+    def test_returns_none_after_hard_max_answers(self):
+        """No question should be returned once HARD_MAX answers have been given."""
+        candidates = [make_candidate() for _ in range(HARD_MAX + 5)]
+        answered_ids = [uuid.uuid4() for _ in range(HARD_MAX)]
         result = select_next_question(
             answered_ids=answered_ids,
             candidates=candidates,
@@ -88,6 +94,14 @@ class TestSelectNextQuestionBasics:
         )
         assert result is not None
         assert result.question_id == c.question_id
+
+    def test_hard_max_is_40(self):
+        """Hard max should be 40 (not 15)."""
+        assert HARD_MAX == 40
+
+    def test_min_questions_is_8(self):
+        """Min questions before offering results should be 8."""
+        assert MIN_QUESTIONS == 8
 
 
 # ── Section 2: Evidence quality preference ────────────────────────────────────
@@ -227,22 +241,12 @@ class TestSalienceDrivenSelection:
         should prefer follow-up questions on that topic, even after having already
         asked one question there.
 
-        Scenario:
-        - User answered 1 judiciary question with salience=2.0 (very important)
-        - Next candidates: 1 more judiciary Q (evidence=0.8) vs economy Q (evidence=0.8)
-        - At count=1, judiciary factor = 1/(1+1/2.0) = 1/(1.5) ≈ 0.667
-          economy factor = 1/(1+0) = 1.0 (unvisited)
-        - judiciary: 0.8 * 0.667 ≈ 0.533
-          economy: 0.8 * 1.0 = 0.800
-        In this case economy wins — but the factor for judiciary is much less penalised.
-
         This test verifies that at count=1 with high salience (2.0), judiciary
-        is NOT as harshly penalised as at neutral salience (1.0):
-        neutral: factor = 1/(1+1) = 0.5 < high_salience: factor = 1/(1.5) ≈ 0.667
+        is NOT as harshly penalised as at neutral salience (1.0) in depth phase.
         """
         from backend.app.services.questionnaire.selector import _topic_interest_factor
-        factor_neutral = _topic_interest_factor("judiciary", 1, {"judiciary": 1.0})
-        factor_high = _topic_interest_factor("judiciary", 1, {"judiciary": 2.0})
+        factor_neutral = _topic_interest_factor("judiciary", 1, {"judiciary": 1.0}, "depth")
+        factor_high = _topic_interest_factor("judiciary", 1, {"judiciary": 2.0}, "depth")
         assert factor_high > factor_neutral, (
             "High-salience topic should be less penalised after 1 answer "
             "than a neutral-salience topic."
@@ -278,10 +282,10 @@ class TestSalienceDrivenSelection:
 
     def test_neutral_salience_is_standard_diversity(self):
         """
-        Neutral salience (1.0) should produce exactly the same result as the
-        old diversity penalty: 1 / (1 + topic_count).
+        In depth phase, neutral salience (1.0) should produce exactly the same
+        result as the old diversity penalty: 1 / (1 + topic_count).
         """
-        factor_with_salience = _topic_interest_factor("judiciary", 2, {"judiciary": 1.0})
+        factor_with_salience = _topic_interest_factor("judiciary", 2, {"judiciary": 1.0}, "depth")
         factor_without_salience = 1.0 / (1.0 + 2)  # old formula
         assert abs(factor_with_salience - factor_without_salience) < 1e-9
 
@@ -292,9 +296,9 @@ class TestSalienceDrivenSelection:
         This means high-salience topics get roughly 2× the follow-up budget.
         """
         # salience=2.0, count=2: effective_count=1, factor = 1/(1+1) = 0.5
-        factor_high_salience = _topic_interest_factor("judiciary", 2, {"judiciary": 2.0})
+        factor_high_salience = _topic_interest_factor("judiciary", 2, {"judiciary": 2.0}, "depth")
         # salience=1.0, count=1: effective_count=1, factor = 1/(1+1) = 0.5
-        factor_neutral = _topic_interest_factor("judiciary", 1, {"judiciary": 1.0})
+        factor_neutral = _topic_interest_factor("judiciary", 1, {"judiciary": 1.0}, "depth")
         assert abs(factor_high_salience - factor_neutral) < 1e-9
 
     def test_no_salience_map_falls_back_to_standard_diversity(self):
@@ -334,47 +338,54 @@ class TestTopicInterestFactor:
     """Unit tests for the _topic_interest_factor helper function."""
 
     def test_zero_count_returns_one(self):
-        """Never-answered topic should have interest factor = 1.0."""
-        factor = _topic_interest_factor("judiciary", 0, {})
+        """Never-answered topic should have interest factor = 1.0 in survey phase."""
+        factor = _topic_interest_factor("judiciary", 0, {}, "survey")
         assert factor == 1.0
 
     def test_high_count_reduces_factor(self):
-        """More answers on a topic → lower interest factor."""
-        factor_1 = _topic_interest_factor("judiciary", 1, {})
-        factor_3 = _topic_interest_factor("judiciary", 3, {})
+        """More answers on a topic → lower interest factor (depth phase)."""
+        factor_1 = _topic_interest_factor("judiciary", 1, {}, "depth")
+        factor_3 = _topic_interest_factor("judiciary", 3, {}, "depth")
         assert factor_1 > factor_3
 
     def test_high_salience_slows_decay(self):
-        """High salience keeps factor higher even after multiple answers."""
-        factor_neutral = _topic_interest_factor("judiciary", 2, {"judiciary": 1.0})
-        factor_high = _topic_interest_factor("judiciary", 2, {"judiciary": 2.0})
+        """High salience keeps factor higher even after multiple answers (depth)."""
+        factor_neutral = _topic_interest_factor("judiciary", 2, {"judiciary": 1.0}, "depth")
+        factor_high = _topic_interest_factor("judiciary", 2, {"judiciary": 2.0}, "depth")
         assert factor_high > factor_neutral
 
     def test_low_salience_accelerates_decay(self):
-        """Low salience makes factor drop faster with each answer."""
-        factor_neutral = _topic_interest_factor("judiciary", 1, {"judiciary": 1.0})
-        factor_low = _topic_interest_factor("judiciary", 1, {"judiciary": 0.5})
+        """Low salience makes factor drop faster with each answer (depth)."""
+        factor_neutral = _topic_interest_factor("judiciary", 1, {"judiciary": 1.0}, "depth")
+        factor_low = _topic_interest_factor("judiciary", 1, {"judiciary": 0.5}, "depth")
         assert factor_low < factor_neutral
 
     def test_factor_always_positive(self):
         """Interest factor must always be positive (no zero/negative scores)."""
         for count in range(10):
             for salience in [0.5, 1.0, 2.0]:
-                factor = _topic_interest_factor("test", count, {"test": salience})
+                factor = _topic_interest_factor("test", count, {"test": salience}, "depth")
                 assert factor > 0.0
 
     def test_factor_at_most_one_for_unvisited(self):
-        """Unvisited topics should have factor exactly 1.0."""
-        factor = _topic_interest_factor("judiciary", 0, {"judiciary": 2.0})
+        """Unvisited topics should have factor exactly 1.0 in survey phase."""
+        factor = _topic_interest_factor("judiciary", 0, {"judiciary": 2.0}, "survey")
         assert factor == 1.0, "Zero questions answered should give factor=1.0 regardless of salience"
 
     def test_factor_ordering_by_salience(self):
-        """At the same topic_count, the ordering must be: high > neutral > low."""
+        """At the same topic_count, the ordering must be: high > neutral > low (depth)."""
         count = 2
-        factor_high = _topic_interest_factor("t", count, {"t": 2.0})
-        factor_neutral = _topic_interest_factor("t", count, {"t": 1.0})
-        factor_low = _topic_interest_factor("t", count, {"t": 0.5})
+        factor_high = _topic_interest_factor("t", count, {"t": 2.0}, "depth")
+        factor_neutral = _topic_interest_factor("t", count, {"t": 1.0}, "depth")
+        factor_low = _topic_interest_factor("t", count, {"t": 0.5}, "depth")
         assert factor_high > factor_neutral > factor_low
+
+    def test_survey_phase_already_covered_topic_near_zero(self):
+        """In survey phase, topic already asked once should get near-zero factor."""
+        factor_covered = _topic_interest_factor("judiciary", 1, {}, "survey")
+        factor_uncovered = _topic_interest_factor("economy", 0, {}, "survey")
+        assert factor_uncovered == 1.0
+        assert factor_covered < 0.1  # near-zero to enforce breadth
 
 
 # ── Section 7: Salience aggregation ───────────────────────────────────────────
@@ -448,23 +459,34 @@ class TestAggregateSalienceByTopic:
 # ── Section 8: Stop conditions ────────────────────────────────────────────────
 
 class TestStopConditions:
-    def test_offer_results_after_8_stable(self):
-        assert should_offer_results(8, 0.85) is True
+    def test_offer_results_after_8_stable_all_covered(self):
+        """Results offered when stable AND all topics covered AND min answered."""
+        assert should_offer_results(8, 0.85, True) is True
 
     def test_no_offer_when_unstable(self):
-        assert should_offer_results(8, 0.70) is False
+        """Not offered when ranking unstable."""
+        assert should_offer_results(8, 0.70, True) is False
 
     def test_no_offer_before_8_questions(self):
-        assert should_offer_results(7, 0.95) is False
+        """Not offered before MIN_QUESTIONS even if stable."""
+        assert should_offer_results(7, 0.95, True) is False
 
-    def test_force_results_at_15(self):
-        assert force_results(15) is True
-        assert force_results(14) is False
+    def test_force_results_at_hard_max(self):
+        """Force results at HARD_MAX (40)."""
+        assert force_results(HARD_MAX) is True
+        assert force_results(HARD_MAX - 1) is False
 
-    def test_offer_requires_both_conditions(self):
-        """Both count >= 8 AND stability > 0.8 must hold."""
-        assert should_offer_results(8, 0.80) is False  # boundary: not strictly > 0.8
-        assert should_offer_results(8, 0.81) is True
+    def test_no_offer_when_topics_not_covered(self):
+        """Not offered when not all topics covered yet."""
+        assert should_offer_results(8, 0.85, False) is False
+
+    def test_offer_requires_all_three_conditions(self):
+        """All three conditions (count, stability, coverage) must hold."""
+        # CONVERGENCE_THRESHOLD = 0.80 — must be >= to trigger
+        assert should_offer_results(8, 0.80, True) is True    # exactly at threshold → offered
+        assert should_offer_results(8, 0.79, True) is False   # just below threshold → not offered
+        assert should_offer_results(8, 0.81, True) is True
+        assert should_offer_results(8, 0.81, False) is False  # topics not covered
 
 
 # ── Section 9: End-to-end values discovery scenario ──────────────────────────
@@ -513,16 +535,13 @@ class TestValuesDiscoveryScenario:
 
     def test_military_high_salience_stays_competitive_vs_unvisited(self):
         """
-        With salience=2.0 and count=1, military's factor is 0.667.
+        With salience=2.0 and count=1 in depth phase, military's factor is 0.667.
         An unvisited economy topic has factor=1.0.
         With equal evidence, economy wins — but military is NOT dropped.
         This tests that high-salience topics remain in the running.
         """
-        mil_q = make_candidate(topic="military_service", evidence=0.8)
-        eco_q = make_candidate(topic="economy_taxes", evidence=0.8)
-
-        mil_factor = _topic_interest_factor("military_service", 1, {"military_service": 2.0})
-        eco_factor = _topic_interest_factor("economy_taxes", 0, {})
+        mil_factor = _topic_interest_factor("military_service", 1, {"military_service": 2.0}, "depth")
+        eco_factor = _topic_interest_factor("economy_taxes", 0, {}, "depth")
 
         # Check military is still reasonably competitive (factor > 0.5)
         assert mil_factor > 0.5, (
