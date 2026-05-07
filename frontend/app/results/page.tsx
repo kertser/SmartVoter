@@ -40,7 +40,16 @@ function ResultsContent() {
         // Mark this session as completed so home page can offer "View previous results"
         saveCompletedSessionId(sessionId);
       })
-      .catch(() => setError(r.errorLoad))
+      .catch((err: unknown) => {
+        // If the session is gone from the server (container restart, data wipe, etc.),
+        // clear the stale localStorage reference so the home page no longer shows
+        // "View previous results" for a session that no longer exists.
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("404") || msg.includes("422")) {
+          clearCompletedSession();
+        }
+        setError(r.errorLoad);
+      })
       .finally(() => setLoading(false));
   }, [sessionId, router, r]);
 

@@ -7,6 +7,12 @@ echo   SmartVoter -- Development Start Script
 echo  ==========================================
 echo.
 
+:: ── Clear VIRTUAL_ENV so uv always uses the project's .venv ────────────────
+:: Without this, an activated external venv in the shell (e.g. "(venv)") causes
+:: the warning: VIRTUAL_ENV=venv does not match project environment path .venv
+set VIRTUAL_ENV=
+set UV_PROJECT_ENVIRONMENT=
+
 :: ── Check uv ──────────────────────────────────────────────────────────────
 where uv >nul 2>&1
 if %ERRORLEVEL% neq 0 (
@@ -109,9 +115,9 @@ echo  Frontend is ready.
 echo.
 echo  [OK] All services are running in Docker:
 echo.
-echo        Frontend  -->  http://localhost:3000
-echo        Backend   -->  http://localhost:8000
-echo        API docs  -->  http://localhost:8000/docs
+echo        Frontend  --^>  http://localhost:3000
+echo        Backend   --^>  http://localhost:8000
+echo        API docs  --^>  http://localhost:8000/docs
 echo.
 echo  To view live logs:
 echo        docker compose logs -f frontend
@@ -124,4 +130,3 @@ echo  Opening browser...
 start "" "http://localhost:3000"
 echo.
 pause
-

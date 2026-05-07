@@ -8,6 +8,7 @@ import { Tooltip } from "@/components/Tooltip";
 import {
   clearSession,
   getCompletedSessionId,
+  clearCompletedSession,
 } from "@/lib/session";
 
 /**
@@ -22,8 +23,23 @@ export default function HomePage() {
   const [prevSessionId, setPrevSessionId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if there's a completed session available to view
-    setPrevSessionId(getCompletedSessionId());
+    const completedId = getCompletedSessionId();
+    if (!completedId) return;
+    // Verify the session still exists on the server. If the container was
+    // restarted / data wiped, the server will return 404/422 and we clear
+    // the stale reference so the "View previous results" button disappears.
+    fetch(`/api/results/${completedId}`)
+      .then((res) => {
+        if (res.status === 404 || res.status === 422) {
+          clearCompletedSession();
+        } else {
+          setPrevSessionId(completedId);
+        }
+      })
+      .catch(() => {
+        // Network error — don't clear; might be a transient startup delay.
+        setPrevSessionId(completedId);
+      });
   }, []);
 
   /** Start a brand-new questionnaire, discarding any in-progress session. */
