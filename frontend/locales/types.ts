@@ -52,6 +52,7 @@ export interface Translations {
     disclaimer: [string, string, string, string];
     ctaStart: string;
     ctaMethodology: string;
+    ctaViewPrevResults: string;
     trust1: string;
     trust2: string;
     trust3: string;
@@ -105,6 +106,7 @@ export interface Translations {
     bestPartyByTopic: string;
     viewMethodology: string;
     startOver: string;
+    retakeTest: string;
     matchLabel: string;
     confidenceLabel: (level: string) => string;
     evidenceLabel: (pct: string) => string;

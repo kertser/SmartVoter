@@ -1,8 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n";
 import { Tooltip } from "@/components/Tooltip";
+import {
+  clearSession,
+  getCompletedSessionId,
+} from "@/lib/session";
 
 /**
  * Onboarding / Home page (AGENTS.MD Section 14.2).
@@ -12,6 +18,19 @@ import { Tooltip } from "@/components/Tooltip";
 export default function HomePage() {
   const t = useT();
   const h = t.home;
+  const router = useRouter();
+  const [prevSessionId, setPrevSessionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check if there's a completed session available to view
+    setPrevSessionId(getCompletedSessionId());
+  }, []);
+
+  /** Start a brand-new questionnaire, discarding any in-progress session. */
+  const handleStartFresh = () => {
+    clearSession(); // force a new session ID to be generated in the questionnaire
+    router.push("/questionnaire");
+  };
 
   return (
     <div className="flex flex-col items-center text-center gap-10 py-12">
@@ -47,18 +66,26 @@ export default function HomePage() {
 
       {/* CTAs */}
       <div className="flex flex-wrap gap-4 justify-center">
-        <Link
-          href="/questionnaire"
+        <button
+          onClick={handleStartFresh}
           className="rounded-lg bg-brand-600 px-8 py-3 text-white font-medium hover:bg-brand-700 transition-colors shadow-sm"
         >
           {h.ctaStart}
-        </Link>
+        </button>
         <Link
           href="/methodology"
           className="rounded-lg border border-slate-300 bg-white px-8 py-3 text-slate-700 font-medium hover:bg-slate-50 transition-colors"
         >
           {h.ctaMethodology}
         </Link>
+        {prevSessionId && (
+          <Link
+            href={`/results?session_id=${prevSessionId}`}
+            className="rounded-lg border border-brand-200 bg-brand-50 px-8 py-3 text-brand-700 font-medium hover:bg-brand-100 transition-colors"
+          >
+            {h.ctaViewPrevResults}
+          </Link>
+        )}
       </div>
 
       {/* Trust indicators */}

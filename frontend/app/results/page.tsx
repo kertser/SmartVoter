@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getResults, ResultsOut, PartyResult, deleteSession } from "@/lib/api";
-import { clearSession } from "@/lib/session";
+import { clearSession, saveCompletedSessionId, clearCompletedSession } from "@/lib/session";
 import { formatPercent, confidenceLabel, confidenceColor } from "@/lib/utils";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -34,16 +34,29 @@ function ResultsContent() {
   useEffect(() => {
     if (!sessionId) { router.push("/"); return; }
     getResults(sessionId)
-      .then((res) => { setResults(res); setActiveConfParty(res.parties[0]?.party_id ?? null); })
+      .then((res) => {
+        setResults(res);
+        setActiveConfParty(res.parties[0]?.party_id ?? null);
+        // Mark this session as completed so home page can offer "View previous results"
+        saveCompletedSessionId(sessionId);
+      })
       .catch(() => setError(r.errorLoad))
       .finally(() => setLoading(false));
   }, [sessionId, router, r]);
 
+  /** Take the test again with a completely fresh session. Previous results remain viewable from home. */
+  const handleRetakeTest = () => {
+    clearSession(); // new session ID will be created in questionnaire
+    router.push("/questionnaire");
+  };
+
+  /** Full reset — clear everything including the previous-results reference. */
   const handleStartOver = async () => {
     if (sessionId) {
       try { await deleteSession(sessionId); } catch { /* non-blocking */ }
     }
     clearSession();
+    clearCompletedSession();
     router.push("/");
   };
 
@@ -217,6 +230,12 @@ function ResultsContent() {
 
       {/* Actions */}
       <div className="flex flex-wrap gap-4">
+        <button
+          onClick={handleRetakeTest}
+          className="rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors shadow-sm"
+        >
+          {r.retakeTest}
+        </button>
         <Link
           href="/methodology"
           className="rounded-lg border border-slate-300 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
