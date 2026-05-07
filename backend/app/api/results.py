@@ -65,6 +65,12 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
     if not party_instances:
         raise HTTPException(status_code=500, detail="No party data in database")
 
+    # Build lookup caches so we don't query inside loops
+    all_brands: dict = {b.id: b for b in db.query(PoliticalBrand).all()}
+    all_policy_items: dict = {pi.id: pi for pi in db.query(PolicyItem).all()}
+    all_topics: dict = {t.id: t for t in db.query(Topic).all()}
+    answered_item_ids_global: set = {a.policy_item_id for a in user_answers_rows}
+
     party_results: list[PartyResult] = []
 
     for party in party_instances:

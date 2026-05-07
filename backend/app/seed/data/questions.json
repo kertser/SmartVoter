@@ -36,20 +36,20 @@
     "policy_slug": "jud_03",
     "question_text_en": "Should an override clause require a special supermajority (e.g. 80 MKs) or is a simple majority sufficient?",
     "question_text_he": "האם סעיף התגברות צריך לדרוש רוב מיוחד (למשל 80 ח\"כים) או שדי ברוב רגיל?",
-    "question_text_ru": "Должна ли преодолевающая оговорка требовать квалифицированного большинства (например, 80 депутатов) или достаточно простого большинства?"
+    "question_text_ru": "Должна ли преодолевающая поправка требовать квалифицированного большинства (например, 80 депутатов) или достаточно простого большинства?"
   },
   {
     "_comment": "jud_04 — Attorney General Independence",
     "policy_slug": "jud_04",
     "question_text_en": "Should the Attorney General be directly accountable to the elected government?",
     "question_text_he": "האם היועץ המשפטי לממשלה צריך להיות כפוף ישירות לממשלה הנבחרת?",
-    "question_text_ru": "Должен ли генеральный прокурор быть подотчётен непосредственно избранному правительству?"
+    "question_text_ru": "Должен ли юридический советник правительства быть подотчётен непосредственно избранному правительству?"
   },
   {
     "policy_slug": "jud_04",
     "question_text_en": "Should the government be able to appoint and dismiss the Attorney General without external review?",
     "question_text_he": "האם הממשלה צריכה להיות מסוגלת למנות ולפטר את היועמ''ש ללא בקרה חיצונית?",
-    "question_text_ru": "Должно ли правительство иметь возможность назначать и увольнять генерального прокурора без внешнего контроля?"
+    "question_text_ru": "Должно ли правительство иметь возможность назначать и увольнять юридического советника правительства без внешнего контроля?"
   },
   {
     "_comment": "eco_01 — Income Tax Progressivity",
@@ -95,7 +95,7 @@
     "policy_slug": "eco_04",
     "question_text_en": "Should state funding for yeshivas (religious seminaries) be reduced?",
     "question_text_he": "האם יש להפחית את מימון המדינה לישיבות?",
-    "question_text_ru": "Следует ли сократить государственное финансирование иешив (религиозных семинарий)?"
+    "question_text_ru": "Следует ли сократить государственное финансирование иешив (религиозных учебных заведений)?"
   },
   {
     "policy_slug": "eco_04",
@@ -283,7 +283,7 @@
     "policy_slug": "col_02",
     "question_text_en": "Should the government reduce VAT on a broad basket of consumer goods to ease cost-of-living pressures?",
     "question_text_he": "האם הממשלה צריכה להפחית מע\"מ על סל רחב של מוצרי צריכה כדי להקל על לחץ יוקר המחיה?",
-    "question_text_ru": "Должно ли правительство снизить НДС на широкий ассортимент потребительских товаров для снижения давления стоимости жизни?"
+    "question_text_ru": "Должно ли правительство снизить НДС на широкий ассортимент потребительских товаров для снижения стоимости жизни?"
   },
   {
     "_comment": "edu_01 — School Choice Vouchers",
@@ -303,13 +303,13 @@
     "policy_slug": "edu_02",
     "question_text_en": "Should religious schools (yeshivot) that receive public funding be required to teach a core secular curriculum?",
     "question_text_he": "האם ישיבות שמקבלות מימון ציבורי צריכות להיות מחויבות ללמד תוכנית לימודים חילונית מינימלית?",
-    "question_text_ru": "Должны ли религиозные школы (ешивы), получающие государственное финансирование, быть обязаны преподавать базовую светскую программу?"
+    "question_text_ru": "Должны ли религиозные школы (иешивы), получающие государственное финансирование, быть обязаны преподавать базовую светскую программу?"
   },
   {
     "policy_slug": "edu_02",
     "question_text_en": "Should ultra-Orthodox schools be allowed to receive state funding while teaching only religious studies, with no math or English requirement?",
     "question_text_he": "האם בתי ספר חרדים יוכלו לקבל מימון ממלכתי תוך הוראת לימודי דת בלבד, ללא חובת מתמטיקה או אנגלית?",
-    "question_text_ru": "Должны ли ультраортодоксальные школы иметь право получать государственное финансирование, преподавая только религиозные дисциплины, без обязательной математики или английского?"
+    "question_text_ru": "Должны ли ультраортодоксальные школы иметь право получать государственное финансирование, преподавая только религиозные дисциплины, без обязательного изучения математики и английского языка?"
   },
   {
     "_comment": "env_01 — Carbon Tax",
@@ -400,7 +400,7 @@
     "policy_slug": "hou_01",
     "question_text_en": "Should private developers, incentivized by tax breaks, be the primary solution to the housing shortage?",
     "question_text_he": "האם יזמים פרטיים, המתומרצים על ידי הטבות מס, צריכים להיות הפתרון העיקרי למחסור בדיור?",
-    "question_text_ru": "Должны ли частные застройщики, стимулируемые налоговыми льготами, стать основным решением жилищного дефицита?"
+    "question_text_ru": "Должны ли частные застройщики, стимулируемые налоговыми льготами, стать основным решением проблемы дефицита жилья?"
   },
   {
     "_comment": "hou_02 — Rent Control",
@@ -472,7 +472,7 @@
     "policy_slug": "tra_01",
     "question_text_en": "Should the government prioritize investment in mass public transit (rail, BRT, metro) over new road construction?",
     "question_text_he": "האם הממשלה צריכה לתת עדיפות להשקעה בתחבורה ציבורית המונית (רכבת, BRT, מטרו) על פני סלילת כבישים חדשים?",
-    "question_text_ru": "Должно ли правительство ставить инвестиции в массовый общественный транспорт (железные дороги, скоростной автобус, метро) выше строительства новых дорог?"
+    "question_text_ru": "Должно ли правительство ставить инвестиции в массовый общественный транспорт (железные дороги, скоростной автобусный транспорт, метро) выше строительства новых дорог?"
   },
   {
     "policy_slug": "tra_01",
@@ -491,7 +491,7 @@
     "policy_slug": "tra_02",
     "question_text_en": "Should intercity transport investment focus on highway upgrades and bus frequency rather than high-cost rail projects?",
     "question_text_he": "האם השקעה בתחבורה בין-עירונית צריכה להתמקד בשדרוג כבישים ותדירות אוטובוסים, ולא בפרויקטי רכבת יקרים?",
-    "question_text_ru": "Должны ли инвестиции в межгородские перевозки сосредоточиться на модернизации шоссе и повышении частоты автобусных рейсов, а не на дорогостоящих железнодорожных проектах?"
+    "question_text_ru": "Должны ли инвестиции в межгородские перевозки сосредоточиться на модернизации шоссе и увеличении частоты автобусных рейсов, а не на дорогостоящих железнодорожных проектах?"
   },
   {
     "_comment": "wel_01 — Guaranteed Minimum Income",
