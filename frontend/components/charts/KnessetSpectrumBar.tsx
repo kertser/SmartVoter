@@ -87,7 +87,7 @@ export function KnessetSpectrumBar({ parties }: Props) {
                 }}
                 onMouseEnter={() => setHovered(party.official_name)}
                 onMouseLeave={() => setHovered(null)}
-                title={`${party.name_en}: ${party.seats} seats`}
+                title={`${party.name_he || party.official_name}: ${party.seats} מנדטים`}
               >
                 {/* Show label only if wide enough */}
                 {widthPct >= 7 && (
@@ -142,13 +142,13 @@ export function KnessetSpectrumBar({ parties }: Props) {
       {/* Bloc totals */}
       <BlocSeats parties={parties} />
 
-      {/* MK explanation footnote */}
+      {/* Explanation footnote */}
       <p className="text-xs text-slate-400 pt-2 border-t border-slate-100">
-        <strong>MK</strong> — Member of Knesset (חבר כנסת, ח&quot;כ). Each row above represents a
-        party that passed the 3.25% electoral threshold in the November 2022 elections.
+        Each row above represents a party that passed the 3.25% electoral threshold in the November 2022 elections.
         Seat counts are actual official results.
       </p>
     </div>
   );
 }
+
 

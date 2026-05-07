@@ -147,7 +147,7 @@ export function CoalitionBuilder({ parties, useForecastSeats = false }: Props) {
                 draggedName === chip.official_name ? "opacity-40" : "opacity-100"
               }`}
               style={{ backgroundColor: chip.color_hex }}
-              title={`${chip.name_en} — ${chip.seats} seats (L/R: ${chip.left_right_score?.toFixed(2)})`}
+              title={`${chip.name_he || chip.official_name} — ${chip.seats} מנדטים (שמאל/ימין: ${chip.left_right_score?.toFixed(2)})`}
             >
               <span className="max-w-[100px] truncate" dir="rtl">{chip.name_he || chip.name_en}</span>
               <span className="rounded-full bg-black/20 px-1.5 py-0.5 text-[10px] font-bold">
