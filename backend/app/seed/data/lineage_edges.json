@@ -25,6 +25,15 @@
     "continuity_weight": 0.30,
     "llm_explanation": "New Hope was founded by former Likud members who left over leadership disputes.",
     "human_review_status": "approved"
+  },
+  {
+    "_comment": "Merger: New Hope merged into National Unity (Mamlakhtit) before 2022 election",
+    "from_party_official_name": "Tikva Hadasha",
+    "to_party_official_name": "Mamlakhtit",
+    "relation_type": "merger",
+    "continuity_weight": 0.70,
+    "llm_explanation": "New Hope (Tikva Hadasha) merged with Blue and White to form National Unity (Mamlakhtit) ahead of the 2022 elections.",
+    "human_review_status": "approved"
   }
 ]
 

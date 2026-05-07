@@ -1,35 +1,83 @@
 [
   {
-    "_comment": "UTJ refuses to sit with Labor — declared hard refusal",
-    "source_party_official_name": "Yahadut HaTorah",
-    "target_party_official_name": "HaAvoda",
-    "constraint_type": "refuses",
-    "strength": "hard",
-    "explanation": "UTJ has declared it will not sit in any coalition with Labor."
-  },
-  {
-    "_comment": "UTJ refuses to sit with Yesh Atid — declared hard refusal",
+    "_comment": "UTJ refuses Yesh Atid — hard refusal, repeated declarations",
     "source_party_official_name": "Yahadut HaTorah",
     "target_party_official_name": "Yesh Atid",
     "constraint_type": "refuses",
     "strength": "hard",
-    "explanation": "UTJ has declared it will not sit in any coalition with Yesh Atid."
+    "explanation": "UTJ has repeatedly declared it will not sit with Yesh Atid (Lapid) in any coalition."
   },
   {
-    "_comment": "Labor soft against joining Likud-led coalition",
+    "_comment": "UTJ refuses HaAvoda — hard refusal",
+    "source_party_official_name": "Yahadut HaTorah",
+    "target_party_official_name": "HaAvoda",
+    "constraint_type": "refuses",
+    "strength": "hard",
+    "explanation": "UTJ has declared it will not sit in coalition with Labor."
+  },
+  {
+    "_comment": "UTJ refuses Yisrael Beiteinu — hard, Lieberman is ultra-Orthodox's main opponent",
+    "source_party_official_name": "Yahadut HaTorah",
+    "target_party_official_name": "Yisrael Beiteinu",
+    "constraint_type": "refuses",
+    "strength": "hard",
+    "explanation": "UTJ and Yisrael Beiteinu are ideological opposites on the religion-state axis. Deep mutual refusal."
+  },
+  {
+    "_comment": "Shas refuses Yisrael Beiteinu",
+    "source_party_official_name": "Shas",
+    "target_party_official_name": "Yisrael Beiteinu",
+    "constraint_type": "refuses",
+    "strength": "hard",
+    "explanation": "Shas and Yisrael Beiteinu have declared incompatibility due to religion-state disagreements."
+  },
+  {
+    "_comment": "Hadash-Taal refuses Hatzionut HaDatit — impossible",
+    "source_party_official_name": "Hadash-Taal",
+    "target_party_official_name": "Hatzionut HaDatit",
+    "constraint_type": "refuses",
+    "strength": "hard",
+    "explanation": "Arab-left Hadash-Ta'al and far-right Religious Zionism/Otzma are ideologically incompatible."
+  },
+  {
+    "_comment": "Raam refuses Hatzionut HaDatit",
+    "source_party_official_name": "Raam",
+    "target_party_official_name": "Hatzionut HaDatit",
+    "constraint_type": "refuses",
+    "strength": "hard",
+    "explanation": "Ra'am refuses to sit with Otzma Yehudit/Ben-Gvir, citing extremist anti-Arab positions."
+  },
+  {
+    "_comment": "HaAvoda soft against Likud-led coalition",
     "source_party_official_name": "HaAvoda",
     "target_party_official_name": "Likud",
     "constraint_type": "refuses",
     "strength": "soft",
-    "explanation": "Labor leadership has stated preference against joining a Likud-led coalition."
+    "explanation": "Labor leadership has stated reluctance to join a Netanyahu/Likud-led coalition, though not absolute."
   },
   {
-    "_comment": "New Hope soft preference for right-center bloc",
-    "source_party_official_name": "Tikva Hadasha",
-    "target_party_official_name": "HaAvoda",
+    "_comment": "Meretz refuses Shas",
+    "source_party_official_name": "Meretz",
+    "target_party_official_name": "Shas",
+    "constraint_type": "refuses",
+    "strength": "hard",
+    "explanation": "Meretz refuses to sit with Shas due to fundamental disagreements on religion-state and civil rights."
+  },
+  {
+    "_comment": "Meretz refuses Hatzionut HaDatit",
+    "source_party_official_name": "Meretz",
+    "target_party_official_name": "Hatzionut HaDatit",
+    "constraint_type": "refuses",
+    "strength": "hard",
+    "explanation": "Meretz refuses to sit with the far-right Religious Zionism/Otzma coalition."
+  },
+  {
+    "_comment": "Mamlakhtit refuses Hatzionut HaDatit in principle (soft after Oct 7, but stated preference)",
+    "source_party_official_name": "Mamlakhtit",
+    "target_party_official_name": "Hatzionut HaDatit",
     "constraint_type": "refuses",
     "strength": "soft",
-    "explanation": "New Hope founder stated preference for right-center bloc."
+    "explanation": "Gantz / National Unity has stated preference not to sit with Ben-Gvir's Otzma Yehudit."
   }
 ]
 

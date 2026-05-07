@@ -79,10 +79,26 @@ def _snapshot_hash(polls: list[dict]) -> str:
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
+def _get_party_color_map(db: Session) -> dict[str, str]:
+    """Return official_name → color_hex from political_brands join."""
+    rows = (
+        db.query(PartyInstance.official_name, PoliticalBrand.color_hex)
+        .join(PoliticalBrand, PartyInstance.political_brand_id == PoliticalBrand.id)
+        .all()
+    )
+    return {name: (color or "#94a3b8") for name, color in rows}
+
+
+def _get_party_lr_map(db: Session) -> dict[str, float | None]:
+    """Return official_name → left_right_score."""
+    rows = db.query(PartyInstance.official_name, PartyInstance.left_right_score).all()
+    return {name: lr for name, lr in rows}
+
+
 def _run_and_persist(db: Session, n_iterations: int = 5000) -> SimulationRun:
     polls = _load_polls(db)
     if not polls:
-        raise HTTPException(status_code=422, detail="No poll data available. Seed mock data first.")
+        raise HTTPException(status_code=422, detail="No poll data available. Run --simulation-reset seed script first.")
 
     aggregator = PollAggregator()
     aggregate = aggregator.aggregate(polls)
@@ -102,7 +118,7 @@ def _run_and_persist(db: Session, n_iterations: int = 5000) -> SimulationRun:
     }
 
     run = SimulationRun(
-        model_version="v1.1-bader-ofer",
+        model_version="v1.2-bader-ofer",
         data_cutoff_date=date.today(),
         n_iterations=n_iterations,
         assumptions_json={
@@ -112,7 +128,7 @@ def _run_and_persist(db: Session, n_iterations: int = 5000) -> SimulationRun:
             "surplus_agreements": "not modelled in MVP",
             "poll_weighting": "recency+sample+quality",
             "half_life_days": 14,
-            "note": "Mock polling data — not real Knesset polling.",
+            "note": "Estimates based on Israeli polling data 2025-2026. Not official election results.",
         },
         input_snapshot_hash=_snapshot_hash(polls),
     )
@@ -169,7 +185,7 @@ def _run_and_persist(db: Session, n_iterations: int = 5000) -> SimulationRun:
     return run
 
 
-def _serialize_run(run: SimulationRun) -> dict:
+def _serialize_run(run: SimulationRun, color_map: dict[str, str] | None = None, lr_map: dict[str, float | None] | None = None) -> dict:
     return {
         "run_id": str(run.id),
         "created_at": run.created_at.isoformat() if run.created_at else None,
@@ -189,6 +205,8 @@ def _serialize_run(run: SimulationRun) -> dict:
                 "seats_p90": r.seats_p90,
                 "threshold_pass_probability": r.threshold_pass_probability,
                 "vote_share_mean": r.vote_share_mean,
+                "color_hex": (color_map or {}).get(r.party_name, "#94a3b8"),
+                "left_right_score": (lr_map or {}).get(r.party_name),
             }
             for r in sorted(run.party_results, key=lambda x: -(x.seats_mean or 0))
         ],
@@ -209,6 +227,7 @@ def _serialize_run(run: SimulationRun) -> dict:
                         "party_name": m.party_name,
                         "expected_seats": m.expected_seats,
                         "role": m.role,
+                        "color_hex": (color_map or {}).get(m.party_name, "#94a3b8"),
                     }
                     for m in sc.members
                 ],
@@ -246,7 +265,9 @@ def get_latest_simulation(db: Session = Depends(get_db)) -> dict:
             .filter(SimulationRun.id == run.id)
             .first()
         )
-    return _serialize_run(run)
+    color_map = _get_party_color_map(db)
+    lr_map = _get_party_lr_map(db)
+    return _serialize_run(run, color_map, lr_map)
 
 
 @router.post("/run")
@@ -264,7 +285,193 @@ def trigger_simulation(
         .filter(SimulationRun.id == run.id)
         .first()
     )
-    return _serialize_run(run)
+    color_map = _get_party_color_map(db)
+    lr_map = _get_party_lr_map(db)
+    return _serialize_run(run, color_map, lr_map)
+
+
+@router.get("/knesset/current")
+def get_current_knesset(db: Session = Depends(get_db)) -> dict:
+    """
+    Return the real 25th Knesset composition from historical election results,
+    with parties sorted left-to-right by their political position score.
+    """
+    hist = (
+        db.query(HistoricalElectionResult)
+        .options(joinedload(HistoricalElectionResult.party_results))
+        .filter(HistoricalElectionResult.election_cycle == "2022")
+        .order_by(HistoricalElectionResult.election_date.desc())
+        .first()
+    )
+    if not hist:
+        raise HTTPException(status_code=404, detail="No 25th Knesset data found. Run seed script.")
+
+    # Build enrichment maps
+    party_map: dict[str, PartyInstance] = {
+        p.official_name: p for p in db.query(PartyInstance).all()
+    }
+    brand_map: dict[uuid.UUID, PoliticalBrand] = {
+        b.id: b for b in db.query(PoliticalBrand).all()
+    }
+
+    parties = []
+    for pr in hist.party_results:
+        if not pr.passed_threshold:
+            continue
+        pi = party_map.get(pr.reported_name)
+        brand = brand_map.get(pi.political_brand_id) if pi else None
+        lr = (pi.left_right_score if pi else None) or 0.0
+
+        # Determine political bloc from LR score
+        if lr >= 0.70:
+            bloc = "far-right"
+        elif lr >= 0.35:
+            bloc = "right"
+        elif lr >= 0.0:
+            bloc = "center-right"
+        elif lr >= -0.30:
+            bloc = "center-left"
+        elif lr >= -0.50:
+            bloc = "left"
+        else:
+            bloc = "arab-left"
+
+        parties.append({
+            "official_name": pr.reported_name,
+            "name_en": (brand.names_json or {}).get("en", pr.reported_name) if brand else pr.reported_name,
+            "name_he": (brand.names_json or {}).get("he") if brand else None,
+            "name_ru": (brand.names_json or {}).get("ru") if brand else None,
+            "seats": pr.seats or 0,
+            "vote_share": pr.vote_share,
+            "left_right_score": lr,
+            "political_bloc": bloc,
+            "color_hex": brand.color_hex if brand else "#94a3b8",
+            "party_instance_id": str(pi.id) if pi else None,
+        })
+
+    # Sort left (-1) to right (+1)
+    parties.sort(key=lambda p: p["left_right_score"])
+
+    total_seats = sum(p["seats"] for p in parties)
+    return {
+        "knesset_number": 25,
+        "election_date": hist.election_date.isoformat(),
+        "election_cycle": hist.election_cycle,
+        "total_seats": total_seats,
+        "threshold_percent": hist.threshold_percent,
+        "parties": parties,
+    }
+
+
+@router.post("/coalition/evaluate")
+def evaluate_coalition(
+    party_names: list[str],
+    use_forecast_seats: bool = False,
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    Evaluate a user-assembled coalition.
+    Returns seat count, majority status, score decomposition, and constraint violations.
+    """
+    # Get seat counts
+    if use_forecast_seats:
+        latest_run = (
+            db.query(SimulationRun)
+            .options(joinedload(SimulationRun.party_results))
+            .order_by(SimulationRun.created_at.desc())
+            .first()
+        )
+        seat_map: dict[str, float] = {}
+        if latest_run:
+            for pr in latest_run.party_results:
+                seat_map[pr.party_name] = pr.seats_median or 0
+    else:
+        # Use actual 25th Knesset seats
+        hist = (
+            db.query(HistoricalElectionResult)
+            .options(joinedload(HistoricalElectionResult.party_results))
+            .filter(HistoricalElectionResult.election_cycle == "2022")
+            .first()
+        )
+        seat_map = {}
+        if hist:
+            for pr in hist.party_results:
+                seat_map[pr.reported_name] = pr.seats or 0
+
+    # Get constraints
+    constraints = _load_constraints(db)
+    # Build constraint lookup: (source, target) → strength
+    constraint_set: dict[tuple[str, str], str] = {
+        (c["source"], c["target"]): c["strength"]
+        for c in constraints
+        if c["type"] == "refuses"
+    }
+
+    coalition_seats = sum(seat_map.get(p, 0) for p in party_names)
+    has_majority = coalition_seats >= 61
+
+    # Check constraint violations
+    violations = []
+    for i, a in enumerate(party_names):
+        for b in party_names[i + 1:]:
+            for s, t in [(a, b), (b, a)]:
+                strength = constraint_set.get((s, t))
+                if strength:
+                    violations.append({
+                        "source": s,
+                        "target": t,
+                        "strength": strength,
+                        "description": f"{s} has declared {strength} refusal to sit with {t}",
+                    })
+
+    hard_violations = sum(1 for v in violations if v["strength"] == "hard")
+    soft_violations = sum(1 for v in violations if v["strength"] == "soft")
+
+    # Scores
+    feasibility = max(0.0, 1.0 - hard_violations * 0.4 - soft_violations * 0.1)
+    stability = min(1.0, max(0.0, (coalition_seats - 61) / 20.0)) if has_majority else 0.0
+
+    # Ideological coherence: based on variance of LR scores
+    lr_map = _get_party_lr_map(db)
+    lr_scores = [lr_map.get(p) for p in party_names if lr_map.get(p) is not None]
+    if lr_scores:
+        mean_lr = sum(lr_scores) / len(lr_scores)
+        variance = sum((x - mean_lr) ** 2 for x in lr_scores) / len(lr_scores)
+        ideological_coherence = max(0.0, 1.0 - variance * 2)
+    else:
+        ideological_coherence = 0.5
+
+    return {
+        "party_names": party_names,
+        "seats": coalition_seats,
+        "has_majority": has_majority,
+        "seat_breakdown": {p: seat_map.get(p, 0) for p in party_names},
+        "feasibility_score": round(feasibility, 3),
+        "stability_score": round(stability, 3),
+        "ideological_coherence_score": round(ideological_coherence, 3),
+        "constraint_violations": violations,
+        "hard_violations": hard_violations,
+        "soft_violations": soft_violations,
+    }
+
+
+@router.get("/polls/list")
+def list_polls(db: Session = Depends(get_db)) -> list[dict]:
+    """List all polls used for aggregation. Must be defined BEFORE /{run_id} to avoid route shadowing."""
+    polls = db.query(Poll).options(joinedload(Poll.pollster), joinedload(Poll.party_results)).all()
+    return [
+        {
+            "pollster": p.pollster.name if p.pollster else "unknown",
+            "field_end_date": p.field_end_date.isoformat(),
+            "sample_size": p.sample_size,
+            "quality_score": p.quality_score,
+            "parties": [
+                {"name": pr.reported_name, "vote_share": pr.vote_share_mean}
+                for pr in p.party_results
+            ],
+        }
+        for p in polls
+    ]
 
 
 @router.get("/{run_id}")
@@ -284,7 +491,9 @@ def get_simulation_run(run_id: str, db: Session = Depends(get_db)) -> dict:
     )
     if not run:
         raise HTTPException(status_code=404, detail="Simulation run not found")
-    return _serialize_run(run)
+    color_map = _get_party_color_map(db)
+    lr_map = _get_party_lr_map(db)
+    return _serialize_run(run, color_map, lr_map)
 
 
 @router.get("/{run_id}/coalitions")
@@ -314,21 +523,4 @@ def get_coalition_scenarios(run_id: str, db: Session = Depends(get_db)) -> list[
     ]
 
 
-@router.get("/polls/list")
-def list_polls(db: Session = Depends(get_db)) -> list[dict]:
-    """List all polls used for aggregation."""
-    polls = db.query(Poll).options(joinedload(Poll.pollster), joinedload(Poll.party_results)).all()
-    return [
-        {
-            "pollster": p.pollster.name if p.pollster else "unknown",
-            "field_end_date": p.field_end_date.isoformat(),
-            "sample_size": p.sample_size,
-            "quality_score": p.quality_score,
-            "parties": [
-                {"name": pr.reported_name, "vote_share": pr.vote_share_mean}
-                for pr in p.party_results
-            ],
-        }
-        for p in polls
-    ]
 

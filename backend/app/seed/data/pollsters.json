@@ -1,19 +1,27 @@
 [
   {
     "id": "50000000-0000-0000-0000-000000000001",
-    "name": "Midgam (mock)",
+    "name": "Midgam",
     "country": "IL",
-    "reliability_score": 0.82,
-    "historical_bias_json": { "Likud": 0.01, "Yesh Atid": -0.01 },
-    "historical_error_std_json": { "default": 0.025 }
+    "reliability_score": 0.84,
+    "historical_bias_json": { "Likud": 0.005, "Mamlakhtit": -0.010 },
+    "historical_error_std_json": { "default": 0.022 }
   },
   {
     "id": "50000000-0000-0000-0000-000000000002",
-    "name": "Maariv Research (mock)",
+    "name": "Direct Polls",
     "country": "IL",
-    "reliability_score": 0.74,
+    "reliability_score": 0.76,
     "historical_bias_json": {},
-    "historical_error_std_json": { "default": 0.03 }
+    "historical_error_std_json": { "default": 0.028 }
+  },
+  {
+    "id": "50000000-0000-0000-0000-000000000003",
+    "name": "Panels Politics",
+    "country": "IL",
+    "reliability_score": 0.79,
+    "historical_bias_json": { "HaAvoda": 0.008 },
+    "historical_error_std_json": { "default": 0.025 }
   }
 ]
 

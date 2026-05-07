@@ -38,6 +38,7 @@ const ANGLE_MAX = Math.PI * 0.95; // 171° from right (leave buffer)
 interface PartyEntry {
   name: string;
   seats: number;
+  color?: string;  // optional override from DB
 }
 
 interface Props {
@@ -64,7 +65,8 @@ export function KnessetSemicircleChart({ parties, highlight }: Props) {
   const seatLabels = layoutSeats(parties);
   const colorMap: Record<string, string> = {};
   parties.forEach((p, i) => {
-    colorMap[p.name] = PARTY_COLORS[i % PARTY_COLORS.length];
+    // Use DB color if available, otherwise fallback to palette
+    colorMap[p.name] = p.color || PARTY_COLORS[i % PARTY_COLORS.length];
   });
 
   const seats: Array<{ x: number; y: number; label: string; color: string }> = [];

@@ -5,13 +5,19 @@
   "turnout": 0.709,
   "threshold_percent": 3.25,
   "total_valid_votes": 4584000,
-  "_comment": "Simplified mock — not 100% accurate to real results.",
+  "_comment": "25th Knesset election results (November 1, 2022). Actual official results.",
   "results": [
-    { "party_official_name": "Likud",           "vote_share": 0.234, "seats": 32, "passed_threshold": true  },
-    { "party_official_name": "Yesh Atid",       "vote_share": 0.178, "seats": 24, "passed_threshold": true  },
-    { "party_official_name": "Yahadut HaTorah", "vote_share": 0.059, "seats":  7, "passed_threshold": true  },
-    { "party_official_name": "HaAvoda",         "vote_share": 0.037, "seats":  4, "passed_threshold": true  },
-    { "party_official_name": "Tikva Hadasha",   "vote_share": 0.028, "seats":  0, "passed_threshold": false }
+    { "party_official_name": "Likud",            "vote_share": 0.2338, "seats": 32, "passed_threshold": true  },
+    { "party_official_name": "Yesh Atid",        "vote_share": 0.1779, "seats": 24, "passed_threshold": true  },
+    { "party_official_name": "Hatzionut HaDatit","vote_share": 0.1078, "seats": 14, "passed_threshold": true  },
+    { "party_official_name": "Mamlakhtit",       "vote_share": 0.0892, "seats": 12, "passed_threshold": true  },
+    { "party_official_name": "Shas",             "vote_share": 0.0822, "seats": 11, "passed_threshold": true  },
+    { "party_official_name": "Yahadut HaTorah",  "vote_share": 0.0586, "seats":  7, "passed_threshold": true  },
+    { "party_official_name": "Yisrael Beiteinu", "vote_share": 0.0451, "seats":  6, "passed_threshold": true  },
+    { "party_official_name": "Raam",             "vote_share": 0.0407, "seats":  5, "passed_threshold": true  },
+    { "party_official_name": "Hadash-Taal",      "vote_share": 0.0381, "seats":  5, "passed_threshold": true  },
+    { "party_official_name": "HaAvoda",          "vote_share": 0.0367, "seats":  4, "passed_threshold": true  },
+    { "party_official_name": "Meretz",           "vote_share": 0.0316, "seats":  0, "passed_threshold": false }
   ]
 }
 

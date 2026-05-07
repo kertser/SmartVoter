@@ -332,12 +332,15 @@ export interface SimulationPartyResult {
   seats_p90: number;
   threshold_pass_probability: number;
   vote_share_mean: number;
+  color_hex?: string;
+  left_right_score?: number | null;
 }
 
 export interface CoalitionScenarioMember {
   party_name: string;
   expected_seats: number;
   role?: string;
+  color_hex?: string;
 }
 
 export interface CoalitionScenario {
@@ -365,6 +368,50 @@ export interface SimulationRun {
   coalitions: CoalitionScenario[];
 }
 
+// Current Knesset (25th, real election results sorted left-to-right)
+export interface KnessetParty {
+  official_name: string;
+  name_en: string;
+  name_he?: string;
+  name_ru?: string;
+  seats: number;
+  vote_share?: number;
+  left_right_score: number;
+  political_bloc: string;
+  color_hex: string;
+  party_instance_id?: string;
+}
+
+export interface KnessetComposition {
+  knesset_number: number;
+  election_date: string;
+  election_cycle: string;
+  total_seats: number;
+  threshold_percent: number;
+  parties: KnessetParty[];  // sorted left → right
+}
+
+// Coalition evaluation (user-built coalition)
+export interface CoalitionViolation {
+  source: string;
+  target: string;
+  strength: "hard" | "soft";
+  description: string;
+}
+
+export interface CoalitionEvaluation {
+  party_names: string[];
+  seats: number;
+  has_majority: boolean;
+  seat_breakdown: Record<string, number>;
+  feasibility_score: number;
+  stability_score: number;
+  ideological_coherence_score: number;
+  constraint_violations: CoalitionViolation[];
+  hard_violations: number;
+  soft_violations: number;
+}
+
 export async function getLatestSimulation(): Promise<SimulationRun> {
   return apiFetch<SimulationRun>("/api/simulation/latest");
 }
@@ -372,6 +419,21 @@ export async function getLatestSimulation(): Promise<SimulationRun> {
 export async function triggerSimulation(n_iterations = 5000): Promise<SimulationRun> {
   return apiFetch<SimulationRun>(`/api/simulation/run?n_iterations=${n_iterations}`, {
     method: "POST",
+  });
+}
+
+export async function getKnessetCurrent(): Promise<KnessetComposition> {
+  return apiFetch<KnessetComposition>("/api/simulation/knesset/current");
+}
+
+export async function evaluateCoalition(
+  partyNames: string[],
+  useForecastSeats = false,
+): Promise<CoalitionEvaluation> {
+  const params = new URLSearchParams({ use_forecast_seats: String(useForecastSeats) });
+  return apiFetch<CoalitionEvaluation>(`/api/simulation/coalition/evaluate?${params}`, {
+    method: "POST",
+    body: JSON.stringify(partyNames),
   });
 }
 

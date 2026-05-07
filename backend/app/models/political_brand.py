@@ -12,6 +12,8 @@ class PoliticalBrand(Base):
     canonical_name: Mapped[str] = mapped_column(String(255), nullable=False)
     names_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # CSS hex color for UI rendering (e.g. "#1E3A8A"). Nullable until migrated.
+    color_hex: Mapped[str | None] = mapped_column(String(7), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

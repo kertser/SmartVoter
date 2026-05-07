@@ -51,6 +51,8 @@ from backend.app.seed.seed_data import (
     COALITION_CONSTRAINTS_RAW,
     # Party UUIDs needed for coalition constraints
     PARTY_LIKUD, PARTY_LABOR, PARTY_UTJ, PARTY_YESH_ATID, PARTY_NEW_HOPE,
+    PARTY_MAMLAKHTIT, PARTY_SHAS, PARTY_HATZIONUT, PARTY_BEITEINU,
+    PARTY_RAAM, PARTY_HADASH, PARTY_MERETZ,
 )
 
 
@@ -147,7 +149,206 @@ def seed_simulation_only() -> None:
         db.close()
 
 
-def patch_brand_names() -> None:
+def patch_party_colors_and_lr() -> None:
+    """
+    Update existing political_brands with color_hex and party_instances with
+    left_right_score from seed data. Safe to run on an already-seeded DB.
+    Also inserts new party brands/instances that don't exist yet.
+    """
+    from sqlalchemy.orm.attributes import flag_modified
+
+    db = SessionLocal()
+    try:
+        updated_brands = 0
+        inserted_brands = 0
+        for b in POLITICAL_BRANDS:
+            brand = db.query(PoliticalBrand).filter(PoliticalBrand.id == b["id"]).first()
+            if not brand:
+                db.add(PoliticalBrand(
+                    id=b["id"],
+                    canonical_name=b["canonical_name"],
+                    names_json=b.get("names_json"),
+                    description=b.get("description"),
+                    color_hex=b.get("color_hex"),
+                ))
+                inserted_brands += 1
+            else:
+                if b.get("color_hex") and brand.color_hex != b["color_hex"]:
+                    brand.color_hex = b["color_hex"]
+                    updated_brands += 1
+                # Also update names_json if missing keys
+                seed_names = b.get("names_json") or {}
+                existing = brand.names_json or {}
+                changed = any(
+                    seed_names.get(k) and existing.get(k) != seed_names[k]
+                    for k in ("he", "ru", "en")
+                )
+                if changed:
+                    brand.names_json = {**existing, **{k: v for k, v in seed_names.items() if v}}
+                    flag_modified(brand, "names_json")
+
+        db.flush()
+        if inserted_brands:
+            print(f"  ✓ Inserted {inserted_brands} new political brands")
+        if updated_brands:
+            print(f"  ✓ Updated color_hex for {updated_brands} political brands")
+
+        # Party instances
+        updated_instances = 0
+        inserted_instances = 0
+        existing_pids = {str(pi.id) for pi in db.query(PartyInstance).all()}
+
+        for p in PARTY_INSTANCES:
+            pid_str = str(p["id"])
+            if pid_str not in existing_pids:
+                db.add(PartyInstance(
+                    id=p["id"],
+                    political_brand_id=p["political_brand_id"],
+                    official_name=p["official_name"],
+                    election_cycle=p.get("election_cycle"),
+                    knesset_number=p.get("knesset_number"),
+                    start_date=p.get("start_date"),
+                    end_date=p.get("end_date"),
+                    status=PartyStatus(p["status"]),
+                    left_right_score=p.get("left_right_score"),
+                ))
+                inserted_instances += 1
+            else:
+                pi_row = db.query(PartyInstance).filter(PartyInstance.id == p["id"]).first()
+                if pi_row and p.get("left_right_score") is not None:
+                    if pi_row.left_right_score != p["left_right_score"]:
+                        pi_row.left_right_score = p["left_right_score"]
+                        updated_instances += 1
+                if pi_row and p.get("status"):
+                    new_status = PartyStatus(p["status"])
+                    if pi_row.status != new_status:
+                        pi_row.status = new_status
+
+        db.flush()
+        if inserted_instances:
+            print(f"  ✓ Inserted {inserted_instances} new party instances")
+        if updated_instances:
+            print(f"  ✓ Updated left_right_score for {updated_instances} party instances")
+
+        db.commit()
+        print("patch_party_colors_and_lr complete ✓")
+    except Exception as e:
+        db.rollback()
+        print(f"patch_party_colors_and_lr failed: {e}", file=sys.stderr)
+        raise
+    finally:
+        db.close()
+
+
+def patch_simulation_data() -> None:
+    """
+    Replace/update simulation data (pollsters, polls, historical election, coalition constraints)
+    with the current seed data. Drops existing simulation run data first to avoid stale caches.
+    Safe to run on a DB that was seeded with old mock data.
+    """
+    db = SessionLocal()
+    try:
+        # Clear existing simulation data so new polls trigger fresh runs
+        from backend.app.models.simulation import (
+            CoalitionScenarioMember, CoalitionScenario, SimulationPartyResult,
+            SimulationRun, CoalitionConstraint, HistoricalPartyResult,
+            HistoricalElectionResult, PollPartyResult, Poll, Pollster
+        )
+        print("  Clearing old simulation data...")
+        db.query(CoalitionScenarioMember).delete()
+        db.query(CoalitionScenario).delete()
+        db.query(SimulationPartyResult).delete()
+        db.query(SimulationRun).delete()
+        db.query(CoalitionConstraint).delete()
+        db.query(HistoricalPartyResult).delete()
+        db.query(HistoricalElectionResult).delete()
+        db.query(PollPartyResult).delete()
+        db.query(Poll).delete()
+        db.query(Pollster).delete()
+        db.flush()
+
+        party_name_to_id: dict[str, uuid.UUID] = {}
+        for pi_row in db.query(PartyInstance).all():
+            party_name_to_id[pi_row.official_name] = pi_row.id
+
+        # Pollsters
+        for po in POLLSTERS:
+            db.add(Pollster(**po))
+        db.flush()
+        print(f"  ✓ {len(POLLSTERS)} pollsters")
+
+        for poll_data in POLLS:
+            poll = Poll(
+                id=poll_data["id"],
+                pollster_id=poll_data["pollster_id"],
+                field_end_date=poll_data["field_end_date"],
+                sample_size=poll_data["sample_size"],
+                quality_score=poll_data["quality_score"],
+            )
+            db.add(poll)
+            db.flush()
+            for party_name, share in poll_data["results"]:
+                db.add(PollPartyResult(
+                    poll_id=poll.id,
+                    party_instance_id=party_name_to_id.get(party_name),
+                    reported_name=party_name,
+                    vote_share_mean=share,
+                    seats_mean=round(share * 120, 1),
+                ))
+        db.flush()
+        print(f"  ✓ {len(POLLS)} polls")
+
+        hist = HistoricalElectionResult(
+            id=HISTORICAL_ELECTION["id"],
+            election_cycle=HISTORICAL_ELECTION["election_cycle"],
+            election_date=HISTORICAL_ELECTION["election_date"],
+            turnout=HISTORICAL_ELECTION["turnout"],
+            threshold_percent=HISTORICAL_ELECTION["threshold_percent"],
+            total_valid_votes=HISTORICAL_ELECTION["total_valid_votes"],
+        )
+        db.add(hist)
+        db.flush()
+        for party_name, share, seats, passed in HISTORICAL_ELECTION["results"]:
+            db.add(HistoricalPartyResult(
+                historical_election_result_id=hist.id,
+                party_instance_id=party_name_to_id.get(party_name),
+                reported_name=party_name,
+                vote_share=share,
+                seats=seats,
+                passed_threshold=passed,
+            ))
+        db.flush()
+        print("  ✓ 1 historical election (25th Knesset, Nov 2022 — real results)")
+
+        for src_name, tgt_name, c_type, strength, explanation in COALITION_CONSTRAINTS_RAW:
+            src_id = party_name_to_id.get(src_name)
+            tgt_id = party_name_to_id.get(tgt_name)
+            if not src_id or not tgt_id:
+                print(f"    ⚠ Coalition constraint skipped: {src_name!r} or {tgt_name!r} not in DB")
+                continue
+            db.add(CoalitionConstraint(
+                source_party_instance_id=src_id,
+                target_party_instance_id=tgt_id,
+                constraint_type=c_type,
+                strength=strength,
+                llm_explanation=explanation,
+                confidence=0.90,
+                human_review_status="approved",
+            ))
+        db.flush()
+        print(f"  ✓ {len(COALITION_CONSTRAINTS_RAW)} coalition constraints")
+
+        db.commit()
+        print("patch_simulation_data complete ✓")
+    except Exception as e:
+        db.rollback()
+        print(f"patch_simulation_data failed: {e}", file=sys.stderr)
+        raise
+    finally:
+        db.close()
+
+
+
     """
     Ensure all seed political brands have up-to-date names_json (he + ru + en).
     Safe to run on an already-seeded DB — only updates if a key is missing or wrong.
@@ -332,14 +533,119 @@ def seed_missing_policy_items() -> None:
         db.close()
 
 
+def patch_brand_names() -> None:
+    """
+    Update political_brands.names_json and color_hex from seed data.
+    Safe to run on already-seeded DB — uses canonical_name to look up existing brands.
+    """
+    db = SessionLocal()
+    try:
+        updated = 0
+        for b in POLITICAL_BRANDS:
+            brand = db.query(PoliticalBrand).filter(
+                PoliticalBrand.canonical_name == b["canonical_name"]
+            ).first()
+            if brand is None:
+                # Insert missing brand
+                db.add(PoliticalBrand(
+                    id=b["id"],
+                    canonical_name=b["canonical_name"],
+                    names_json=b.get("names_json"),
+                    description=b.get("description"),
+                    color_hex=b.get("color_hex"),
+                ))
+                updated += 1
+            else:
+                changed = False
+                if b.get("names_json") and brand.names_json != b["names_json"]:
+                    brand.names_json = b["names_json"]
+                    changed = True
+                if b.get("color_hex") and brand.color_hex != b["color_hex"]:
+                    brand.color_hex = b["color_hex"]
+                    changed = True
+                if changed:
+                    updated += 1
+        db.commit()
+        if updated:
+            print(f"  ✓ patch_brand_names: updated/inserted {updated} brands")
+        else:
+            print("  patch_brand_names: all brands up to date")
+    except Exception as e:
+        db.rollback()
+        print(f"patch_brand_names failed: {e}", file=sys.stderr)
+    finally:
+        db.close()
+
+
+def patch_party_colors_and_lr() -> None:
+    """
+    Update party_instances.left_right_score and ensure Raam (and any missing
+    English-named party instances) are inserted with correct LR scores and colors.
+    """
+    db = SessionLocal()
+    try:
+        updated = 0
+        brand_name_to_id: dict[str, uuid.UUID] = {
+            b.canonical_name: b.id for b in db.query(PoliticalBrand).all()
+        }
+
+        for p in PARTY_INSTANCES:
+            # Look up by UUID first (seed has deterministic UUIDs)
+            existing = db.query(PartyInstance).filter(PartyInstance.id == p["id"]).first()
+            if existing is None:
+                # Also check by official_name to avoid duplicate
+                existing_by_name = db.query(PartyInstance).filter(
+                    PartyInstance.official_name == p["official_name"]
+                ).first()
+                if existing_by_name is None:
+                    # Insert missing party instance
+                    brand_id = p.get("political_brand_id") or brand_name_to_id.get(
+                        next((b["canonical_name"] for b in POLITICAL_BRANDS
+                              if b.get("id") == str(p.get("political_brand_id")) or
+                              b.get("id") == p.get("political_brand_id")), None), None
+                    )
+                    if brand_id:
+                        db.add(PartyInstance(
+                            id=p["id"],
+                            political_brand_id=brand_id if isinstance(brand_id, uuid.UUID)
+                                else uuid.UUID(str(brand_id)),
+                            official_name=p["official_name"],
+                            election_cycle=p.get("election_cycle"),
+                            knesset_number=p.get("knesset_number"),
+                            start_date=p.get("start_date"),
+                            end_date=p.get("end_date"),
+                            status=PartyStatus(p["status"]),
+                            left_right_score=p.get("left_right_score"),
+                        ))
+                        updated += 1
+            else:
+                # Update left_right_score if missing
+                if existing.left_right_score is None and p.get("left_right_score") is not None:
+                    existing.left_right_score = p["left_right_score"]
+                    updated += 1
+
+        db.commit()
+        if updated:
+            print(f"  ✓ patch_party_colors_and_lr: updated/inserted {updated} party instances")
+        else:
+            print("  patch_party_colors_and_lr: all party instances up to date")
+    except Exception as e:
+        db.rollback()
+        print(f"patch_party_colors_and_lr failed: {e}", file=sys.stderr)
+        import traceback; traceback.print_exc()
+    finally:
+        db.close()
+
+
 def run_seed() -> None:
     db = SessionLocal()
     try:
         # Idempotency check
         if db.query(Topic).first():
-            print("Database already seeded. Checking for missing topics...")
+            print("Database already seeded. Checking for updates...")
             db.close()
             patch_brand_names()
+            patch_party_colors_and_lr()
             seed_missing_topics()
             seed_missing_policy_items()
             return
@@ -348,7 +654,13 @@ def run_seed() -> None:
 
         # 1. Political Brands
         for b in POLITICAL_BRANDS:
-            db.add(PoliticalBrand(**b))
+            db.add(PoliticalBrand(
+                id=b["id"],
+                canonical_name=b["canonical_name"],
+                names_json=b.get("names_json"),
+                description=b.get("description"),
+                color_hex=b.get("color_hex"),
+            ))
         db.flush()
         print(f"  ✓ {len(POLITICAL_BRANDS)} political brands")
 
@@ -363,6 +675,7 @@ def run_seed() -> None:
                 start_date=p.get("start_date"),
                 end_date=p.get("end_date"),
                 status=PartyStatus(p["status"]),
+                left_right_score=p.get("left_right_score"),
             )
             db.add(pi)
         db.flush()
@@ -581,13 +894,21 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--simulation-only", action="store_true", help="Seed only simulation data")
+    parser.add_argument("--simulation-reset", action="store_true", help="Reset + reseed simulation data (polls, constraints, historical)")
     parser.add_argument("--topics-only", action="store_true", help="Add missing topics (safe on existing DB)")
+    parser.add_argument("--patch-colors", action="store_true", help="Add color_hex and left_right_score to existing DB (safe)")
     args = parser.parse_args()
     if args.simulation_only:
         seed_simulation_only()
+    elif args.simulation_reset:
+        patch_party_colors_and_lr()
+        patch_simulation_data()
     elif args.topics_only:
         seed_missing_topics()
+    elif args.patch_colors:
+        patch_party_colors_and_lr()
     else:
         run_seed()
-        seed_simulation_only()
+        patch_party_colors_and_lr()
+        patch_simulation_data()
 

@@ -452,22 +452,22 @@ const en: Translations = {
 
   simulation: {
     heading: "Knesset Simulator",
-    subheading: "Probabilistic seat distribution scenarios based on aggregated polling data.",
+    subheading: "Three views: current 25th Knesset composition, probabilistic election forecast from polling data, and an interactive coalition builder.",
     disclaimer:
-      "These are probabilistic scenarios, not predictions. Mock data only \u2014 not real Knesset polling. Do not treat as election forecasts.",
+      "These are probabilistic scenarios and historical data, not predictions. Do not treat as election forecasts or voting advice.",
     loadingSimulation: "Running simulation\u2026",
     errorLoad: "Failed to load simulation. Please try again.",
     runNewSimulation: "Run new simulation",
     running: "Running\u2026",
-    semicircleHeading: "Knesset Composition",
-    semicircleDesc: "Based on median seat estimates. This is a scenario, not a prediction.",
+    semicircleHeading: "Forecast Knesset Composition",
+    semicircleDesc: "Based on median seat estimates from polling aggregation. This is a scenario, not a prediction.",
     seatDistributionHeading: "Seat Distribution Intervals",
     seatDistributionDesc:
       "Central 50% interval (p25\u2013p75) shown as solid bar. Central 80% interval (p10\u2013p90) shown as thin line. These are scenarios, not predictions.",
     thresholdRiskHeading: "Threshold Pass Probability",
     thresholdRiskDesc:
-      "Estimated probability that each party exceeds the 3.25% electoral threshold (in simulated scenarios).",
-    coalitionScenariosHeading: "Coalition Scenarios",
+      "Estimated probability that each party exceeds the 3.25% electoral threshold (in simulated scenarios based on polling data).",
+    coalitionScenariosHeading: "Simulated Coalition Scenarios",
     coalitionScenariosDesc:
       "Numerically viable coalitions (\u226561 seats) sorted by feasibility. Scenarios only \u2014 not recommendations.",
     assumptionsHeading: "Model Assumptions & Data Sources",
@@ -486,11 +486,11 @@ const en: Translations = {
     modelVersionLabel: "Model",
     iterationsLabel: "Simulations",
     totalSeatsLabel: "120 total seats",
-    dataNote: "Mock data only \u2014 not real Knesset polling",
+    dataNote: "Estimates based on 2025\u20132026 polling data. Not real-time official data.",
     notPrediction:
-      "This is a probabilistic simulation scenario, not a prediction or voting recommendation.",
+      "This is a probabilistic simulation and historical record, not a prediction or voting recommendation.",
     coalSeats: (mean, p10, p90) =>
-      `~${Math.round(mean)} seats (${p10}–${p90} 80% interval)`,
+      `~${Math.round(mean)} seats (${p10}\u2013${p90} 80% interval)`,
     coalFeasibility: (score) => `Feasibility: ${Math.round(score * 100)}%`,
     coalStability: (score) => `Stability: ${Math.round(score * 100)}%`,
     feasibilityTooltip: "Estimated likelihood that coalition partners would agree to govern together, based on declared incompatibilities, ideological distance, and historical cooperation.",

@@ -77,7 +77,7 @@ export default function PersonDetailPage() {
                         {partyName}
                       </Link>
                       <p className="text-xs text-slate-500 capitalize">
-                        {m.role}
+                        {m.role === "mk" ? "MK (Member of Knesset)" : m.role}
                         {m.is_current && " · current"}
                       </p>
                       <p className="text-xs text-slate-400">

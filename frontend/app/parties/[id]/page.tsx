@@ -129,7 +129,9 @@ export default function PartyDetailPage() {
                   )}
                 </div>
                 <div className="text-right text-xs text-slate-500">
-                  <p className="capitalize">{m.role}</p>
+                  <p className="capitalize">
+                    {m.role === "mk" ? "MK (Member of Knesset)" : m.role}
+                  </p>
                   {m.start_date && <p>{m.start_date.slice(0, 7)}{m.end_date ? ` – ${m.end_date.slice(0, 7)}` : " – present"}</p>}
                 </div>
               </Link>

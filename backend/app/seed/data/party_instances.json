@@ -7,7 +7,8 @@
     "knesset_number": 25,
     "start_date": "2022-11-01",
     "end_date": null,
-    "status": "active"
+    "status": "active",
+    "left_right_score": 0.58
   },
   {
     "id": "20000000-0000-0000-0000-000000000002",
@@ -17,7 +18,8 @@
     "knesset_number": 25,
     "start_date": "2022-11-01",
     "end_date": null,
-    "status": "active"
+    "status": "active",
+    "left_right_score": -0.45
   },
   {
     "id": "20000000-0000-0000-0000-000000000003",
@@ -27,7 +29,8 @@
     "knesset_number": 25,
     "start_date": "2022-11-01",
     "end_date": null,
-    "status": "active"
+    "status": "active",
+    "left_right_score": 0.42
   },
   {
     "id": "20000000-0000-0000-0000-000000000004",
@@ -37,28 +40,110 @@
     "knesset_number": 25,
     "start_date": "2022-11-01",
     "end_date": null,
-    "status": "active"
+    "status": "active",
+    "left_right_score": -0.05
   },
   {
+    "_comment": "New Hope merged into National Unity before 2022 — kept as historical record",
     "id": "20000000-0000-0000-0000-000000000005",
     "brand_canonical_name": "New Hope",
     "official_name": "Tikva Hadasha",
     "election_cycle": "2022",
     "knesset_number": 25,
     "start_date": "2022-11-01",
-    "end_date": null,
-    "status": "active"
+    "end_date": "2022-10-31",
+    "status": "merged",
+    "left_right_score": 0.25
   },
   {
-    "_comment": "Dissolved predecessor for lineage demo",
+    "id": "20000000-0000-0000-0000-000000000006",
+    "brand_canonical_name": "National Unity",
+    "official_name": "Mamlakhtit",
+    "election_cycle": "2022",
+    "knesset_number": 25,
+    "start_date": "2022-11-01",
+    "end_date": null,
+    "status": "active",
+    "left_right_score": 0.18
+  },
+  {
+    "id": "20000000-0000-0000-0000-000000000007",
+    "brand_canonical_name": "Shas",
+    "official_name": "Shas",
+    "election_cycle": "2022",
+    "knesset_number": 25,
+    "start_date": "2022-11-01",
+    "end_date": null,
+    "status": "active",
+    "left_right_score": 0.52
+  },
+  {
+    "id": "20000000-0000-0000-0000-000000000008",
+    "brand_canonical_name": "Religious Zionism",
+    "official_name": "Hatzionut HaDatit",
+    "election_cycle": "2022",
+    "knesset_number": 25,
+    "start_date": "2022-11-01",
+    "end_date": null,
+    "status": "active",
+    "left_right_score": 0.88
+  },
+  {
+    "id": "20000000-0000-0000-0000-000000000009",
+    "brand_canonical_name": "Yisrael Beiteinu",
+    "official_name": "Yisrael Beiteinu",
+    "election_cycle": "2022",
+    "knesset_number": 25,
+    "start_date": "2022-11-01",
+    "end_date": null,
+    "status": "active",
+    "left_right_score": 0.15
+  },
+  {
     "id": "20000000-0000-0000-0000-000000000010",
+    "brand_canonical_name": "Ra'am",
+    "official_name": "Raam",
+    "election_cycle": "2022",
+    "knesset_number": 25,
+    "start_date": "2022-11-01",
+    "end_date": null,
+    "status": "active",
+    "left_right_score": -0.30,
+    "_note": "UUID collision fixed: old UUID was wrongly used for Kadima in DB. Party instance inserted at runtime with new UUID."
+  },
+  {
+    "id": "20000000-0000-0000-0000-000000000011",
+    "brand_canonical_name": "Hadash-Ta'al",
+    "official_name": "Hadash-Taal",
+    "election_cycle": "2022",
+    "knesset_number": 25,
+    "start_date": "2022-11-01",
+    "end_date": null,
+    "status": "active",
+    "left_right_score": -0.80
+  },
+  {
+    "id": "20000000-0000-0000-0000-000000000012",
+    "brand_canonical_name": "Meretz",
+    "official_name": "Meretz",
+    "election_cycle": "2022",
+    "knesset_number": 25,
+    "start_date": "2022-11-01",
+    "end_date": "2022-11-01",
+    "status": "dissolved",
+    "left_right_score": -0.75
+  },
+  {
+    "_comment": "Dissolved predecessor for lineage demo — see lineage_edges.json",
+    "id": "20000000-0000-0000-0000-000000000099",
     "brand_canonical_name": "Likud",
     "official_name": "Kadima (19th Knesset)",
     "election_cycle": "2013",
     "knesset_number": 19,
     "start_date": "2013-01-01",
     "end_date": "2015-03-17",
-    "status": "dissolved"
+    "status": "dissolved",
+    "left_right_score": 0.35
   }
 ]
 

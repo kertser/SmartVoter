@@ -63,6 +63,7 @@ POLITICAL_BRANDS: list[dict] = [
         "canonical_name": b["canonical_name"],
         "names_json": b["names_json"],
         "description": b["description"],
+        "color_hex": b.get("color_hex"),
     }
     for b in _load("political_brands.json")
 ]
@@ -84,8 +85,11 @@ PARTY_INSTANCES: list[dict] = [
         "start_date": _date(p.get("start_date")),
         "end_date": _date(p.get("end_date")),
         "status": p["status"],
+        "left_right_score": p.get("left_right_score"),
     }
     for p in _load("party_instances.json")
+    if not p.get("_comment", "").startswith("Dissolved predecessor for lineage")
+    or True  # include all, lineage demo included
 ]
 
 # official_name → UUID lookup (used by many other entities)
@@ -100,6 +104,13 @@ PARTY_LABOR = _party_name_to_id["HaAvoda"]
 PARTY_UTJ = _party_name_to_id["Yahadut HaTorah"]
 PARTY_YESH_ATID = _party_name_to_id["Yesh Atid"]
 PARTY_NEW_HOPE = _party_name_to_id["Tikva Hadasha"]
+PARTY_MAMLAKHTIT = _party_name_to_id.get("Mamlakhtit")
+PARTY_SHAS = _party_name_to_id.get("Shas")
+PARTY_HATZIONUT = _party_name_to_id.get("Hatzionut HaDatit")
+PARTY_BEITEINU = _party_name_to_id.get("Yisrael Beiteinu")
+PARTY_RAAM = _party_name_to_id.get("Raam")
+PARTY_HADASH = _party_name_to_id.get("Hadash-Taal")
+PARTY_MERETZ = _party_name_to_id.get("Meretz")
 
 # --- Lineage Edges -----------------------------------------------------------
 LINEAGE_EDGES: list[dict] = [

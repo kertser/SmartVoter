@@ -3,31 +3,85 @@
     "id": "10000000-0000-0000-0000-000000000001",
     "canonical_name": "Likud",
     "names_json": { "he": "הליכוד", "en": "Likud", "ru": "Ликуд" },
-    "description": "Right-wing nationalist party founded by Menachem Begin."
+    "description": "Right-wing nationalist party. Largest party in the 25th Knesset (32 seats).",
+    "color_hex": "#1E3A8A"
   },
   {
     "id": "10000000-0000-0000-0000-000000000002",
     "canonical_name": "Labor",
     "names_json": { "he": "העבודה", "en": "Labor", "ru": "Авода (Труд)" },
-    "description": "Center-left social-democratic party."
+    "description": "Center-left social-democratic party. 4 seats in 25th Knesset.",
+    "color_hex": "#E11D48"
   },
   {
     "id": "10000000-0000-0000-0000-000000000003",
     "canonical_name": "United Torah Judaism",
     "names_json": { "he": "יהדות התורה", "en": "United Torah Judaism", "ru": "Яхадут ха-Тора" },
-    "description": "Ultra-Orthodox Haredi political alliance."
+    "description": "Ultra-Orthodox Haredi political alliance of Agudat Yisrael and Degel HaTorah. 7 seats in 25th Knesset.",
+    "color_hex": "#7C3AED"
   },
   {
     "id": "10000000-0000-0000-0000-000000000004",
     "canonical_name": "Yesh Atid",
-    "names_json": { "he": "יש עתיד", "en": "Yesh Atid", "ru": "Еш Атид" },
-    "description": "Centrist secular party focused on middle class."
+    "names_json": { "he": "יש עתיד", "en": "Yesh Atid", "ru": "Еш Атид (Есть будущее)" },
+    "description": "Centrist secular party focused on middle class and religious pluralism. 24 seats in 25th Knesset.",
+    "color_hex": "#3B82F6"
   },
   {
     "id": "10000000-0000-0000-0000-000000000005",
     "canonical_name": "New Hope",
-    "names_json": { "he": "תקווה חדשה", "en": "New Hope", "ru": "Тиква Хадаша" },
-    "description": "Recently formed right-wing party with limited parliamentary history."
+    "names_json": { "he": "תקווה חדשה", "en": "New Hope", "ru": "Тиква Хадаша (Новая Надежда)" },
+    "description": "Right-wing party founded by Gideon Sa'ar in 2020. Merged into National Unity before the 2022 elections.",
+    "color_hex": "#0F766E"
+  },
+  {
+    "id": "10000000-0000-0000-0000-000000000006",
+    "canonical_name": "National Unity",
+    "names_json": { "he": "מחנה המדינה", "en": "National Unity", "ru": "Национальное единство" },
+    "description": "Center-right alliance led by Benny Gantz, formed from Blue and White and New Hope. 12 seats in 25th Knesset.",
+    "color_hex": "#0EA5E9"
+  },
+  {
+    "id": "10000000-0000-0000-0000-000000000007",
+    "canonical_name": "Shas",
+    "names_json": { "he": "ש\"ס", "en": "Shas", "ru": "Шас" },
+    "description": "Ultra-Orthodox Sephardic religious party led by Arye Deri. 11 seats in 25th Knesset.",
+    "color_hex": "#C2410C"
+  },
+  {
+    "id": "10000000-0000-0000-0000-000000000008",
+    "canonical_name": "Religious Zionism",
+    "names_json": { "he": "הציונות הדתית / עוצמה יהודית", "en": "Religious Zionism / Otzma Yehudit", "ru": "Религиозный сионизм / Еврейская сила" },
+    "description": "Far-right joint list of Smotrich (Religious Zionism), Ben-Gvir (Otzma Yehudit) and Noam. 14 seats in 25th Knesset.",
+    "color_hex": "#B91C1C"
+  },
+  {
+    "id": "10000000-0000-0000-0000-000000000009",
+    "canonical_name": "Yisrael Beiteinu",
+    "names_json": { "he": "ישראל ביתנו", "en": "Yisrael Beiteinu", "ru": "Исраэль Бейтейну (Израиль — наш дом)" },
+    "description": "Secular nationalist party led by Avigdor Lieberman, representing Russian-speaking community. 6 seats in 25th Knesset.",
+    "color_hex": "#1E40AF"
+  },
+  {
+    "id": "10000000-0000-0000-0000-000000000010",
+    "canonical_name": "Ra'am",
+    "names_json": { "he": "רע\"מ", "en": "Ra'am (United Arab List)", "ru": "Раам (Объединённый арабский список)" },
+    "description": "Islamist Arab party led by Mansour Abbas. 5 seats in 25th Knesset.",
+    "color_hex": "#059669"
+  },
+  {
+    "id": "10000000-0000-0000-0000-000000000011",
+    "canonical_name": "Hadash-Ta'al",
+    "names_json": { "he": "חד\"ש-תע\"ל", "en": "Hadash-Ta'al", "ru": "Хадаш-Тааль" },
+    "description": "Joint list of Hadash (Arab-Jewish communist-democratic) and Ta'al (Arab nationalist). 5 seats in 25th Knesset.",
+    "color_hex": "#DC2626"
+  },
+  {
+    "id": "10000000-0000-0000-0000-000000000012",
+    "canonical_name": "Meretz",
+    "names_json": { "he": "מרץ", "en": "Meretz", "ru": "Мерец" },
+    "description": "Left-wing social-democratic party. Did not pass 3.25% threshold in 2022 (3.16%), relevant for future election polling.",
+    "color_hex": "#16A34A"
   }
 ]
 

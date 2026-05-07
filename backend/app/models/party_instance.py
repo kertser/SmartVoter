@@ -30,8 +30,11 @@ class PartyInstance(Base):
         SAEnum(PartyStatus, name="party_status"), default=PartyStatus.active
     )
     source_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
-    # Persisted volatility score (0..1). Updated by run_volatility_update().
-    # NULL means not yet computed — falls back to live computation.
+    # Persisted volatility score (0..1). NULL = not yet computed.
     volatility_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Left-right political axis score: -1.0 (far left) .. +1.0 (far right). NULL = not yet computed.
+    left_right_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # High-level political bloc for grouping/display: right | center-right | center | left | arab
+    political_bloc: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
 
