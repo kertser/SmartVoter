@@ -189,13 +189,14 @@ PARTY_VOLATILITY: dict[uuid.UUID, float] = {
 }
 
 # --- Questions ---------------------------------------------------------------
-# Output: list of (policy_slug, text_en, text_he, text_ru)
-QUESTIONS_DATA: list[tuple[str, str, str, str]] = [
+# Output: list of (policy_slug, text_en, text_he, text_ru, answer_polarity)
+QUESTIONS_DATA: list[tuple[str, str, str, str, float]] = [
     (
         q["policy_slug"],
         q["question_text_en"],
         q["question_text_he"],
         q.get("question_text_ru", ""),
+        float(q.get("answer_polarity", 1.0)),
     )
     for q in _load("questions.json")
 ]

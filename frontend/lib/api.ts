@@ -47,6 +47,10 @@ export interface Question {
   context_note?: string;
   why_selected?: string;
   is_root_question?: boolean;
+  // answer_polarity: +1 means "Strongly support" = positive axis; -1 means it's inverted.
+  // The backend handles the arithmetic automatically. Frontend uses this ONLY to optionally
+  // flip the Likert label display so labels always make intuitive sense to the user.
+  answer_polarity?: number;
   // Convergence metadata
   can_show_results?: boolean;
   phase?: "survey" | "depth";

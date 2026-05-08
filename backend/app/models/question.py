@@ -36,6 +36,11 @@ class Question(Base):
     neutrality_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     complexity_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     llm_prompt_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    # answer_polarity: +1.0 means "Strongly support" on the question = +1 on the policy axis.
+    # -1.0 means the question is phrased in the OPPOSITE direction to the axis
+    # (e.g. "Should Haredim serve?" → support=+1 but axis is haredi_service: +1=exempt).
+    # The answers API multiplies answer_value by answer_polarity before storage.
+    answer_polarity: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
     human_review_status: Mapped[ReviewStatus] = mapped_column(
         SAEnum(ReviewStatus, name="question_review_status"),
         default=ReviewStatus.draft,

@@ -170,6 +170,8 @@ def run_question_pipeline(
                 answer_scale_type=AnswerScaleType.likert_5,
                 neutrality_score=neutrality_score,
                 llm_prompt_version=result.get("_prompt_version", "v1.0"),
+                # LLM prompt requires "Strongly Support = positive axis pole"
+                answer_polarity=1.0,
                 human_review_status=ReviewStatus.needs_review,
             )
             thread_db.add(q)
@@ -382,6 +384,8 @@ def run_niche_discovery_pipeline(
                 answer_scale_type=AnswerScaleType.likert_5,
                 neutrality_score=neutrality_score,
                 llm_prompt_version="discovery-v1.3",
+                # LLM prompt requires "Strongly Support = positive axis pole"
+                answer_polarity=1.0,
                 human_review_status=ReviewStatus.needs_review,
             )
             thread_db.add(q)

@@ -386,6 +386,52 @@ def patch_simulation_data() -> None:
         db.close()
 
 
+def patch_question_polarity() -> None:
+    """
+    Update answer_polarity on all existing questions using the seed data as source of truth.
+    Safe to run on any already-seeded DB — matching by English text.
+    Also clears stale user_answers/recommendation_runs from before the polarity fix was applied
+    (since those stored values may be in the wrong direction).
+    """
+    from backend.app.models.question import Question as _QP
+
+    db = SessionLocal()
+    try:
+        # Build lookup: english text → answer_polarity
+        polarity_map: dict[str, float] = {}
+        for q_tuple in QUESTIONS_DATA:
+            text_en = q_tuple[1]
+            polarity = float(q_tuple[4]) if len(q_tuple) > 4 else 1.0
+            polarity_map[text_en] = polarity
+
+        updated = 0
+        for q in db.query(_QP).all():
+            expected = polarity_map.get(q.question_text_en, 1.0)
+            current = getattr(q, "answer_polarity", None)
+            if current is None or abs(current - expected) > 0.01:
+                q.answer_polarity = expected
+                updated += 1
+
+        # Clear stale user_answers since their stored values may be wrong direction
+        from backend.app.models.user_answer import UserAnswer as _UA
+        from backend.app.models.recommendation_run import RecommendationRun as _RR
+        deleted_answers = db.query(_UA).delete()
+        deleted_runs = db.query(_RR).delete()
+
+        db.commit()
+        print(f"  ✓ patch_question_polarity: updated polarity for {updated} questions")
+        if deleted_answers:
+            print(f"  ✓ Cleared {deleted_answers} stale user_answers (polarity fix)")
+        if deleted_runs:
+            print(f"  ✓ Cleared {deleted_runs} stale recommendation_runs")
+    except Exception as e:
+        db.rollback()
+        print(f"patch_question_polarity failed: {e}", file=sys.stderr)
+        raise
+    finally:
+        db.close()
+
+
 def patch_question_translations() -> None:
     """
     Backfill question_text_ru (and question_text_he) for existing questions that have
@@ -555,6 +601,7 @@ def seed_missing_policy_items() -> None:
         for q_tuple in QUESTIONS_DATA:
             item_slug, text_en, text_he = q_tuple[0], q_tuple[1], q_tuple[2]
             text_ru = q_tuple[3] if len(q_tuple) > 3 else None
+            answer_polarity = float(q_tuple[4]) if len(q_tuple) > 4 else 1.0
             if text_en in existing_questions_text:
                 # Question exists — patch missing translations if needed
                 existing_q = existing_question_by_en.get(text_en)
@@ -565,6 +612,10 @@ def seed_missing_policy_items() -> None:
                         changed = True
                     if text_he and not existing_q.question_text_he:
                         existing_q.question_text_he = text_he
+                        changed = True
+                    # Always update polarity (fixes existing incorrect data)
+                    if hasattr(existing_q, "answer_polarity") and existing_q.answer_polarity != answer_polarity:
+                        existing_q.answer_polarity = answer_polarity
                         changed = True
                     if changed:
                         added_questions += 1  # reuse counter to count patches
@@ -581,6 +632,7 @@ def seed_missing_policy_items() -> None:
                 neutrality_score=0.82,
                 complexity_score=0.45,
                 llm_prompt_version="mock-v1",
+                answer_polarity=answer_polarity,
                 human_review_status=RS2.approved,
             ))
             added_questions += 1
@@ -714,6 +766,7 @@ def run_seed() -> None:
             seed_missing_topics()
             seed_missing_policy_items()
             patch_question_translations()
+            patch_question_polarity()
             return
 
         print("Seeding database...")
@@ -840,6 +893,7 @@ def run_seed() -> None:
         for q_tuple in QUESTIONS_DATA:
             item_slug, text_en, text_he = q_tuple[0], q_tuple[1], q_tuple[2]
             text_ru = q_tuple[3] if len(q_tuple) > 3 else None
+            answer_polarity = float(q_tuple[4]) if len(q_tuple) > 4 else 1.0
             policy_item_id = pi_slug_to_id.get(item_slug)
             if not policy_item_id:
                 continue
@@ -853,6 +907,7 @@ def run_seed() -> None:
                     neutrality_score=0.82,
                     complexity_score=0.45,
                     llm_prompt_version="mock-v1",
+                    answer_polarity=answer_polarity,
                     human_review_status=ReviewStatus.approved,
                 )
             )
@@ -964,6 +1019,7 @@ if __name__ == "__main__":
     parser.add_argument("--topics-only", action="store_true", help="Add missing topics (safe on existing DB)")
     parser.add_argument("--patch-colors", action="store_true", help="Add color_hex and left_right_score to existing DB (safe)")
     parser.add_argument("--patch-translations", action="store_true", help="Fill question_text_ru / question_text_he where empty (safe)")
+    parser.add_argument("--patch-polarity", action="store_true", help="Fix answer_polarity for all questions (safe, fixes scoring bug)")
     args = parser.parse_args()
     if args.simulation_only:
         seed_simulation_only()
@@ -976,9 +1032,12 @@ if __name__ == "__main__":
         patch_party_colors_and_lr()
     elif args.patch_translations:
         patch_question_translations()
+    elif args.patch_polarity:
+        patch_question_polarity()
     else:
         run_seed()
         patch_party_colors_and_lr()
         patch_question_translations()
+        patch_question_polarity()
         patch_simulation_data()
 

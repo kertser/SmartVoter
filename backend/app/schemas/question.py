@@ -16,6 +16,10 @@ class QuestionOut(BaseModel):
     context_note: str | None = None
     why_selected: str | None = None
     is_root_question: bool = False
+    # answer_polarity: +1 = "support" maps to +1 on axis; -1 = "support" maps to -1 on axis.
+    # Frontend CAN use this to optionally relabel scales, but the backend handles the
+    # arithmetic internally when storing answers.
+    answer_polarity: float = 1.0
 
     # Convergence metadata — used by the frontend to decide when to offer results
     can_show_results: bool = False          # ranking stable + topics covered

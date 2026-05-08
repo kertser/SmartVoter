@@ -173,6 +173,8 @@ def _auto_generate_question(
             answer_scale_type=AnswerScaleType.likert_5,
             neutrality_score=0.7,
             llm_prompt_version=result.get("_prompt_version", "v1.0-auto"),
+            # LLM prompt instructs "Strongly Support = positive axis pole", so polarity=1.0
+            answer_polarity=1.0,
             human_review_status=ReviewStatus.llm_generated,
         )
         db.add(q)
@@ -483,6 +485,7 @@ def get_next_question(
                 context_note=None,
                 why_selected=_ui_strings()["why_selected"]["survey_question"],
                 is_root_question=survey_q.is_root_question,
+                answer_polarity=survey_q.answer_polarity if hasattr(survey_q, "answer_polarity") else 1.0,
                 can_show_results=conv_meta["can_show_results"],
                 phase=conv_meta["phase"],
                 topics_covered=topics_covered,
@@ -622,6 +625,7 @@ def get_next_question(
                     topic_name_ru=topic.name_ru if topic else None,
                     context_note=None,
                     why_selected=_ui_strings()["why_selected"]["auto_generated"],
+                    answer_polarity=new_q.answer_polarity if hasattr(new_q, "answer_polarity") else 1.0,
                     can_show_results=conv["can_show_results"],
                     phase=conv["phase"],
                     topics_covered=topics_covered,
@@ -681,6 +685,7 @@ def get_next_question(
         context_note=context_note,
         why_selected=why,
         is_root_question=q.is_root_question,
+        answer_polarity=q.answer_polarity if hasattr(q, "answer_polarity") else 1.0,
         can_show_results=conv["can_show_results"],
         phase=conv["phase"],
         topics_covered=topics_covered,

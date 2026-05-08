@@ -1,520 +1,600 @@
 [
   {
-    "_comment": "jud_01 — Judicial Review Scope",
+    "_comment": "jud_01 — Judicial Review Scope. axis: -1=broad court power, +1=parliamentary supremacy",
     "policy_slug": "jud_01",
+    "answer_polarity": -1,
     "question_text_en": "Should the Supreme Court have the authority to strike down Basic Laws passed by the Knesset?",
     "question_text_he": "האם בית המשפט העליון צריך להיות מוסמך לפסול חוקי יסוד שהתקבלו בכנסת?",
     "question_text_ru": "Должен ли Верховный суд иметь право признавать недействительными Основные законы, принятые Кнессетом?"
   },
   {
     "policy_slug": "jud_01",
+    "answer_polarity": 1,
     "question_text_en": "Should a simple majority of Knesset members be able to override any Supreme Court ruling?",
     "question_text_he": "האם רוב פשוט של חברי הכנסת צריך להיות מסוגל לבטל כל פסיקה של בית המשפט העליון?",
     "question_text_ru": "Должно ли простое большинство членов Кнессета иметь возможность отменить любое решение Верховного суда?"
   },
   {
-    "_comment": "jud_02 — Judicial Appointments",
+    "_comment": "jud_02 — Judicial Appointments. axis: -1=judicial committee control, +1=political appointment",
     "policy_slug": "jud_02",
+    "answer_polarity": 1,
     "question_text_en": "Should the Judicial Appointments Committee include more elected politicians and fewer sitting judges?",
     "question_text_he": "האם ועדת מינויים לשפיטה צריכה לכלול יותר פוליטיקאים נבחרים ופחות שופטים?",
     "question_text_ru": "Должен ли Комитет по судебным назначениям включать больше избранных политиков и меньше действующих судей?"
   },
   {
     "policy_slug": "jud_02",
+    "answer_polarity": 1,
     "question_text_en": "Should the government coalition have veto power over Supreme Court justice appointments?",
     "question_text_he": "האם לקואליציה הממשלתית צריך להיות כוח וטו על מינויי שופטי בית המשפט העליון?",
     "question_text_ru": "Должна ли правительственная коалиция иметь право вето на назначение судей Верховного суда?"
   },
   {
-    "_comment": "jud_03 — Override Clause",
+    "_comment": "jud_03 — Override Clause. axis: -1=no override, +1=simple majority override",
     "policy_slug": "jud_03",
+    "answer_polarity": 1,
     "question_text_en": "Should the Knesset be able to reinstate a law that the Supreme Court declared unconstitutional?",
     "question_text_he": "האם הכנסת צריכה להיות מסוגלת לאשרר חוק שבית המשפט העליון פסל כלא חוקתי?",
     "question_text_ru": "Должен ли Кнессет иметь возможность восстановить закон, признанный Верховным судом неконституционным?"
   },
   {
     "policy_slug": "jud_03",
+    "answer_polarity": 1,
     "question_text_en": "Should an override clause require a special supermajority (e.g. 80 MKs) or is a simple majority sufficient?",
-    "question_text_he": "האם סעיף התגברות צריך לדרוש רוב מיוחד (למשל 80 ח\"כים) או שדי ברוב רגיל?",
+    "question_text_he": "האם סעיף התגברות צריך לדרוש רוב מיוחד (למשל 80 חכים) או שדי ברוב רגיל?",
     "question_text_ru": "Должна ли преодолевающая поправка требовать квалифицированного большинства (например, 80 депутатов) или достаточно простого большинства?"
   },
   {
-    "_comment": "jud_04 — Attorney General Independence",
+    "_comment": "jud_04 — Attorney General Independence. axis: -1=full independence, +1=politically subordinate",
     "policy_slug": "jud_04",
+    "answer_polarity": 1,
     "question_text_en": "Should the Attorney General be directly accountable to the elected government?",
     "question_text_he": "האם היועץ המשפטי לממשלה צריך להיות כפוף ישירות לממשלה הנבחרת?",
     "question_text_ru": "Должен ли юридический советник правительства быть подотчётен непосредственно избранному правительству?"
   },
   {
     "policy_slug": "jud_04",
+    "answer_polarity": 1,
     "question_text_en": "Should the government be able to appoint and dismiss the Attorney General without external review?",
-    "question_text_he": "האם הממשלה צריכה להיות מסוגלת למנות ולפטר את היועמ''ש ללא בקרה חיצונית?",
+    "question_text_he": "האם הממשלה צריכה להיות מסוגלת למנות ולפטר את היועמש ללא בקרה חיצונית?",
     "question_text_ru": "Должно ли правительство иметь возможность назначать и увольнять юридического советника правительства без внешнего контроля?"
   },
   {
-    "_comment": "eco_01 — Income Tax Progressivity",
+    "_comment": "eco_01 — Income Tax Progressivity. axis: -1=higher top rates, +1=flat/lower rates",
     "policy_slug": "eco_01",
+    "answer_polarity": -1,
     "question_text_en": "Should the top income tax bracket be raised to fund public services?",
     "question_text_he": "האם יש להעלות את שיעור מס ההכנסה הגבוה ביותר למימון שירותים ציבוריים?",
     "question_text_ru": "Следует ли повысить максимальную ставку подоходного налога для финансирования общественных услуг?"
   },
   {
     "policy_slug": "eco_01",
+    "answer_polarity": 1,
     "question_text_en": "Should capital gains taxes be reduced to encourage investment?",
     "question_text_he": "האם יש להפחית את מס רווחי הון כדי לעודד השקעות?",
     "question_text_ru": "Следует ли снизить налог на прирост капитала для стимулирования инвестиций?"
   },
   {
-    "_comment": "eco_02 — State Welfare Spending",
+    "_comment": "eco_02 — State Welfare Spending. axis: -1=expand welfare, +1=reduce welfare/privatize",
     "policy_slug": "eco_02",
+    "answer_polarity": -1,
     "question_text_en": "Should the state expand child benefits and social assistance programs?",
     "question_text_he": "האם המדינה צריכה להרחיב גמלאות ילדים ותוכניות סיוע סוציאלי?",
     "question_text_ru": "Должно ли государство расширить детские пособия и программы социальной помощи?"
   },
   {
     "policy_slug": "eco_02",
+    "answer_polarity": -1,
     "question_text_en": "Should essential utilities (electricity, water) remain fully state-owned?",
     "question_text_he": "האם שירותים חיוניים (חשמל, מים) צריכים להישאר בבעלות מדינה מלאה?",
     "question_text_ru": "Должны ли основные коммунальные услуги (электричество, вода) оставаться полностью в государственной собственности?"
   },
   {
-    "_comment": "eco_03 — Housing Market Regulation",
+    "_comment": "eco_03 — Housing Market Regulation. axis: -1=strong state regulation, +1=free market",
     "policy_slug": "eco_03",
+    "answer_polarity": -1,
     "question_text_en": "Should the government intervene to cap residential rental prices?",
     "question_text_he": "האם הממשלה צריכה להתערב לצורך הגבלת שכר דירה למגורים?",
     "question_text_ru": "Должно ли правительство вмешиваться и ограничивать цены на аренду жилья?"
   },
   {
     "policy_slug": "eco_03",
-    "question_text_en": "Should the state build and rent public ('social') housing at subsidized rates?",
+    "answer_polarity": -1,
+    "question_text_en": "Should the state build and rent public housing at subsidized rates?",
     "question_text_he": "האם המדינה צריכה לבנות ולהשכיר דיור ציבורי במחירים מסובסדים?",
     "question_text_ru": "Должно ли государство строить и сдавать в аренду муниципальное жильё по субсидированным ценам?"
   },
   {
-    "_comment": "eco_04 — Religious Institution Funding",
+    "_comment": "eco_04 — Religious Institution Funding. axis: -1=cut funding, +1=increase funding",
     "policy_slug": "eco_04",
+    "answer_polarity": -1,
     "question_text_en": "Should state funding for yeshivas (religious seminaries) be reduced?",
     "question_text_he": "האם יש להפחית את מימון המדינה לישיבות?",
     "question_text_ru": "Следует ли сократить государственное финансирование иешив (религиозных учебных заведений)?"
   },
   {
     "policy_slug": "eco_04",
+    "answer_polarity": -1,
     "question_text_en": "Should religious councils receive the same per-capita state funding as secular municipalities?",
     "question_text_he": "האם מועצות דתיות צריכות לקבל מימון מדינה שווה לנפש כמו רשויות חילוניות?",
     "question_text_ru": "Должны ли религиозные советы получать такое же душевое государственное финансирование, как светские муниципалитеты?"
   },
   {
-    "_comment": "rel_01 — Civil Marriage",
+    "_comment": "rel_01 — Civil Marriage. axis: -1=legalize civil marriage, +1=maintain religious monopoly",
     "policy_slug": "rel_01",
+    "answer_polarity": -1,
     "question_text_en": "Should civil marriage (without a rabbi or religious authority) be legally recognized in Israel?",
     "question_text_he": "האם נישואים אזרחיים (ללא רב או סמכות דתית) צריכים להיות מוכרים חוקית בישראל?",
     "question_text_ru": "Должны ли гражданские браки (без раввина или религиозного органа) быть юридически признаны в Израиле?"
   },
   {
     "policy_slug": "rel_01",
-    "question_text_en": "Should Jewish Israelis who marry abroad in civil ceremonies be recognized as married by the state upon their return?",
-    "question_text_he": "האם יהודים ישראלים שנישאו בחו''ל בנישואים אזרחיים צריכים להיות מוכרים כנשואים על ידי המדינה עם שובם?",
-    "question_text_ru": "Должны ли израильтяне-евреи, заключившие гражданский брак за рубежом, быть признаны состоящими в браке государством по возвращении?"
+    "answer_polarity": -1,
+    "question_text_en": "Should Israeli citizens who married abroad in civil ceremonies be recognized as married by the state upon their return?",
+    "question_text_he": "האם ישראלים שנישאו בחוץ לארץ בנישואים אזרחיים צריכים להיות מוכרים כנשואים על ידי המדינה עם שובם?",
+    "question_text_ru": "Должны ли израильтяне, заключившие гражданский брак за рубежом, быть признаны состоящими в браке государством по возвращении?"
   },
   {
-    "_comment": "rel_02 — Shabbat Commerce",
+    "_comment": "rel_02 — Shabbat Commerce. axis: -1=allow commerce, +1=restrict commerce",
     "policy_slug": "rel_02",
+    "answer_polarity": -1,
     "question_text_en": "Should supermarkets and shopping centers be permitted to open on Shabbat?",
     "question_text_he": "האם יש לאפשר לסופרמרקטים ולמרכזי קניות לפתוח בשבת?",
     "question_text_ru": "Следует ли разрешить супермаркетам и торговым центрам работать в Шаббат?"
   },
   {
     "policy_slug": "rel_02",
+    "answer_polarity": -1,
     "question_text_en": "Should local city councils have the authority to decide independently whether businesses may operate on Shabbat?",
     "question_text_he": "האם מועצות עיריות מקומיות צריכות להיות מוסמכות להחליט באופן עצמאי האם עסקים רשאים לפעול בשבת?",
     "question_text_ru": "Должны ли местные городские советы иметь право самостоятельно решать, могут ли предприятия работать в Шаббат?"
   },
   {
-    "_comment": "rel_03 — Haredi Military Service",
+    "_comment": "rel_03 — Haredi Military Service. axis: -1=mandatory service, +1=exempt status",
     "policy_slug": "rel_03",
+    "answer_polarity": -1,
     "question_text_en": "Should ultra-Orthodox (Haredi) men be required to serve in the Israeli military?",
     "question_text_he": "האם גברים חרדים צריכים להתגייס לצבא הישראלי?",
     "question_text_ru": "Должны ли ультраортодоксальные (харедим) мужчины проходить военную службу в израильской армии?"
   },
   {
     "policy_slug": "rel_03",
+    "answer_polarity": 1,
     "question_text_en": "Should Haredi men who study full-time in yeshivas receive a formal exemption from military service?",
     "question_text_he": "האם גברים חרדים הלומדים במשרה מלאה בישיבות צריכים לקבל פטור רשמי משירות צבאי?",
     "question_text_ru": "Должны ли мужчины-харедим, обучающиеся в иешивах на полную ставку, получить официальное освобождение от военной службы?"
   },
   {
-    "_comment": "rel_04 — Kashrut Law",
+    "_comment": "rel_04 — Kashrut Law. axis: -1=privatize kashrut, +1=state monopoly enforcement",
     "policy_slug": "rel_04",
+    "answer_polarity": -1,
     "question_text_en": "Should the state's exclusive kashrut (kosher certification) monopoly be abolished and opened to private supervision?",
     "question_text_he": "האם המונופול הממלכתי על כשרות צריך להתבטל ולהיפתח לפיקוח פרטי?",
     "question_text_ru": "Должна ли государственная монополия на кашрут (кошерную сертификацию) быть упразднена и открыта для частного надзора?"
   },
   {
     "policy_slug": "rel_04",
+    "answer_polarity": 1,
     "question_text_en": "Should restaurants be required to display only state-approved kashrut certification?",
     "question_text_he": "האם מסעדות צריכות להידרש להציג רק תעודת כשרות שאושרה על ידי המדינה?",
     "question_text_ru": "Должны ли рестораны быть обязаны представлять только государственный сертификат кошерности?"
   },
   {
-    "_comment": "sec_01 — Two-State Solution",
+    "_comment": "sec_01 — Two-State Solution. axis: -1=support two states, +1=oppose Palestinian statehood",
     "policy_slug": "sec_01",
+    "answer_polarity": -1,
     "question_text_en": "Do you support the establishment of an independent Palestinian state alongside Israel?",
     "question_text_he": "האם אתה תומך בהקמת מדינה פלסטינית עצמאית לצד ישראל?",
     "question_text_ru": "Поддерживаете ли вы создание независимого палестинского государства рядом с Израилем?"
   },
   {
     "policy_slug": "sec_01",
+    "answer_polarity": -1,
     "question_text_en": "Should Israel negotiate a final-status peace agreement with Palestinian leadership?",
     "question_text_he": "האם ישראל צריכה לנהל משא ומתן על הסכם מעמד סופי עם ההנהגה הפלסטינית?",
     "question_text_ru": "Должен ли Израиль вести переговоры об окончательном мирном соглашении с палестинским руководством?"
   },
   {
-    "_comment": "sec_02 — Settlement Expansion",
+    "_comment": "sec_02 — Settlement Expansion. axis: -1=freeze/remove settlements, +1=expand settlements",
     "policy_slug": "sec_02",
+    "answer_polarity": 1,
     "question_text_en": "Should Israel continue to expand Jewish settlements in the West Bank?",
     "question_text_he": "האם ישראל צריכה להמשיך להרחיב את ההתנחלויות היהודיות בגדה המערבית?",
     "question_text_ru": "Должен ли Израиль продолжать расширять еврейские поселения на Западном берегу?"
   },
   {
     "policy_slug": "sec_02",
+    "answer_polarity": -1,
     "question_text_en": "Should Israel remove any existing settlements as part of a peace agreement?",
     "question_text_he": "האם ישראל צריכה לפנות התנחלויות קיימות כחלק מהסכם שלום?",
     "question_text_ru": "Должен ли Израиль ликвидировать часть существующих поселений в рамках мирного соглашения?"
   },
   {
-    "_comment": "sec_03 — Defense Budget",
+    "_comment": "sec_03 — Defense Budget. axis: -1=reduce, +1=increase significantly",
     "policy_slug": "sec_03",
+    "answer_polarity": 1,
     "question_text_en": "Should Israel increase its defense budget as a share of GDP?",
-    "question_text_he": "האם ישראל צריכה להגדיל את תקציב הביטחון כחלק מהתמ''ג?",
+    "question_text_he": "האם ישראל צריכה להגדיל את תקציב הביטחון כחלק מהתמג?",
     "question_text_ru": "Должен ли Израиль увеличить оборонный бюджет как долю ВВП?"
   },
   {
     "policy_slug": "sec_03",
+    "answer_polarity": -1,
     "question_text_en": "Should defense spending be reduced in order to fund social programs?",
     "question_text_he": "האם יש להפחית הוצאות ביטחון כדי לממן תוכניות חברתיות?",
     "question_text_ru": "Следует ли сократить расходы на оборону в целях финансирования социальных программ?"
   },
   {
-    "_comment": "sec_04 — Gaza Ceasefire Terms",
+    "_comment": "sec_04 — Gaza Ceasefire Terms. axis: -1=flexible humanitarian terms, +1=military victory first",
     "policy_slug": "sec_04",
+    "answer_polarity": -1,
     "question_text_en": "Should Israel accept a temporary ceasefire in Gaza without achieving all military objectives first?",
     "question_text_he": "האם ישראל צריכה לקבל הפסקת אש זמנית בעזה מבלי להשיג תחילה את כל המטרות הצבאיות?",
     "question_text_ru": "Должен ли Израиль принять временное прекращение огня в Газе, не достигнув всех военных целей?"
   },
   {
     "policy_slug": "sec_04",
+    "answer_polarity": -1,
     "question_text_en": "Should hostage return be prioritized over military objectives in Gaza negotiations?",
     "question_text_he": "האם יש לתעדף החזרת החטופים על פני מטרות צבאיות במשא ומתן עזה?",
     "question_text_ru": "Следует ли отдать приоритет возвращению заложников над военными целями в переговорах по Газе?"
   },
   {
-    "_comment": "civ_01 — LGBTQ+ Rights",
+    "_comment": "civ_01 — LGBTQ+ Rights. axis: -1=full equality, +1=restrict recognition",
     "policy_slug": "civ_01",
+    "answer_polarity": -1,
     "question_text_en": "Should same-sex couples have the same legal rights as different-sex married couples in Israel?",
     "question_text_he": "האם לזוגות חד-מיניים צריכות להיות אותן זכויות חוקיות כמו לזוגות נשואים מסוגים שונים בישראל?",
     "question_text_ru": "Должны ли однополые пары иметь те же юридические права, что и разнополые супружеские пары в Израиле?"
   },
   {
     "policy_slug": "civ_01",
+    "answer_polarity": -1,
     "question_text_en": "Should same-sex couples have the right to adopt children in Israel?",
     "question_text_he": "האם לזוגות חד-מיניים צריכה להיות הזכות לאמץ ילדים בישראל?",
     "question_text_ru": "Должны ли однополые пары иметь право усыновлять детей в Израиле?"
   },
   {
-    "_comment": "civ_02 — Arab Minority Rights",
+    "_comment": "civ_02 — Arab Minority Rights. axis: -1=full equality and recognition, +1=restrict political participation",
     "policy_slug": "civ_02",
+    "answer_polarity": -1,
     "question_text_en": "Should Arabic be maintained as an official state language with full government services available in Arabic?",
     "question_text_he": "האם יש לשמור על ערבית כשפת מדינה רשמית עם שירותי ממשל מלאים בערבית?",
     "question_text_ru": "Должен ли арабский язык сохраняться как официальный государственный язык с полным обеспечением государственных услуг на арабском?"
   },
   {
     "policy_slug": "civ_02",
+    "answer_polarity": -1,
     "question_text_en": "Should Arab citizens of Israel receive equal per-capita budget allocations from the state?",
     "question_text_he": "האם לאזרחים ערבים של ישראל צריכה להיות הקצאת תקציב שווה לנפש מהמדינה?",
     "question_text_ru": "Должны ли арабские граждане Израиля получать равное душевое финансирование от государства?"
   },
   {
-    "_comment": "civ_03 — Freedom of Press",
+    "_comment": "civ_03 — Freedom of Press. axis: -1=strong independent media, +1=government control/influence",
     "policy_slug": "civ_03",
+    "answer_polarity": -1,
     "question_text_en": "Should public broadcasting be fully independent from government influence?",
     "question_text_he": "האם השידור הציבורי צריך להיות בלתי תלוי לחלוטין מהשפעת הממשלה?",
     "question_text_ru": "Должно ли общественное вещание быть полностью независимым от влияния правительства?"
   },
   {
     "policy_slug": "civ_03",
+    "answer_polarity": 1,
     "question_text_en": "Should the government have the power to appoint the majority of public broadcaster board members?",
     "question_text_he": "האם לממשלה צריכה להיות הסמכות למנות את רוב חברי דירקטוריון השידור הציבורי?",
     "question_text_ru": "Должно ли правительство иметь право назначать большинство членов совета директоров общественного вещателя?"
   },
   {
-    "_comment": "civ_04 — Anti-Discrimination Law",
+    "_comment": "civ_04 — Anti-Discrimination Law. axis: -1=broad protections, +1=narrow/religious exemptions",
     "policy_slug": "civ_04",
+    "answer_polarity": -1,
     "question_text_en": "Should anti-discrimination laws protect LGBTQ+ individuals in employment and services?",
-    "question_text_he": "האם חוקי אי-אפליה צריכים להגן על אנשים להט''בים בתעסוקה ובשירותים?",
+    "question_text_he": "האם חוקי אי-אפליה צריכים להגן על אנשים להטבים בתעסוקה ובשירותים?",
     "question_text_ru": "Должны ли законы против дискриминации защищать представителей ЛГБТК+ в сфере занятости и услуг?"
   },
   {
     "policy_slug": "civ_04",
+    "answer_polarity": 1,
     "question_text_en": "Should religious institutions be exempt from anti-discrimination requirements when hiring staff?",
     "question_text_he": "האם למוסדות דתיים צריך להיות פטור מדרישות אי-אפליה בעת גיוס עובדים?",
     "question_text_ru": "Должны ли религиозные организации быть освобождены от требований о недискриминации при найме персонала?"
   },
   {
-    "_comment": "col_01 — Basic Necessities Subsidies",
+    "_comment": "col_01 — Basic Necessities Subsidies. axis: -1=expand direct subsidies, +1=market prices only",
     "policy_slug": "col_01",
+    "answer_polarity": -1,
     "question_text_en": "Should the government provide direct subsidies to reduce the cost of food and basic necessities?",
     "question_text_he": "האם הממשלה צריכה לסבסד ישירות מזון ומוצרי יסוד כדי להוריד את יוקר המחיה?",
     "question_text_ru": "Должно ли правительство напрямую субсидировать продукты питания и товары первой необходимости для снижения стоимости жизни?"
   },
   {
     "policy_slug": "col_01",
+    "answer_polarity": -1,
     "question_text_en": "Should the state set price ceilings on essential food products to protect low-income households?",
     "question_text_he": "האם המדינה צריכה לקבוע תקרות מחיר על מוצרי מזון בסיסיים כדי להגן על משפחות בעלות הכנסה נמוכה?",
     "question_text_ru": "Должно ли государство устанавливать ценовые потолки на основные продукты питания для защиты малообеспеченных семей?"
   },
   {
-    "_comment": "col_02 — VAT Exemptions on Essentials",
+    "_comment": "col_02 — VAT Exemptions on Essentials. axis: -1=broad product exemptions, +1=uniform VAT on all goods",
     "policy_slug": "col_02",
+    "answer_polarity": -1,
     "question_text_en": "Should essential goods like bread, milk, and vegetables be exempt from VAT?",
-    "question_text_he": "האם מוצרי יסוד כמו לחם, חלב וירקות צריכים להיות פטורים ממע\"מ?",
+    "question_text_he": "האם מוצרי יסוד כמו לחם, חלב וירקות צריכים להיות פטורים ממעמ?",
     "question_text_ru": "Должны ли товары первой необходимости, такие как хлеб, молоко и овощи, быть освобождены от НДС?"
   },
   {
     "policy_slug": "col_02",
+    "answer_polarity": -1,
     "question_text_en": "Should the government reduce VAT on a broad basket of consumer goods to ease cost-of-living pressures?",
-    "question_text_he": "האם הממשלה צריכה להפחית מע\"מ על סל רחב של מוצרי צריכה כדי להקל על לחץ יוקר המחיה?",
+    "question_text_he": "האם הממשלה צריכה להפחית מעמ על סל רחב של מוצרי צריכה כדי להקל על לחץ יוקר המחיה?",
     "question_text_ru": "Должно ли правительство снизить НДС на широкий ассортимент потребительских товаров для снижения стоимости жизни?"
   },
   {
-    "_comment": "edu_01 — School Choice Vouchers",
+    "_comment": "edu_01 — School Choice Vouchers. axis: -1=invest in public schools, +1=school-choice vouchers",
     "policy_slug": "edu_01",
+    "answer_polarity": 1,
     "question_text_en": "Should the state provide vouchers allowing parents to choose private or charter schools instead of only funding public schools?",
     "question_text_he": "האם המדינה צריכה לתת שוברים להורים לבחור בבתי ספר פרטיים, במקום לממן רק חינוך ציבורי?",
     "question_text_ru": "Должно ли государство выдавать ваучеры родителям для выбора частных школ вместо финансирования только государственных?"
   },
   {
     "policy_slug": "edu_01",
+    "answer_polarity": -1,
     "question_text_en": "Should government education spending focus exclusively on strengthening public schools rather than subsidizing private education?",
     "question_text_he": "האם הוצאות ממשלתיות על חינוך צריכות להתמקד אך ורק בחיזוק בתי ספר ציבוריים, ולא בסובסידיות לחינוך פרטי?",
     "question_text_ru": "Должны ли государственные расходы на образование сосредоточиться исключительно на укреплении государственных школ, а не на субсидировании частного образования?"
   },
   {
-    "_comment": "edu_02 — Core Curriculum in Religious Schools",
+    "_comment": "edu_02 — Core Curriculum in Religious Schools. axis: -1=mandatory core subjects, +1=full yeshiva autonomy",
     "policy_slug": "edu_02",
+    "answer_polarity": -1,
     "question_text_en": "Should religious schools (yeshivot) that receive public funding be required to teach a core secular curriculum?",
     "question_text_he": "האם ישיבות שמקבלות מימון ציבורי צריכות להיות מחויבות ללמד תוכנית לימודים חילונית מינימלית?",
     "question_text_ru": "Должны ли религиозные школы (иешивы), получающие государственное финансирование, быть обязаны преподавать базовую светскую программу?"
   },
   {
     "policy_slug": "edu_02",
+    "answer_polarity": 1,
     "question_text_en": "Should ultra-Orthodox schools be allowed to receive state funding while teaching only religious studies, with no math or English requirement?",
     "question_text_he": "האם בתי ספר חרדים יוכלו לקבל מימון ממלכתי תוך הוראת לימודי דת בלבד, ללא חובת מתמטיקה או אנגלית?",
     "question_text_ru": "Должны ли ультраортодоксальные школы иметь право получать государственное финансирование, преподавая только религиозные дисциплины, без обязательного изучения математики и английского языка?"
   },
   {
-    "_comment": "env_01 — Carbon Tax",
+    "_comment": "env_01 — Carbon Tax. axis: -1=strict emission regulations/tax, +1=economic growth over climate",
     "policy_slug": "env_01",
+    "answer_polarity": -1,
     "question_text_en": "Should Israel impose a carbon tax on large industrial polluters to reduce greenhouse gas emissions?",
     "question_text_he": "האם ישראל צריכה להטיל מס פחמן על מזהמים תעשייתיים גדולים כדי לצמצם פליטת גזי חממה?",
     "question_text_ru": "Должен ли Израиль ввести углеродный налог на крупных промышленных загрязнителей для сокращения выбросов парниковых газов?"
   },
   {
     "policy_slug": "env_01",
+    "answer_polarity": 1,
     "question_text_en": "Should environmental regulations be loosened to support economic growth and reduce costs for businesses?",
     "question_text_he": "האם יש להקל על תקנות סביבתיות כדי לתמוך בצמיחה כלכלית ולהפחית עלויות לעסקים?",
     "question_text_ru": "Следует ли смягчить экологические нормы для поддержки экономического роста и снижения затрат бизнеса?"
   },
   {
-    "_comment": "env_02 — Offshore Gas Extraction",
+    "_comment": "env_02 — Offshore Gas Extraction. axis: -1=limit extraction/transition to renewables, +1=maximize gas revenues",
     "policy_slug": "env_02",
+    "answer_polarity": 1,
     "question_text_en": "Should Israel accelerate offshore natural gas extraction to increase state revenues, even at some environmental cost?",
     "question_text_he": "האם ישראל צריכה להאיץ את הפקת הגז הטבעי בים כדי להגדיל הכנסות המדינה, גם במחיר סביבתי מסוים?",
     "question_text_ru": "Должен ли Израиль ускорить добычу природного газа на шельфе для увеличения доходов государства, даже за счёт экологии?"
   },
   {
     "policy_slug": "env_02",
+    "answer_polarity": -1,
     "question_text_en": "Should Israel invest gas revenues into transitioning away from fossil fuels rather than expanding extraction?",
     "question_text_he": "האם ישראל צריכה להשקיע הכנסות גז במעבר לאנרגיה מתחדשת, במקום להרחיב את ההפקה?",
     "question_text_ru": "Должен ли Израиль инвестировать доходы от газа в переход на возобновляемую энергию, а не расширять добычу?"
   },
   {
-    "_comment": "gov_01 — PM Under Indictment",
+    "_comment": "gov_01 — PM Under Indictment. axis: -1=PM must suspend on indictment, +1=PM may serve through trial",
     "policy_slug": "gov_01",
+    "answer_polarity": -1,
     "question_text_en": "Should a sitting Prime Minister who has been indicted on criminal charges be required to temporarily leave office?",
     "question_text_he": "האם ראש ממשלה שהוגש נגדו כתב אישום פלילי חייב להתפטר זמנית מתפקידו?",
     "question_text_ru": "Должен ли действующий премьер-министр, которому предъявлено уголовное обвинение, временно оставить свой пост?"
   },
   {
     "policy_slug": "gov_01",
+    "answer_polarity": 1,
     "question_text_en": "Should an elected Prime Minister be allowed to continue serving and making policy decisions while awaiting a criminal verdict?",
     "question_text_he": "האם ראש ממשלה נבחר צריך להיות רשאי להמשיך בתפקידו ולקבל החלטות מדיניות בזמן המתנה לפסיקה פלילית?",
     "question_text_ru": "Должен ли избранный премьер-министр иметь право продолжать работу и принимать политические решения в ожидании уголовного приговора?"
   },
   {
-    "_comment": "gov_02 — State Comptroller Independence",
+    "_comment": "gov_02 — State Comptroller Independence. axis: -1=full independence, +1=limit comptroller powers",
     "policy_slug": "gov_02",
+    "answer_polarity": -1,
     "question_text_en": "Should the State Comptroller's budget and mandate be fully independent from the government coalition?",
     "question_text_he": "האם תקציב וסמכויות מבקר המדינה צריכים להיות עצמאיים לחלוטין מהקואליציה?",
     "question_text_ru": "Должны ли бюджет и полномочия государственного контролёра быть полностью независимы от правительственной коалиции?"
   },
   {
     "policy_slug": "gov_02",
+    "answer_polarity": 1,
     "question_text_en": "Should the government be able to limit the scope of State Comptroller investigations to protect sensitive security or policy matters?",
     "question_text_he": "האם הממשלה צריכה להיות מסוגלת להגביל את היקף חקירות מבקר המדינה כדי להגן על עניינים ביטחוניים או מדיניותיים רגישים?",
     "question_text_ru": "Должно ли правительство иметь возможность ограничивать сферу расследований государственного контролёра для защиты конфиденциальных вопросов безопасности или политики?"
   },
   {
-    "_comment": "hea_01 — Public vs Private Healthcare",
+    "_comment": "hea_01 — Public vs Private Healthcare. axis: -1=strengthen public health, +1=expand private medicine",
     "policy_slug": "hea_01",
+    "answer_polarity": -1,
     "question_text_en": "Should the government significantly increase funding for public hospitals to reduce dependence on private supplemental insurance?",
     "question_text_he": "האם הממשלה צריכה להגדיל משמעותית את המימון לבתי חולים ציבוריים כדי להפחית את התלות בביטוח פרטי?",
     "question_text_ru": "Должно ли правительство значительно увеличить финансирование государственных больниц для снижения зависимости от частного страхования?"
   },
   {
     "policy_slug": "hea_01",
+    "answer_polarity": 1,
     "question_text_en": "Should citizens have the freedom to purchase additional private medical services beyond the public health basket?",
     "question_text_he": "האם לאזרחים צריכה להיות חופש לרכוש שירותים רפואיים פרטיים נוספים מעבר לסל הבריאות הציבורי?",
     "question_text_ru": "Должны ли граждане иметь свободу приобретать дополнительные частные медицинские услуги сверх государственной корзины здравоохранения?"
   },
   {
-    "_comment": "hea_02 — Mental Health Funding",
+    "_comment": "hea_02 — Mental Health Funding. axis: -1=significantly increase, +1=status quo or reduce",
     "policy_slug": "hea_02",
+    "answer_polarity": -1,
     "question_text_en": "Should mental health services be fully integrated and equally funded as part of the public health basket?",
     "question_text_he": "האם שירותי בריאות הנפש צריכים להיות מוכללים במלואם בסל הבריאות הציבורי ולקבל מימון שווה?",
     "question_text_ru": "Должны ли услуги психического здоровья быть полностью включены в государственную корзину здравоохранения с равным финансированием?"
   },
   {
     "policy_slug": "hea_02",
+    "answer_polarity": -1,
     "question_text_en": "Should the state budget for mental health treatment be significantly increased above current levels?",
     "question_text_he": "האם יש להגדיל משמעותית את תקציב המדינה לטיפול בבריאות הנפש מעל לרמות הנוכחיות?",
     "question_text_ru": "Следует ли значительно увеличить государственный бюджет на лечение психических расстройств выше нынешнего уровня?"
   },
   {
-    "_comment": "hou_01 — Public Affordable Housing",
+    "_comment": "hou_01 — Public Affordable Housing. axis: -1=large state housing program, +1=market-driven only",
     "policy_slug": "hou_01",
+    "answer_polarity": -1,
     "question_text_en": "Should the government build large quantities of affordable public housing to reduce prices, rather than relying on the market?",
     "question_text_he": "האם הממשלה צריכה לבנות דיור ציבורי במחיר מוזל בהיקף גדול כדי להוריד מחירים, במקום להסתמך על השוק?",
     "question_text_ru": "Должно ли правительство строить большое количество доступного социального жилья для снижения цен, вместо того чтобы полагаться на рынок?"
   },
   {
     "policy_slug": "hou_01",
+    "answer_polarity": 1,
     "question_text_en": "Should private developers, incentivized by tax breaks, be the primary solution to the housing shortage?",
     "question_text_he": "האם יזמים פרטיים, המתומרצים על ידי הטבות מס, צריכים להיות הפתרון העיקרי למחסור בדיור?",
     "question_text_ru": "Должны ли частные застройщики, стимулируемые налоговыми льготами, стать основным решением проблемы дефицита жилья?"
   },
   {
-    "_comment": "hou_02 — Rent Control",
+    "_comment": "hou_02 — Rent Control. axis: -1=statutory rent caps, +1=free market rents",
     "policy_slug": "hou_02",
+    "answer_polarity": -1,
     "question_text_en": "Should apartment rent increases be capped by law to protect tenants from sharp price hikes?",
     "question_text_he": "האם יש לקבוע בחוק תקרה על העלאות שכר דירה כדי להגן על שוכרים מפני עליות מחיר חדות?",
     "question_text_ru": "Должны ли законом ограничить повышение арендной платы для защиты арендаторов от резкого роста цен?"
   },
   {
     "policy_slug": "hou_02",
+    "answer_polarity": 1,
     "question_text_en": "Should landlords be free to set and increase rents without government limits?",
     "question_text_he": "האם בעלי דירות צריכים להיות חופשיים לקבוע ולהעלות שכר דירה ללא מגבלות ממשלתיות?",
     "question_text_ru": "Должны ли арендодатели иметь право свободно устанавливать и повышать арендную плату без государственных ограничений?"
   },
   {
-    "_comment": "mil_01 — Universal Military Service",
+    "_comment": "mil_01 — Universal Military Service. axis: -1=truly universal service, +1=maintain exemptions",
     "policy_slug": "mil_01",
+    "answer_polarity": -1,
     "question_text_en": "Should military service be truly universal, applying equally to ultra-Orthodox and Arab citizens?",
     "question_text_he": "האם שירות הצבאי צריך להיות אוניברסלי באמת, ולחול באופן שווה על חרדים וערבים?",
     "question_text_ru": "Должна ли военная служба быть по-настоящему всеобщей, распространяясь в равной мере на ультраортодоксов и арабских граждан?"
   },
   {
     "policy_slug": "mil_01",
+    "answer_polarity": 1,
     "question_text_en": "Should ultra-Orthodox students enrolled in full-time Torah study continue to receive military service exemptions?",
     "question_text_he": "האם סטודנטים חרדים הלומדים לימודי תורה במשרה מלאה צריכים להמשיך לקבל פטור משירות צבאי?",
     "question_text_ru": "Должны ли ультраортодоксальные студенты, полностью занятые изучением Торы, продолжать получать освобождение от военной службы?"
   },
   {
-    "_comment": "mil_02 — Mandatory Service Length",
+    "_comment": "mil_02 — Mandatory Service Length. axis: -1=shorten service, +1=maintain or extend current length",
     "policy_slug": "mil_02",
+    "answer_polarity": -1,
     "question_text_en": "Should mandatory military service be shortened to allow young people to enter the workforce and higher education sooner?",
     "question_text_he": "האם יש לקצר את השירות הצבאי החובה כדי לאפשר לצעירים להיכנס לשוק העבודה ולהשכלה גבוהה מוקדם יותר?",
     "question_text_ru": "Следует ли сократить обязательный военный срок, чтобы молодёжь могла раньше начать карьеру и получить высшее образование?"
   },
   {
     "policy_slug": "mil_02",
+    "answer_polarity": 1,
     "question_text_en": "Should mandatory military service be maintained at its current length or extended, given ongoing security threats?",
     "question_text_he": "האם יש לשמור על אורך השירות הצבאי החובה כפי שהוא כיום, או להאריכו, לאור האיומים הביטחוניים המתמשכים?",
     "question_text_ru": "Следует ли сохранить нынешнюю продолжительность обязательной военной службы или продлить её с учётом продолжающихся угроз безопасности?"
   },
   {
-    "_comment": "set_01 — West Bank Annexation",
+    "_comment": "set_01 — West Bank Annexation. axis: -1=oppose annexation, +1=formal annexation of settlement blocs",
     "policy_slug": "set_01",
+    "answer_polarity": 1,
     "question_text_en": "Should Israel formally annex major settlement blocs in the West Bank into Israeli sovereign territory?",
     "question_text_he": "האם ישראל צריכה לספח רשמית גושי התנחלויות גדולים בגדה המערבית לשטח הריבוני הישראלי?",
     "question_text_ru": "Должен ли Израиль официально аннексировать крупные поселенческие блоки на Западном берегу реки Иордан?"
   },
   {
     "policy_slug": "set_01",
+    "answer_polarity": -1,
     "question_text_en": "Should Israel's ultimate borders be determined through negotiation rather than unilateral annexation?",
     "question_text_he": "האם גבולותיה הסופיים של ישראל צריכים להיקבע באמצעות משא ומתן ולא סיפוח חד-צדדי?",
     "question_text_ru": "Должны ли окончательные границы Израиля быть определены путём переговоров, а не односторонней аннексии?"
   },
   {
-    "_comment": "set_02 — Evacuation-Compensation Law",
+    "_comment": "set_02 — Evacuation-Compensation Law. axis: -1=support voluntary evacuation with compensation, +1=oppose any evacuation",
     "policy_slug": "set_02",
+    "answer_polarity": -1,
     "question_text_en": "Should the state offer generous compensation packages to settlers willing to voluntarily leave isolated outposts?",
     "question_text_he": "האם המדינה צריכה להציע חבילות פיצויים נדיבות למתנחלים המוכנים לפנות מרצון מאחים מבודדים?",
     "question_text_ru": "Должно ли государство предлагать щедрые компенсационные пакеты поселенцам, готовым добровольно покинуть изолированные форпосты?"
   },
   {
     "policy_slug": "set_02",
+    "answer_polarity": 1,
     "question_text_en": "Should the law prohibit any evacuation of settlements even if the settler agrees, in order to affirm Israeli sovereignty?",
     "question_text_he": "האם החוק צריך לאסור כל פינוי של התנחלויות גם אם המתנחל מסכים, כדי לאשש את הריבונות הישראלית?",
     "question_text_ru": "Должен ли закон запрещать любое выселение поселений, даже по согласию поселенца, в целях утверждения израильского суверенитета?"
   },
   {
-    "_comment": "tra_01 — Public Transit Investment",
+    "_comment": "tra_01 — Public Transit Investment. axis: -1=major public transit investment, +1=rely on private cars/highways",
     "policy_slug": "tra_01",
+    "answer_polarity": -1,
     "question_text_en": "Should the government prioritize investment in mass public transit (rail, BRT, metro) over new road construction?",
     "question_text_he": "האם הממשלה צריכה לתת עדיפות להשקעה בתחבורה ציבורית המונית (רכבת, BRT, מטרו) על פני סלילת כבישים חדשים?",
     "question_text_ru": "Должно ли правительство ставить инвестиции в массовый общественный транспорт (железные дороги, скоростной автобусный транспорт, метро) выше строительства новых дорог?"
   },
   {
     "policy_slug": "tra_01",
+    "answer_polarity": 1,
     "question_text_en": "Should the state invest primarily in road infrastructure to support private car use, rather than expanding public transit?",
     "question_text_he": "האם המדינה צריכה להשקיע בעיקר בתשתיות כבישים כדי לתמוך בשימוש ברכב פרטי, ולא בהרחבת תחבורה ציבורית?",
     "question_text_ru": "Должно ли государство инвестировать преимущественно в дорожную инфраструктуру для поддержки использования личного автомобиля, а не в расширение общественного транспорта?"
   },
   {
-    "_comment": "tra_02 — High-Speed Intercity Rail",
+    "_comment": "tra_02 — High-Speed Intercity Rail. axis: -1=prioritize high-speed rail, +1=highway expansion over rail",
     "policy_slug": "tra_02",
+    "answer_polarity": -1,
     "question_text_en": "Should Israel build a high-speed rail network connecting all major cities, even at high upfront cost?",
     "question_text_he": "האם ישראל צריכה לבנות רשת רכבת מהירה שתחבר את כל הערים הגדולות, גם בעלות גבוהה?",
     "question_text_ru": "Должен ли Израиль построить высокоскоростную железнодорожную сеть, соединяющую все крупные города, даже при высоких первоначальных затратах?"
   },
   {
     "policy_slug": "tra_02",
+    "answer_polarity": 1,
     "question_text_en": "Should intercity transport investment focus on highway upgrades and bus frequency rather than high-cost rail projects?",
     "question_text_he": "האם השקעה בתחבורה בין-עירונית צריכה להתמקד בשדרוג כבישים ותדירות אוטובוסים, ולא בפרויקטי רכבת יקרים?",
     "question_text_ru": "Должны ли инвестиции в межгородские перевозки сосредоточиться на модернизации шоссе и увеличении частоты автобусных рейсов, а не на дорогостоящих железнодорожных проектах?"
   },
   {
-    "_comment": "wel_01 — Guaranteed Minimum Income",
+    "_comment": "wel_01 — Guaranteed Minimum Income. axis: -1=support guaranteed minimum income, +1=oppose/cut welfare",
     "policy_slug": "wel_01",
+    "answer_polarity": -1,
     "question_text_en": "Should Israel introduce a guaranteed minimum income for all working-age adults to eliminate extreme poverty?",
     "question_text_he": "האם ישראל צריכה להכניס הכנסה בסיסית מובטחת לכל המבוגרים בגיל עבודה כדי לחסל עוני קיצוני?",
     "question_text_ru": "Должен ли Израиль ввести гарантированный минимальный доход для всех взрослых трудоспособного возраста для ликвидации крайней бедности?"
   },
   {
     "policy_slug": "wel_01",
+    "answer_polarity": 1,
     "question_text_en": "Should welfare payments be strictly means-tested and tied to active job seeking, rather than unconditional?",
     "question_text_he": "האם תשלומי רווחה צריכים להיות מותנים בבדיקת הכנסה וחיפוש עבודה פעיל, ולא ללא תנאי?",
     "question_text_ru": "Должны ли выплаты социального обеспечения быть строго адресными и связаны с активным поиском работы, а не безусловными?"
   },
   {
-    "_comment": "wel_02 — Universal Child Allowance",
+    "_comment": "wel_02 — Universal Child Allowance. axis: -1=expand universal allowance, +1=means-test or reduce allowance",
     "policy_slug": "wel_02",
+    "answer_polarity": -1,
     "question_text_en": "Should universal child allowances paid to all families, regardless of income, be significantly increased?",
     "question_text_he": "האם יש להגדיל משמעותית את קצבאות הילדים האוניברסליות המשולמות לכל המשפחות ללא קשר להכנסה?",
     "question_text_ru": "Следует ли значительно увеличить универсальные пособия на детей, выплачиваемые всем семьям независимо от дохода?"
   },
   {
     "policy_slug": "wel_02",
+    "answer_polarity": 1,
     "question_text_en": "Should child allowances be means-tested and limited to lower-income families rather than paid universally?",
     "question_text_he": "האם קצבאות ילדים צריכות להיות מוגבלות למשפחות בעלות הכנסה נמוכה, ולא לשולם לכולם?",
     "question_text_ru": "Должны ли пособия на детей быть адресными и ограничены семьями с низким доходом, а не выплачиваться всем?"
