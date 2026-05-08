@@ -972,3 +972,51 @@ export async function adminRestoreBackup(
   }
   return resp.json();
 }
+
+// ── Question Bank bulk generation ──────────────────────────────────────────────
+
+export interface QuestionBankJobStatus {
+  job_id: string;
+  status: "queued" | "running" | "done" | "error";
+  max_questions: number;
+  depth_levels: number;
+  created?: number;
+  skipped?: number;
+  errors?: number;
+  stale_marked?: number;
+  step?: string;
+  step_completed?: number;
+  step_total?: number;
+  message?: string;
+  error?: string;
+}
+
+export async function adminGenerateQuestionBank(params: {
+  max_questions?: number;
+  depth_levels?: number;
+  max_workers?: number;
+  topics?: string[];
+  force_regenerate?: boolean;
+  root_questions_per_topic?: number;
+}): Promise<{ job_id: string; status: string; max_questions: number; message: string }> {
+  return adminApiFetch("/api/admin/llm/generate-question-bank", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+export async function adminGetQuestionBankStatus(
+  jobId: string,
+): Promise<QuestionBankJobStatus> {
+  return adminApiFetch<QuestionBankJobStatus>(
+    `/api/admin/llm/question-bank-status/${jobId}`,
+  );
+}
+
+export async function adminMarkStaleQuestions(): Promise<{
+  marked_stale: number;
+  message: string;
+}> {
+  return adminApiFetch("/api/admin/llm/mark-stale-questions", { method: "POST" });
+}
+

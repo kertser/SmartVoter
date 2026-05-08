@@ -9,10 +9,13 @@ No chain-of-thought is stored — only the public concise explanations.
 import hashlib
 import json
 import logging
+import random
 import re
+import threading
+import time
 from pathlib import Path
 
-from openai import OpenAI, BadRequestError
+from openai import OpenAI, BadRequestError, RateLimitError
 
 from backend.app.services.llm.base import LLMProvider
 
@@ -52,6 +55,18 @@ SYSTEM_NEUTRAL: str = _PROMPTS.get(
 PROMPT_VERSION = _PROMPTS.get("_meta", {}).get("version", "v1.0")
 
 
+# Global semaphore: caps concurrent OpenAI API calls across all worker threads.
+# Without this, 6+ concurrent threads each hit the API simultaneously, causing
+# cascading 429 errors. 2 concurrent calls is safe for gpt-4o-mini / gpt-5-nano
+# tier-1 rate limits; raise to 3–4 only after confirming higher quota.
+_OPENAI_CONCURRENCY = 2
+_openai_semaphore = threading.Semaphore(_OPENAI_CONCURRENCY)
+
+# Minimum delay (seconds) between releasing the semaphore and the next acquire.
+# Adds ~0.5 s spacing between sequential calls from the same thread.
+_MIN_INTER_CALL_DELAY = 0.5
+
+
 # Runtime cache: models discovered to not support custom temperature.
 # Pre-populated with known reasoning/next-gen models; grows automatically
 # when the API returns an "unsupported_value" error for temperature.
@@ -87,7 +102,18 @@ def _call(client: OpenAI, model: str, messages: list[dict], temperature: float =
     Automatically retries without ``temperature`` if the model returns an
     ``unsupported_value`` error for that parameter, and caches the result so
     subsequent calls skip the parameter without an extra round-trip.
+
+    Also retries on 429 RateLimitError with exponential backoff + jitter
+    (up to 6 attempts, max 60 s delay).
+
+    A global semaphore (_openai_semaphore) limits the number of concurrent
+    API calls across all threads so rate-limit buckets are never exhausted
+    by parallel workers.
     """
+    _MAX_RETRIES = 6
+    _BASE_DELAY  = 5.0   # seconds before first retry on 429
+    _MAX_DELAY   = 60.0  # cap
+
     def _run(with_temperature: bool) -> dict:
         kwargs: dict = {
             "model": model,
@@ -104,27 +130,61 @@ def _call(client: OpenAI, model: str, messages: list[dict], temperature: float =
             logger.error("OpenAI returned invalid JSON: %s", raw[:500])
             return {}
 
-    if not _supports_temperature(model):
-        return _run(with_temperature=False)
+    use_temperature = _supports_temperature(model)
 
-    try:
-        return _run(with_temperature=True)
-    except BadRequestError as exc:
-        # Detect "temperature not supported" and auto-learn for this model
-        err_body = exc.body or {}
-        if (
-            isinstance(err_body, dict)
-            and err_body.get("error", {}).get("code") == "unsupported_value"
-            and "temperature" in err_body.get("error", {}).get("message", "")
-        ):
-            key = _model_key(model)
-            _no_temperature_models.add(key)
-            logger.info(
-                "Model '%s' does not support custom temperature — "
-                "retrying without it (cached for this session).", model
+    for attempt in range(_MAX_RETRIES):
+        # Acquire the global concurrency semaphore before talking to the API.
+        # This ensures at most _OPENAI_CONCURRENCY requests are in-flight at once.
+        _openai_semaphore.acquire()
+        released = False  # track so finally never double-releases
+        try:
+            if not use_temperature:
+                return _run(with_temperature=False)
+            try:
+                return _run(with_temperature=True)
+            except BadRequestError as exc:
+                err_body = exc.body or {}
+                if (
+                    isinstance(err_body, dict)
+                    and err_body.get("error", {}).get("code") == "unsupported_value"
+                    and "temperature" in err_body.get("error", {}).get("message", "")
+                ):
+                    key = _model_key(model)
+                    _no_temperature_models.add(key)
+                    use_temperature = False
+                    logger.info(
+                        "Model '%s' does not support custom temperature — "
+                        "retrying without it (cached for this session).", model
+                    )
+                    return _run(with_temperature=False)
+                raise
+
+        except RateLimitError:
+            if attempt >= _MAX_RETRIES - 1:
+                logger.error("OpenAI 429 — exhausted %d retries, giving up.", _MAX_RETRIES)
+                raise
+            # Release the semaphore BEFORE sleeping so other threads don't
+            # queue behind a sleeping thread.
+            _openai_semaphore.release()
+            released = True
+            delay = min(_BASE_DELAY * (2 ** attempt), _MAX_DELAY)
+            jitter = random.uniform(0, delay * 0.3)
+            wait = delay + jitter
+            logger.warning(
+                "OpenAI 429 RateLimitError (attempt %d/%d) — waiting %.1fs before retry.",
+                attempt + 1, _MAX_RETRIES, wait,
             )
-            return _run(with_temperature=False)
-        raise
+            time.sleep(wait)
+            # Re-acquire happens at the top of the next loop iteration
+
+        finally:
+            if not released:
+                _openai_semaphore.release()
+            # Small inter-call delay to spread calls within per-minute limits
+            time.sleep(_MIN_INTER_CALL_DELAY)
+
+    # Should never reach here
+    raise RuntimeError("_call: unexpected exit from retry loop")
 
 
 def _input_hash(input_data: dict) -> str:
@@ -137,7 +197,11 @@ class OpenAIProvider(LLMProvider):
     provider = "openai"
 
     def __init__(self, api_key: str, model: str = "gpt-4o-mini"):
-        self.client = OpenAI(api_key=api_key)
+        # max_retries=0 disables the OpenAI SDK's own retry loop so that only
+        # our custom exponential-backoff loop in _call() handles 429s.  Without
+        # this the SDK retries with sub-second delays, which floods the API
+        # with requests *before* our longer backoff can take effect.
+        self.client = OpenAI(api_key=api_key, max_retries=0)
         self.model = model
 
     # ── 7.1 Bill/vote summarization ────────────────────────────────────────────
@@ -248,70 +312,6 @@ class OpenAIProvider(LLMProvider):
             "negative_pole": result.get("negative_pole", ""),
             "positive_pole": result.get("positive_pole", ""),
             "direction_explanation": result.get("direction_explanation", ""),
-            "_prompt_version": pv,
-            "_input_hash": _input_hash(input_data),
-        }
-
-    # ── Discovery question (niche legislative positions) ─────────────────────
-
-    def generate_discovery_question(self, input_data: dict) -> dict:
-        """
-        Generate a question for a niche policy item using the dedicated
-        'discovery_question_from_niche' prompt.  Frames the question as an
-        unexpected topic where some parties have a distinctive track record.
-
-        input_data keys required:
-            title, description, directional_axis, evidence_context
-        """
-        tmpl, pv = _get_template("discovery_question_from_niche")
-        user_msg = tmpl.format_map({
-            "title": input_data.get("title", ""),
-            "description": input_data.get("description", ""),
-            "directional_axis": input_data.get("directional_axis", ""),
-            "evidence_context": input_data.get("evidence_context", ""),
-        })
-        messages = [
-            {"role": "system", "content": SYSTEM_NEUTRAL},
-            {"role": "user", "content": user_msg},
-        ]
-        result = _call(self.client, self.model, messages)
-
-        question_en = result.get("question_en", "")
-        is_loaded = bool(result.get("is_loaded", False))
-        if is_loaded and result.get("suggested_revision"):
-            question_en = result["suggested_revision"]
-
-        neutrality_risk = result.get("neutrality_risk", "medium")
-        if is_loaded:
-            neutrality_score = 0.4
-        elif neutrality_risk == "low":
-            neutrality_score = 0.9
-        elif neutrality_risk == "high":
-            neutrality_score = 0.5
-        else:
-            neutrality_score = 0.7
-
-        return {
-            "question": question_en,
-            "question_en": question_en,
-            "question_he": result.get("question_he", ""),
-            "question_ru": result.get("question_ru", ""),
-            "context_note_en": result.get("context_note_en", ""),
-            "everyday_life_hook": result.get("everyday_life_hook", ""),
-            "discovery_rationale": result.get("discovery_rationale", ""),
-            "answer_scale": result.get("answer_scale", [
-                "Strongly oppose", "Somewhat oppose", "Neutral / unsure",
-                "Somewhat support", "Strongly support",
-            ]),
-            "neutrality_risk": neutrality_risk,
-            "loaded_terms": result.get("loaded_terms", []),
-            "is_loaded": is_loaded,
-            "bias_direction": result.get("bias_direction"),
-            "suggested_revision": result.get("suggested_revision"),
-            "reading_level": result.get("reading_level", "general public"),
-            "requires_context": bool(result.get("requires_context", False)),
-            "context_note": result.get("context_note"),
-            "neutrality_score": neutrality_score,
             "_prompt_version": pv,
             "_input_hash": _input_hash(input_data),
         }
@@ -597,6 +597,114 @@ class OpenAIProvider(LLMProvider):
             "evidence_sources": result.get("evidence_sources", []),
             "explanation": result.get("explanation", ""),
             "_prompt_version": pv,
+            "_input_hash": _input_hash(input_data),
+        }
+
+    # ── Discovery question generation ─────────────────────────────────────────
+
+    def generate_discovery_question(self, input_data: dict) -> dict:
+        """Generate a niche/discovery question using the dedicated discovery prompt."""
+        tmpl, pv = _get_template("discovery_question_from_niche")
+        user_msg = tmpl.format_map({
+            "title": input_data.get("title", ""),
+            "description": input_data.get("description", ""),
+            "directional_axis": input_data.get("directional_axis", ""),
+            "evidence_context": input_data.get("evidence_context", ""),
+        })
+        messages = [
+            {"role": "system", "content": SYSTEM_NEUTRAL},
+            {"role": "user", "content": user_msg},
+        ]
+        result = _call(self.client, self.model, messages)
+
+        question_en = result.get("question_en", "")
+        is_loaded = bool(result.get("is_loaded", False))
+        neutrality_risk = result.get("neutrality_risk", "medium")
+        if is_loaded and result.get("suggested_revision"):
+            question_en = result["suggested_revision"]
+        neutrality_score = (
+            0.4 if is_loaded
+            else 0.9 if neutrality_risk == "low"
+            else 0.5 if neutrality_risk == "high"
+            else 0.7
+        )
+        return {
+            "question": question_en,
+            "question_en": question_en,
+            "question_he": result.get("question_he", ""),
+            "question_ru": result.get("question_ru", ""),
+            "context_note_en": result.get("context_note_en", ""),
+            "answer_scale": result.get("answer_scale", [
+                "Strongly oppose", "Somewhat oppose", "Neutral / unsure",
+                "Somewhat support", "Strongly support",
+            ]),
+            "neutrality_risk": neutrality_risk,
+            "loaded_terms": result.get("loaded_terms", []),
+            "is_loaded": is_loaded,
+            "bias_direction": result.get("bias_direction"),
+            "suggested_revision": result.get("suggested_revision"),
+            "reading_level": result.get("reading_level", "general public"),
+            "requires_context": bool(result.get("requires_context", False)),
+            "context_note": result.get("context_note"),
+            "neutrality_score": neutrality_score,
+            "_prompt_version": "discovery-" + pv,
+            "_input_hash": _input_hash(input_data),
+        }
+
+    # ── Question bank item generation (bulk pre-generation, date-aware) ────────
+
+    def generate_question_bank_item(self, input_data: dict) -> dict:
+        """
+        Generate a single question for the offline question bank.
+        Uses 'generate_question_bank_item' prompt which is date-aware (May 2026).
+        The current_context field from input_data is injected into the prompt.
+        """
+        tmpl, pv = _get_template("generate_question_bank_item")
+        user_msg = tmpl.format_map({
+            "title": input_data.get("title", ""),
+            "description": input_data.get("description", ""),
+            "directional_axis": input_data.get("directional_axis", ""),
+            "current_context": input_data.get("current_context", ""),
+            "direction_hint": input_data.get("direction_hint", ""),
+        })
+        messages = [
+            {"role": "system", "content": SYSTEM_NEUTRAL},
+            {"role": "user", "content": user_msg},
+        ]
+        result = _call(self.client, self.model, messages)
+
+        question_en = result.get("question_en") or result.get("question", "")
+        is_loaded = bool(result.get("is_loaded", False))
+        neutrality_risk = result.get("neutrality_risk", "medium")
+        if is_loaded and result.get("suggested_revision"):
+            question_en = result["suggested_revision"]
+        neutrality_score = (
+            0.4 if is_loaded
+            else 0.9 if neutrality_risk == "low"
+            else 0.5 if neutrality_risk == "high"
+            else 0.7
+        )
+        return {
+            "question": question_en,
+            "question_en": question_en,
+            "question_he": result.get("question_he", ""),
+            "question_ru": result.get("question_ru", ""),
+            "context_note_en": result.get("context_note_en", ""),
+            "subtopic_tag": result.get("subtopic_tag", ""),
+            "answer_scale": result.get("answer_scale", [
+                "Strongly oppose", "Somewhat oppose", "Neutral / unsure",
+                "Somewhat support", "Strongly support",
+            ]),
+            "neutrality_risk": neutrality_risk,
+            "loaded_terms": result.get("loaded_terms", []),
+            "is_loaded": is_loaded,
+            "bias_direction": result.get("bias_direction"),
+            "suggested_revision": result.get("suggested_revision"),
+            "reading_level": result.get("reading_level", "general public"),
+            "requires_context": bool(result.get("requires_context", False)),
+            "context_note": result.get("context_note"),
+            "neutrality_score": neutrality_score,
+            "_prompt_version": "bank-" + pv,
             "_input_hash": _input_hash(input_data),
         }
 

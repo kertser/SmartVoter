@@ -455,6 +455,21 @@ export interface Translations {
     backupSkipExistingLabel: string;
     backupRestoreSuccess: (inserted: number, skipped: number) => string;
     backupRestoreError: string;
+    // Question bank (bulk pre-generation)
+    questionBankHeading: string;
+    questionBankSubtext: string;
+    questionBankMaxQuestionsLabel: string;
+    questionBankDepthLabel: string;
+    questionBankWorkersLabel: string;
+    questionBankForceLabel: string;
+    questionBankGenerateBtn: string;
+    questionBankGenerating: string;
+    questionBankDone: (created: number, skipped: number, errors: number, stale: number) => string;
+    questionBankError: string;
+    questionBankRunning: (step: string, completed: number, total: number) => string;
+    markStaleBtn: string;
+    markStaleDone: (count: number) => string;
+    markStaleError: string;
   };
 
   privacy: {

@@ -26,26 +26,26 @@ import {
   adminTriggerFullPipeline,
   adminGetFullPipelineStatus,
   adminGetTopicsWithRootQuestions,
-  adminGenerateRootQuestion,
-  adminGenerateAllRootQuestions,
-  adminGetGenerateAllRootQuestionsStatus,
   adminCreateManualQuestion,
   adminDownloadBackup,
   adminRestoreBackup,
   adminGetAvailableKnessetData,
+  adminGenerateQuestionBank,
+  adminGetQuestionBankStatus,
+  adminMarkStaleQuestions,
   AdminQuestion,
   LlmOutputRecord,
   IngestionJobStatus,
   FullPipelineJobStatus,
   FullPipelineKnessetResult,
   TopicWithRootQuestion,
-  GenerateAllRootQuestionsJob,
   AvailableKnessetData,
+  QuestionBankJobStatus,
   getStoredAdminPassword,
   storeAdminPassword,
   clearAdminPassword,
 } from "@/lib/api";
-import { useT, useLang } from "@/lib/i18n";
+import { useT } from "@/lib/i18n";
 
 type Tab = "ingestion" | "generate" | "review" | "audit" | "backup";
 
@@ -500,283 +500,198 @@ function ManualQuestionForm({
   );
 }
 
-// ── Generate Tab — Root Question Tree ─────────────────────────────────────────
+// ── Generate Tab ──────────────────────────────────────────────────────────────
 
 function GenerateTab() {
   const a = useT().admin;
-  const { lang } = useLang();
+  // ManualQuestionForm needs a topics list; load it once
   const [topics, setTopics] = useState<TopicWithRootQuestion[]>([]);
   const [loading, setLoading] = useState(true);
-  const [generatingId, setGeneratingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  // Generate All state
-  const [allForce, setAllForce] = useState(false);
-  const [allSkip, setAllSkip] = useState(true);
-  const [allWorkers, setAllWorkers] = useState(8);
-  const [allJob, setAllJob] = useState<GenerateAllRootQuestionsJob | null>(null);
-  const allPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const stopAllPoll = () => {
-    if (allPollRef.current) { clearInterval(allPollRef.current); allPollRef.current = null; }
-  };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => () => stopAllPoll(), []);
-
-  const reload = useCallback(() => {
-    setLoading(true);
+  useEffect(() => {
     adminGetTopicsWithRootQuestions()
       .then(setTopics)
-      .catch((e) => setError(String(e)))
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { reload(); }, [reload]);
-
-  const handleGenerate = async (topicId: string, isUpdate: boolean) => {
-    setGeneratingId(topicId);
-    setError(null);
-    try {
-      await adminGenerateRootQuestion(topicId, isUpdate);
-      reload();
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setGeneratingId(null);
-    }
-  };
-
-  const handleGenerateAll = async () => {
-    setError(null);
-    setAllJob(null);
-    stopAllPoll();
-    try {
-      const res = await adminGenerateAllRootQuestions({ force_regenerate: allForce, skip_existing: allSkip, max_workers: allWorkers });
-      const initial: GenerateAllRootQuestionsJob = {
-        job_id: res.job_id,
-        status: "queued",
-        total: 0,
-        completed: 0,
-        errors: 0,
-        current_topic: null,
-        results: [],
-      };
-      setAllJob(initial);
-      allPollRef.current = setInterval(async () => {
-        try {
-          const status = await adminGetGenerateAllRootQuestionsStatus(res.job_id);
-          setAllJob(status);
-          if (status.status === "done" || status.status === "error") {
-            stopAllPoll();
-            reload();
-          }
-        } catch {
-          stopAllPoll();
-        }
-      }, 2000);
-    } catch (e) {
-      setError(String(e));
-    }
-  };
-
-  const allRunning = allJob?.status === "queued" || allJob?.status === "running";
-
-  const allDoneSummary = allJob?.status === "done"
-    ? (() => {
-        const created = allJob.results.filter(r => r.action === "created").length;
-        const updated = allJob.results.filter(r => r.action === "updated").length;
-        const skipped = allJob.results.filter(r => r.action === "skipped_approved").length;
-        const errors  = allJob.results.filter(r => r.action === "error").length;
-        return a.generateAllDone(created, updated, skipped, errors);
-      })()
-    : null;
-
-  const statusColors: Record<string, string> = {
-    needs_review: "bg-yellow-50 text-yellow-700 border-yellow-200",
-    draft: "bg-slate-100 text-slate-600",
-    llm_generated: "bg-blue-50 text-blue-700 border-blue-200",
-    approved: "bg-green-50 text-green-700 border-green-200",
-    rejected: "bg-red-50 text-red-600 border-red-200",
-  };
-
   return (
-    <div className="space-y-5">
-      {/* Purpose explanation */}
-      <div className="rounded-xl border border-brand-100 bg-brand-50/60 p-4 space-y-1">
-        <p className="text-sm font-semibold text-brand-800">{a.generateTopicHeading}</p>
-        <p className="text-xs text-slate-600">{a.generateTopicSubtext}</p>
-      </div>
+    <div className="space-y-6">
+      {/* Question Bank — primary generation path */}
+      <QuestionBankPanel />
 
-      {/* ── Generate All panel ─────────────────────────────────────────── */}
-      <div className="rounded-xl border-2 border-brand-200 bg-brand-50/40 p-4 space-y-3">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={allForce}
-                onChange={e => setAllForce(e.target.checked)}
-                disabled={allRunning}
-                className="rounded"
-              />
-              {a.generateAllForceLabel}
-            </label>
-            <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={allSkip}
-                onChange={e => setAllSkip(e.target.checked)}
-                disabled={allRunning}
-                className="rounded"
-              />
-              {a.generateAllSkipLabel}
-            </label>
-            <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-              <span>{a.generateAllWorkersLabel}</span>
-              <input
-                type="number"
-                min={1}
-                max={15}
-                value={allWorkers}
-                onChange={e => setAllWorkers(Math.max(1, Math.min(15, Number(e.target.value))))}
-                disabled={allRunning}
-                className="w-14 rounded-md border border-slate-200 px-2 py-0.5 text-xs text-center"
-              />
-            </label>
-          </div>
-          <button
-            onClick={handleGenerateAll}
-            disabled={allRunning}
-            className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
-          >
-            {allRunning ? "⏳ " + a.generateRootGenerating : a.generateAllBtn}
-          </button>
-        </div>
-
-        {/* Progress */}
-        {allJob && (
-          <div className="space-y-1">
-            {(allJob.status === "queued" || allJob.status === "running") && (
-              <>
-                <div className="w-full bg-slate-200 rounded-full h-1.5">
-                  <div
-                    className="bg-brand-600 h-1.5 rounded-full transition-all"
-                    style={{ width: allJob.total > 0 ? `${(allJob.completed / allJob.total) * 100}%` : "5%" }}
-                  />
-                </div>
-                <p className="text-xs text-slate-600">
-                  {a.generateAllRunning(allJob.completed, allJob.total, allJob.current_topic)}
-                </p>
-              </>
-            )}
-            {allJob.status === "done" && (
-              <p className="text-xs text-green-700 font-medium">{allDoneSummary}</p>
-            )}
-            {allJob.status === "error" && (
-              <p className="text-xs text-red-600">{a.generateAllError} {allJob.error}</p>
-            )}
-          </div>
-        )}
-      </div>
-
-      {error && (
-        <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
-      )}
-
-      {loading ? (
-        <p className="text-slate-400 text-sm py-10 text-center">Loading…</p>
-      ) : (
-        <div className="space-y-3">
-          {topics.map((topic) => {
-            const rq = topic.root_question;
-            const isGenerating = generatingId === topic.topic_id;
-            const topicName =
-              lang === "he" && topic.name_he ? topic.name_he
-              : lang === "ru" && topic.name_ru ? topic.name_ru
-              : topic.name_en;
-            return (
-              <div
-                key={topic.topic_id}
-                className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3"
-              >                {/* Topic header */}
-                <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <div className="space-y-0.5 flex-1">
-                    <p className="text-sm font-semibold text-slate-800">
-                      {topicName}
-                      {topicName !== topic.name_en && (
-                        <span className="ms-2 text-xs text-slate-400 font-normal">{topic.name_en}</span>
-                      )}
-                    </p>
-                    <div className="flex gap-2 text-xs text-slate-400 flex-wrap">
-                      <span>{a.generatePolicyItemCount(topic.policy_item_count)}</span>
-                      <span>·</span>
-                      <span>{a.generateFollowupCount(topic.followup_question_count)}</span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleGenerate(topic.topic_id, !!rq)}
-                    disabled={isGenerating}
-                    className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
-                  >
-                    {isGenerating
-                      ? a.generateRootGenerating
-                      : rq
-                      ? a.generateRootUpdateBtn
-                      : a.generateRootBtn}
-                  </button>
-                </div>
-
-                {/* Root question */}
-                {rq ? (
-                  <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 space-y-1.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                        {a.generateRootExists}
-                      </span>
-                      <span className={`rounded-full border px-2 py-0.5 text-xs ${statusColors[rq.status] ?? "bg-slate-100"}`}>
-                        {a.generateRootStatus(rq.status)}
-                      </span>
-                      {rq.neutrality_score != null && (
-                        <span className={`text-xs rounded-full px-2 py-0.5 ${
-                          rq.neutrality_score >= 0.75 ? "bg-green-50 text-green-700"
-                          : rq.neutrality_score >= 0.5 ? "bg-yellow-50 text-yellow-700"
-                          : "bg-red-50 text-red-600"
-                        }`}>
-                          neutrality {(rq.neutrality_score * 100).toFixed(0)}%
-                        </span>
-                      )}
-                    </div>
-                    {/* English */}
-                    <p className="text-sm text-slate-800">{rq.question_text_en}</p>
-                    {/* Hebrew */}
-                    {rq.question_text_he && (
-                      <p dir="rtl" className="text-xs text-slate-500">{rq.question_text_he}</p>
-                    )}
-                    {/* Russian */}
-                    {rq.question_text_ru ? (
-                      <p className="text-xs text-slate-500">{rq.question_text_ru}</p>
-                    ) : (
-                      <p className="text-xs text-amber-600 italic">⚠ Russian translation missing — regenerate to fix</p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/50 p-3 text-xs text-slate-400 text-center">
-                    {a.generateRootNone}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── Manual question entry form ─────────────────────────────── */}
+      {/* Manual entry */}
       {!loading && (
-        <ManualQuestionForm topics={topics} onSaved={reload} />
+        <ManualQuestionForm topics={topics} onSaved={() => {}} />
       )}
     </div>
   );
 }
+
+// ── Question Bank Panel ───────────────────────────────────────────────────────
+
+function QuestionBankPanel() {
+  const a = useT().admin;
+  const [maxQ, setMaxQ] = useState(300);
+  const [depth, setDepth] = useState(2);
+  const [workers, setWorkers] = useState(8);
+  const [rootsPerTopic, setRootsPerTopic] = useState(3);
+  const [force, setForce] = useState(false);
+  const [job, setJob] = useState<QuestionBankJobStatus | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [staleMsg, setStaleMsg] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopPoll = () => {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => () => stopPoll(), []);
+
+  const isRunning = job?.status === "queued" || job?.status === "running";
+
+  const handleGenerate = async () => {
+    setError(null);
+    setJob(null);
+    stopPoll();
+    try {
+      const res = await adminGenerateQuestionBank({
+        max_questions: maxQ,
+        depth_levels: depth,
+        max_workers: workers,
+        force_regenerate: force,
+        root_questions_per_topic: rootsPerTopic,
+      });
+      setJob({ job_id: res.job_id, status: "queued", max_questions: maxQ, depth_levels: depth });
+      pollRef.current = setInterval(async () => {
+        try {
+          const status = await adminGetQuestionBankStatus(res.job_id);
+          setJob(status);
+          if (status.status === "done" || status.status === "error") stopPoll();
+        } catch { stopPoll(); }
+      }, 3000);
+    } catch (e) {
+      setError(String(e));
+    }
+  };
+
+  const handleMarkStale = async () => {
+    setStaleMsg(null);
+    try {
+      const res = await adminMarkStaleQuestions();
+      setStaleMsg(a.markStaleDone(res.marked_stale));
+    } catch {
+      setStaleMsg(a.markStaleError);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border-2 border-amber-200 bg-amber-50/40 p-5 space-y-4 mt-6">
+      <div className="space-y-1">
+        <p className="text-sm font-semibold text-amber-900">{a.questionBankHeading}</p>
+        <p className="text-xs text-slate-600">{a.questionBankSubtext}</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-center sm:gap-4">
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-slate-600">{a.questionBankMaxQuestionsLabel}</span>
+          <input
+            type="number" min={10} max={500} value={maxQ}
+            onChange={e => setMaxQ(Math.max(10, Math.min(500, Number(e.target.value))))}
+            disabled={isRunning}
+            className="w-24 rounded-lg border border-slate-200 px-2 py-1 text-sm text-center"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-slate-600">{a.questionBankDepthLabel.split("(")[0].trim()}</span>
+          <select
+            value={depth}
+            onChange={e => setDepth(Number(e.target.value))}
+            disabled={isRunning}
+            className="rounded-lg border border-slate-200 px-2 py-1 text-sm"
+          >
+            <option value={0}>0 — roots only</option>
+            <option value={1}>1 — + policy items</option>
+            <option value={2}>2 — full tree (recommended)</option>
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-slate-600">{a.questionBankWorkersLabel}</span>
+          <input
+            type="number" min={1} max={15} value={workers}
+            onChange={e => setWorkers(Math.max(1, Math.min(15, Number(e.target.value))))}
+            disabled={isRunning}
+            className="w-16 rounded-lg border border-slate-200 px-2 py-1 text-sm text-center"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-slate-600">Корн. вопр. / тему</span>
+          <input
+            type="number" min={1} max={10} value={rootsPerTopic}
+            onChange={e => setRootsPerTopic(Math.max(1, Math.min(10, Number(e.target.value))))}
+            disabled={isRunning}
+            className="w-16 rounded-lg border border-slate-200 px-2 py-1 text-sm text-center"
+            title="Количество корневых вопросов (depth=0) на каждую тему. Все они идут в пул опросника."
+          />
+        </label>
+        <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer pt-4">
+          <input type="checkbox" checked={force} onChange={e => setForce(e.target.checked)} disabled={isRunning} className="rounded" />
+          {a.questionBankForceLabel}
+        </label>
+      </div>
+
+      <div className="flex gap-3 flex-wrap items-center">
+        <button
+          onClick={handleGenerate}
+          disabled={isRunning}
+          className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+        >
+          {isRunning ? "⏳ " + a.questionBankGenerating : a.questionBankGenerateBtn}
+        </button>
+        <button
+          onClick={handleMarkStale}
+          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 whitespace-nowrap"
+        >
+          {a.markStaleBtn}
+        </button>
+      </div>
+
+      {/* Progress */}
+      {job && (
+        <div className="space-y-1">
+          {isRunning && (
+            <>
+              <div className="w-full bg-slate-200 rounded-full h-1.5">
+                <div className="bg-amber-500 h-1.5 rounded-full transition-all animate-pulse" style={{ width: "60%" }} />
+              </div>
+              <p className="text-xs text-slate-600">
+                {job.step
+                  ? a.questionBankRunning(job.step, job.step_completed ?? 0, job.step_total ?? 0)
+                  : a.questionBankGenerating}
+              </p>
+            </>
+          )}
+          {job.status === "done" && (
+            <p className="text-xs text-green-700 font-medium">
+              ✅ {a.questionBankDone(job.created ?? 0, job.skipped ?? 0, job.errors ?? 0, job.stale_marked ?? 0)}
+            </p>
+          )}
+          {job.status === "error" && (
+            <p className="text-xs text-red-600">❌ {a.questionBankError} {job.error}</p>
+          )}
+        </div>
+      )}
+
+      {staleMsg && (
+        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1">{staleMsg}</p>
+      )}
+
+      {error && (
+        <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1">{error}</p>
+      )}
+    </div>
+  );
+}
+
 
 // ── Full Pipeline Wizard ──────────────────────────────────────────────────────
 

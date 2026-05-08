@@ -475,6 +475,23 @@ const ru: Translations = {
     backupSkipExistingLabel: "\u0411\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e\u0435 \u0441\u043b\u0438\u044f\u043d\u0438\u0435 (\u043f\u0440\u043e\u043f\u0443\u0441\u043a\u0430\u0442\u044c \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u044e\u0449\u0438\u0435)",
     backupRestoreSuccess: (inserted: number, skipped: number) => `\u0412\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u043e. \u0414\u043e\u0431\u0430\u0432\u043b.: ${inserted}, \u043f\u0440\u043e\u043f.: ${skipped}.`,
     backupRestoreError: "\u0412\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435 \u043d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c.",
+    // Question bank
+    questionBankHeading: "🏦 Генерация банка вопросов (300 вопросов)",
+    questionBankSubtext: "Предварительная генерация большого разнообразного банка вопросов, организованного в виде дерева тем. Вопросы учитывают текущую дату — устаревшие ссылки на урегулированные события (например, переговоры об освобождении заложников) автоматически исключаются.",
+    questionBankMaxQuestionsLabel: "Максимум вопросов",
+    questionBankDepthLabel: "Глубина дерева (0=только корни, 1=+пункты политики, 2=+детальное углубление)",
+    questionBankWorkersLabel: "Воркеры",
+    questionBankForceLabel: "Принудительная регенерация (перезаписать существующие)",
+    questionBankGenerateBtn: "⚡ Сгенерировать банк вопросов",
+    questionBankGenerating: "Генерация…",
+    questionBankDone: (created: number, skipped: number, errors: number, stale: number) =>
+      `Готово: создано ${created}, пропущено ${skipped}, ошибок ${errors}. Устаревших помечено: ${stale}.`,
+    questionBankError: "Генерация не удалась.",
+    questionBankRunning: (step: string, completed: number, total: number) =>
+      `[${step}] обработано ${completed}${total > 0 ? " / " + total : ""}`,
+    markStaleBtn: "🗑 Пометить устаревшие вопросы",
+    markStaleDone: (count: number) => `Помечено ${count} устаревших вопросов.`,
+    markStaleError: "Не удалось пометить устаревшие вопросы.",
   },
 
   privacy: {

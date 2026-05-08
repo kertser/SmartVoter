@@ -498,17 +498,21 @@ class TestPartyPositionPipeline:
 # ── Question pipeline tests ────────────────────────────────────────────────────
 
 class TestQuestionPipeline:
+    _MOCK_QUESTION_RESULT = {
+        "question_en": "Should judicial review be limited?",
+        "question_he": "האם להגביל את הביקורת השיפוטית?",
+        "question_ru": "Следует ли ограничить судебный контроль?",
+        "neutrality_risk": "low",
+        "neutrality_score": 0.85,
+        "_prompt_version": "v1.0",
+    }
+
     def _make_mock_llm_provider(self):
         provider = MagicMock()
         provider.provider = "mock"
         provider.model = "mock-v1"
-        provider.generate_question.return_value = {
-            "question_en": "Should judicial review be limited?",
-            "question_he": "האם להגביל את הביקורת השיפוטית?",
-            "question_ru": "Следует ли ограничить судебный контроль?",
-            "neutrality_risk": "low",
-            "_prompt_version": "v1.0",
-        }
+        provider.generate_question.return_value = dict(self._MOCK_QUESTION_RESULT)
+        provider.generate_question_with_critique.return_value = dict(self._MOCK_QUESTION_RESULT)
         provider.critique_question.return_value = {
             "is_loaded": False,
             "bias_direction": None,
@@ -520,24 +524,38 @@ class TestQuestionPipeline:
         from backend.app.services.ingestion.question_pipeline import run_question_pipeline
         topic = _make_topic(db)
         item = _make_policy_item(db, topic, status=ReviewStatus.approved)
-        db.commit()
+        db.flush()  # make item visible within the session
 
         mock_settings = MagicMock()
         mock_settings.llm_provider = "mock"
 
-        with patch("backend.app.services.ingestion.question_pipeline.get_llm_provider") as mock_get:
-            mock_get.return_value = self._make_mock_llm_provider()
-            with patch("backend.app.services.llm.audit_service.AuditedLLMService.generate_question") as mock_gen:
-                mock_gen.return_value = {
-                    "question_en": "Should judicial review be limited?",
-                    "question_he": "האם להגביל?",
-                    "question_ru": "Ограничить?",
-                    "neutrality_risk": "low",
-                    "_prompt_version": "v1.0",
-                }
-                with patch("backend.app.services.llm.audit_service.AuditedLLMService.critique_question") as mock_crit:
-                    mock_crit.return_value = {"is_loaded": False}
-                    stats = run_question_pipeline(db, mock_settings, limit=10)
+        # The pipeline's worker spawns its own SessionLocal() — redirect to test db.
+        # We use a thin wrapper that delegates to the test session but no-ops close().
+        class _PassthroughSession:
+            """Delegates to the real test db; suppresses close() so the fixture can clean up."""
+            def add(self, obj): db.add(obj)
+            def query(self, *args, **kw): return db.query(*args, **kw)
+            def commit(self): db.flush()  # flush instead of real commit
+            def rollback(self): db.rollback()
+            def close(self): pass
+            def flush(self): db.flush()
+
+        mock_session_factory = MagicMock(return_value=_PassthroughSession())
+
+        with patch("backend.app.db.session.SessionLocal", mock_session_factory):
+            with patch("backend.app.services.ingestion.question_pipeline.get_llm_provider") as mock_get:
+                mock_get.return_value = self._make_mock_llm_provider()
+                with patch(
+                    "backend.app.services.llm.audit_service.AuditedLLMService.generate_question_with_critique"
+                ) as mock_gen:
+                    mock_gen.return_value = dict(self._MOCK_QUESTION_RESULT)
+                    # max_workers=1 → single worker thread; avoids SQLite multi-thread issues
+                    stats = run_question_pipeline(db, mock_settings, limit=10, max_workers=1)
+
+        assert stats["created"] >= 1
+        q = db.query(Question).first()
+        assert q is not None
+        assert q.human_review_status == ReviewStatus.needs_review
 
         assert stats["created"] >= 1
         q = db.query(Question).first()

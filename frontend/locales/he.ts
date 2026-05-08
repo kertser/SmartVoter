@@ -474,6 +474,23 @@ const he: Translations = {
     backupSkipExistingLabel: "\u05de\u05d9\u05d6\u05d5\u05d2 \u05d1\u05d8\u05d5\u05d7 (\u05d3\u05dc\u05d2 \u05e9\u05d5\u05e8\u05d5\u05ea \u05e7\u05d9\u05d9\u05de\u05d5\u05ea)",
     backupRestoreSuccess: (inserted: number, skipped: number) => `\u05e9\u05d7\u05d6\u05d5\u05e8 \u05d4\u05d5\u05e9\u05dc\u05dd. \u05d4\u05d5\u05e1\u05e4\u05d5: ${inserted}, \u05d3\u05d5\u05dc\u05d2\u05d5: ${skipped}.`,
     backupRestoreError: "\u05e9\u05d7\u05d6\u05d5\u05e8 \u05e0\u05db\u05e9\u05dc. \u05e2\u05d9\u05d9\u05df \u05d1\u05e7\u05d5\u05e0\u05e1\u05d5\u05dc.",
+    // Question bank
+    questionBankHeading: "🏦 יצירת מאגר שאלות (300 שאלות)",
+    questionBankSubtext: "יצירה מוקדמת של מאגר שאלות מגוון ומאורגן כעץ נושאים.",
+    questionBankMaxQuestionsLabel: "מקסימום שאלות",
+    questionBankDepthLabel: "עומק עץ (0=שורשים בלבד, 1=+פריטי מדיניות, 2=+העמקה)",
+    questionBankWorkersLabel: "עובדים",
+    questionBankForceLabel: "כפה יצירה מחדש",
+    questionBankGenerateBtn: "⚡ צור מאגר שאלות",
+    questionBankGenerating: "מייצר…",
+    questionBankDone: (created: number, skipped: number, errors: number, stale: number) =>
+      `הושלם: ${created} נוצרו, ${skipped} דולגו, ${errors} שגיאות. ${stale} שאלות ישנות סומנו.`,
+    questionBankError: "היצירה נכשלה.",
+    questionBankRunning: (step: string, completed: number, total: number) =>
+      `[${step}] ${completed}${total > 0 ? " / " + total : ""} עובדו`,
+    markStaleBtn: "🗑 סמן שאלות ישנות",
+    markStaleDone: (count: number) => `${count} שאלות ישנות סומנו והוסתרו.`,
+    markStaleError: "סימון שאלות ישנות נכשל.",
   },
 
   privacy: {

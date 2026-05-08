@@ -120,6 +120,29 @@ class LLMProvider(ABC):
         """
         return self.generate_question(input_data)
 
+    def generate_question_bank_item(self, input_data: dict) -> dict:
+        """
+        Generate a single question for the pre-built question bank.
+        Awareness of current date (May 2026) is injected via input_data['current_context'].
+
+        Unlike generate_question_with_critique (which targets a single policy item
+        without date context), this method uses the 'generate_question_bank_item'
+        prompt that explicitly knows what is and isn't currently relevant
+        in Israeli politics.
+
+        input_data keys (in addition to standard policy-item fields):
+            title, description, directional_axis
+            current_context: str  — CURRENT_DATE_CONTEXT injected by the pipeline
+            direction_hint: str (optional) — for depth-2 directional follow-ups
+
+        Returns: question_en, question_he, question_ru, context_note_en,
+                 answer_scale, neutrality_risk, subtopic_tag, is_loaded, etc.
+
+        Default: falls back to generate_question (ignores current_context).
+        Override in concrete providers to use the dedicated prompt.
+        """
+        return self.generate_question(input_data)
+
     @abstractmethod
     def infer_party_position(self, input_data: dict) -> dict:
         """Returns: party_position_mean, uncertainty, evidence_strength,

@@ -62,7 +62,7 @@ export function Tooltip({
           ${above ? "bottom-full mb-2" : "top-full mt-2"}
           px-3 py-2
           bg-slate-800 text-white text-xs leading-relaxed rounded-lg
-          ${wide ? "whitespace-normal w-72 text-start" : "whitespace-nowrap max-w-[240px] text-center"}
+          ${wide ? "whitespace-normal w-72 text-start" : "w-max max-w-[220px] whitespace-normal text-center"}
           opacity-0 group-hover:opacity-100 group-focus-within:opacity-100
           transition-opacity duration-150
           shadow-lg

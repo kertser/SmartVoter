@@ -89,6 +89,9 @@ class FallbackLLMProvider(LLMProvider):
         except Exception:
             return self._call_with_retry("generate_question", input_data)
 
+    def generate_question_bank_item(self, input_data: dict) -> dict:
+        return self._call_with_retry("generate_question_bank_item", input_data)
+
     def infer_party_position(self, input_data: dict) -> dict:
         return self._call_with_retry("infer_party_position", input_data)
 

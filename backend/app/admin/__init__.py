@@ -383,6 +383,133 @@ def generate_discovery_questions(
     }
 
 
+# ── Question Bank generation (bulk, date-aware) ───────────────────────────────
+
+class GenerateQuestionBankBody(BaseModel):
+    max_questions: int | None = None   # defaults to settings.max_questions_to_generate
+    depth_levels: int = 2              # 0=root only, 1=root+policy-items, 2=full tree
+    max_workers: int = 3               # keep low to avoid 429s; semaphore further limits concurrency
+    topics: list[str] | None = None   # if None, all topics
+    force_regenerate: bool = False     # regenerate even if questions already exist
+    root_questions_per_topic: int = 3  # how many root (depth-0) questions per topic
+
+
+_question_bank_jobs: dict[str, dict] = {}
+
+
+@admin_router.post("/llm/generate-question-bank")
+def generate_question_bank(
+    body: GenerateQuestionBankBody,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    settings=Depends(get_settings),
+) -> dict:
+    """
+    Bulk pre-generate a large bank of diverse questions (default: 300) organised as
+    a topic-tree graph:
+
+      Depth 0 — Topic root questions (one broad values-discovery question per topic)
+      Depth 1 — Policy-item questions (specific closed propositions per policy item)
+      Depth 2 — Directional drill-downs (follow-ups for strong support vs oppose directions)
+
+    All questions are date-aware (May 2026) — stale references to resolved events
+    (e.g. Gaza hostage negotiations) are excluded automatically.
+
+    The generated questions are saved to the DB in needs_review status.
+    Human approval is required before questions become live in the questionnaire.
+
+    Returns a job_id; poll GET /api/admin/llm/question-bank-status/{job_id} for progress.
+    """
+    from backend.app.services.ingestion.question_bank_pipeline import run_question_bank_pipeline
+    from backend.app.db.session import SessionLocal
+
+    max_q = body.max_questions or settings.max_questions_to_generate
+
+    job_id = str(uuid.uuid4())[:8]
+    _question_bank_jobs[job_id] = {
+        "job_id": job_id,
+        "status": "queued",
+        "max_questions": max_q,
+        "depth_levels": body.depth_levels,
+        "created": 0,
+        "skipped": 0,
+        "errors": 0,
+        "stale_marked": 0,
+        "message": "Queued",
+    }
+
+    def _run():
+        _question_bank_jobs[job_id]["status"] = "running"
+        bg_db = SessionLocal()
+        try:
+            def _progress(step: str, completed: int, total: int):
+                _question_bank_jobs[job_id]["step"] = step
+                _question_bank_jobs[job_id]["step_completed"] = completed
+                _question_bank_jobs[job_id]["step_total"] = total
+
+            stats = run_question_bank_pipeline(
+                bg_db,
+                settings,
+                max_questions=max_q,
+                depth_levels=body.depth_levels,
+                max_workers=body.max_workers,
+                topics_filter=body.topics or None,
+                force_regenerate=body.force_regenerate,
+                root_questions_per_topic=body.root_questions_per_topic,
+                progress_callback=_progress,
+            )
+            _question_bank_jobs[job_id].update({
+                "status": "done",
+                **stats,
+            })
+        except Exception as exc:
+            _question_bank_jobs[job_id].update({"status": "error", "error": str(exc)})
+            logger.error("generate_question_bank job %s failed: %s", job_id, exc, exc_info=True)
+        finally:
+            bg_db.close()
+
+    background_tasks.add_task(_run)
+    return {
+        "job_id": job_id,
+        "status": "queued",
+        "max_questions": max_q,
+        "depth_levels": body.depth_levels,
+        "message": (
+            f"Question bank generation queued (max={max_q} questions, "
+            f"depth={body.depth_levels}, workers={body.max_workers}). "
+            "Poll /api/admin/llm/question-bank-status/{job_id} for progress."
+        ),
+    }
+
+
+@admin_router.get("/llm/question-bank-status/{job_id}")
+def get_question_bank_status(job_id: str) -> dict:
+    """Poll the status of a question bank generation job."""
+    job = _question_bank_jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail=f"Job {job_id!r} not found")
+    return job
+
+
+@admin_router.get("/llm/question-bank-jobs")
+def list_question_bank_jobs() -> list[dict]:
+    """List all recent question bank generation jobs."""
+    return list(_question_bank_jobs.values())
+
+
+@admin_router.post("/llm/mark-stale-questions")
+def mark_stale_questions_endpoint(db: Session = Depends(get_db)) -> dict:
+    """
+    Scan all questions for stale-event keywords (e.g. 'release the hostages')
+    and mark them as is_stale=True. They will be hidden from the live questionnaire
+    but kept in the DB for audit purposes.
+    """
+    from backend.app.services.ingestion.question_bank_pipeline import mark_stale_questions
+    count = mark_stale_questions(db)
+    return {"marked_stale": count, "message": f"{count} questions marked as stale."}
+
+
+class ClassifyPolicyBody(BaseModel):
     policy_item_id: str
 
 

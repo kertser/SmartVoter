@@ -239,6 +239,20 @@ class AuditedLLMService:
             "discovery_question_from_niche", "question", entity_id,
         )
 
+    def generate_question_bank_item(
+        self, input_data: dict, entity_id: uuid.UUID | None = None
+    ) -> dict:
+        """
+        Generate a single question for the offline question bank.
+        Uses the date-aware 'generate_question_bank_item' prompt (May 2026).
+        Results are audited and stored like all other LLM calls.
+        """
+        return _run_and_store(
+            self.db, self.provider,
+            self.provider.generate_question_bank_item, input_data,
+            "generate_question_bank_item", "question", entity_id,
+        )
+
     def infer_party_position(self, input_data: dict, entity_id: uuid.UUID | None = None) -> dict:
         return _run_and_store(
             self.db, self.provider,

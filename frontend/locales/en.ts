@@ -477,6 +477,23 @@ const en: Translations = {
     backupSkipExistingLabel: "Safe merge (skip existing rows)",
     backupRestoreSuccess: (inserted: number, skipped: number) => `Restore complete. Inserted: ${inserted}, skipped: ${skipped}.`,
     backupRestoreError: "Restore failed. See console for details.",
+    // Question bank
+    questionBankHeading: "🏦 Generate Question Bank (300 questions)",
+    questionBankSubtext: "Pre-generate a large, diverse bank of questions organised as a topic tree (root → policy-item → directional drill-downs). Questions are date-aware — stale references to resolved events (e.g. Gaza hostage negotiations) are excluded. All generated questions require human approval before going live.",
+    questionBankMaxQuestionsLabel: "Max questions",
+    questionBankDepthLabel: "Tree depth (0=roots only, 1=+policy items, 2=+directional follow-ups)",
+    questionBankWorkersLabel: "Workers",
+    questionBankForceLabel: "Force regenerate (overwrite existing)",
+    questionBankGenerateBtn: "⚡ Generate Question Bank",
+    questionBankGenerating: "Generating…",
+    questionBankDone: (created, skipped, errors, stale) =>
+      `Done: ${created} created, ${skipped} skipped, ${errors} errors. ${stale} stale questions marked.`,
+    questionBankError: "Generation failed. See console.",
+    questionBankRunning: (step, completed, total) =>
+      `[${step}] ${completed}${total > 0 ? " / " + total : ""} processed`,
+    markStaleBtn: "🗑 Mark stale questions",
+    markStaleDone: (count) => `${count} stale question(s) marked and hidden from the questionnaire.`,
+    markStaleError: "Failed to mark stale questions.",
   },
 
   privacy: {

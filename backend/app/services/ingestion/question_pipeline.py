@@ -46,8 +46,12 @@ logger = logging.getLogger(__name__)
 # Minimum neutrality_score required before a question moves to public
 PUBLIC_NEUTRALITY_THRESHOLD = 0.75
 
-# Default number of parallel LLM workers for the pipeline
-DEFAULT_WORKERS = 6
+# Default number of parallel LLM workers for the pipeline.
+# The global semaphore in openai_provider._call() limits actual concurrent
+# API calls to _OPENAI_CONCURRENCY (2) regardless of how many threads exist —
+# extra threads simply queue on the semaphore. 8 workers keeps the pipeline
+# full while the semaphore serialises the actual API requests.
+DEFAULT_WORKERS = 8
 
 
 def run_question_pipeline(
@@ -184,7 +188,7 @@ def run_question_pipeline(
         finally:
             thread_db.close()
 
-    workers = min(max(1, max_workers), 15)
+    workers = min(max(1, max_workers), 8)
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = {executor.submit(_process_one, pi_data): pi_data for pi_data in pi_snapshots}
         for future in as_completed(futures):
@@ -409,7 +413,7 @@ def run_niche_discovery_pipeline(
         finally:
             thread_db.close()
 
-    workers = min(max(1, max_workers), 10)
+    workers = min(max(1, max_workers), 8)
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = {executor.submit(_process_one, snap): snap for snap in pi_snapshots}
         for future in as_completed(futures):

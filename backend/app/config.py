@@ -38,6 +38,17 @@ class Settings(BaseSettings):
     # API is updated — no manual bump needed in that case.
     last_knesset_with_votes: int = 24
 
+    # Question bank bulk generation
+    # Maximum number of questions to generate in one "generate question bank" run.
+    # These are pre-generated offline so the questionnaire never needs on-the-fly LLM calls.
+    max_questions_to_generate: int = 300
+    # Maximum tree depth for generated question trees:
+    #   0 = topic-level root questions only
+    #   1 = root + policy-item-level follow-ups
+    #   2 = root + policy-item + deep directional follow-ups (recommended)
+    question_bank_max_depth: int = 2
+    question_bank_max_workers: int = 8
+
     # DB connection pool — expose for production tuning
     db_pool_size: int = 5
     db_max_overflow: int = 10
