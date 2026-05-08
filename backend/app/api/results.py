@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from collections import defaultdict
 import uuid
 
 from backend.app.db import get_db
 from backend.app.models.user_session import UserSession
 from backend.app.models.user_answer import UserAnswer
-from backend.app.models.party_instance import PartyInstance
+from backend.app.models.party_instance import PartyInstance, PartyStatus
 from backend.app.models.party_position import PartyPosition
 from backend.app.models.political_brand import PoliticalBrand
 from backend.app.models.topic import Topic
@@ -36,6 +37,60 @@ router = APIRouter(tags=["results"])
 # Threshold below which we consider a party a "new" party (limited evidence)
 NEW_PARTY_EVIDENCE_THRESHOLD = 0.45
 
+# Minimum match score to include a party in results
+# Parties with 0 policy-item overlap (different data sources) are filtered out
+MIN_MATCH_THRESHOLD = 0.03
+
+# Hebrew leadership-suffix patterns stripped when deduplicating party names
+_HE_STRIP_PATTERNS = [" בהנהגת ", " בראשות ", " – ", " - "]
+
+
+def _canonicalize_he_name(name_he: str | None) -> str:
+    """
+    Strip Hebrew election-period leadership suffixes so that
+    'הליכוד בהנהגת בנימין נתניהו...' and 'הליכוד' resolve to the same key.
+    Used for cross-brand deduplication in results.
+    """
+    if not name_he:
+        return ""
+    result = name_he.strip()
+    for pat in _HE_STRIP_PATTERNS:
+        idx = result.find(pat)
+        if idx > 0:
+            result = result[:idx].strip()
+    return result
+
+
+def _pick_canonical_instances(
+    party_instances: list[PartyInstance],
+    pos_counts: dict[uuid.UUID, int],
+) -> list[PartyInstance]:
+    """
+    For each political_brand_id, return exactly ONE PartyInstance as the
+    canonical representative.
+
+    Selection priority (descending):
+        1. Most positions (highest data richness)
+        2. Active status
+        3. Highest Knesset number
+    """
+    by_brand: dict[uuid.UUID, list[PartyInstance]] = defaultdict(list)
+    for inst in party_instances:
+        by_brand[inst.political_brand_id].append(inst)
+
+    best: list[PartyInstance] = []
+    for insts in by_brand.values():
+        winner = max(
+            insts,
+            key=lambda i: (
+                pos_counts.get(i.id, 0),
+                1 if i.status == PartyStatus.active else 0,
+                i.knesset_number or 0,
+            ),
+        )
+        best.append(winner)
+    return best
+
 
 @router.get("/results/{session_id}", response_model=ResultsOut)
 def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> ResultsOut:
@@ -64,10 +119,18 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
         for a in user_answers_rows
     ]
 
-    # Load all party instances
-    party_instances = db.query(PartyInstance).all()
-    if not party_instances:
+    # Load all party instances — pre-compute position counts for canonical selection
+    all_party_instances_raw = db.query(PartyInstance).all()
+    if not all_party_instances_raw:
         raise HTTPException(status_code=500, detail="No party data in database")
+
+    # Pre-compute position counts per instance for canonical selection
+    _pos_counts: dict[uuid.UUID, int] = defaultdict(int)
+    for _p in db.query(PartyPosition.party_instance_id).all():
+        _pos_counts[_p.party_instance_id] += 1
+
+    # Deduplicate: one representative instance per political_brand_id
+    party_instances = _pick_canonical_instances(all_party_instances_raw, _pos_counts)
 
     # Build lookup caches so we don't query inside loops
     all_brands: dict = {b.id: b for b in db.query(PoliticalBrand).all()}
@@ -118,6 +181,11 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
         ]
 
         match_score = compute_match_score(user_answers, positions)
+
+        # Skip parties with no overlap (different data sources / zero match)
+        if match_score < MIN_MATCH_THRESHOLD:
+            continue
+
         coverage = compute_coverage_score(user_answers, positions)
         answer_stability = compute_answer_stability(user_answers, positions)
         volatility = get_party_volatility(party.id, db)
@@ -145,6 +213,15 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
 
         avg_evidence_strength = sum(p.evidence_strength for p in positions) / len(positions)
         is_new_party = avg_evidence_strength < NEW_PARTY_EVIDENCE_THRESHOLD
+
+        # Confidence breakdown for UI display
+        confidence_breakdown = {
+            "evidence_quality": round(avg_evidence_strength, 3),
+            "coverage": round(coverage, 3),
+            "answer_stability": round(answer_stability, 3),
+            "volatility_penalty": round(volatility, 3),
+            "high_salience_coverage": round(high_salience_coverage, 3),
+        }
 
         # Find agreements and disagreements (top 3 topics each)
         topic_scores: dict[str, list[float]] = {}
@@ -275,11 +352,38 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
                 weak_evidence_topics=weak_evidence_topic_names,
                 topic_scores={t: round(s, 3) for t, s in topic_avg.items()},
                 evidence_by_type=evidence_by_type,
+                confidence_breakdown=confidence_breakdown,
             )
         )
 
     # Sort by match_score descending
     party_results.sort(key=lambda p: -p.match_score)
+
+    # ── Cross-brand deduplication by canonical Hebrew name ────────────────────
+    # Strip election-period leadership suffixes ('בהנהגת', 'בראשות') so that
+    # e.g. 'הליכוד בהנהגת בנימין נתניהו...' and 'הליכוד' resolve to the same key.
+    # When two results share the same canonical key, keep the one with higher
+    # evidence_strength (more data-rich), which produces better match scoring.
+    seen_he_keys: dict[str, int] = {}   # canonical_key → index in deduped list
+    deduped_results: list[PartyResult] = []
+    for pr in party_results:
+        he_key = _canonicalize_he_name(pr.name_he)
+        if not he_key:
+            deduped_results.append(pr)
+            continue
+        if he_key in seen_he_keys:
+            existing_idx = seen_he_keys[he_key]
+            existing = deduped_results[existing_idx]
+            # Replace with higher-evidence result (better data source)
+            if pr.evidence_strength > existing.evidence_strength:
+                deduped_results[existing_idx] = pr
+        else:
+            seen_he_keys[he_key] = len(deduped_results)
+            deduped_results.append(pr)
+
+    # Re-sort after cross-brand dedup (order may have shifted)
+    deduped_results.sort(key=lambda p: -p.match_score)
+    party_results = deduped_results
 
     # Build a global topic name_en → (name_he, name_ru) lookup from the bulk cache
     all_topic_names_i18n: dict[str, tuple[str | None, str | None]] = {

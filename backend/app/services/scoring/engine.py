@@ -198,22 +198,28 @@ def compute_confidence_score(
     high_salience_topic_coverage: float = 1.0,
 ) -> float:
     """
-    AGENTS.MD Section 12.2 with sectoral correction:
+    AGENTS.MD Section 12.2 — weighted hybrid confidence formula.
 
-    confidence = avg_evidence_strength_matched
-                 * coverage
-                 * (1 - volatility)
-                 * answer_stability
-                 * high_salience_topic_coverage
+    Replaces the original fully-multiplicative formula which collapsed too
+    aggressively when any single factor was low (e.g. a new party with
+    platform-only evidence would show <10% confidence even when the match
+    score itself was meaningful).
 
-    BUG FIX vs original spec:
-    avg_evidence_strength is now computed over ONLY positions that overlap
-    with the user's answered items (not all party positions).  This prevents
-    sectoral parties from inflating confidence via high-quality evidence on
-    items the user never answered.
+    New formula (weighted sum of components):
+        confidence =
+              0.40 * avg_evidence_strength   (primary: data quality)
+            + 0.25 * coverage_score          (secondary: question coverage)
+            + 0.15 * answer_stability        (tertiary: ranking robustness)
+            + 0.10 * (1 - party_volatility)  (stability penalty)
+            + 0.10 * high_salience_coverage  (important-topic coverage)
 
-    high_salience_topic_coverage: fraction of topics where user has very-important
-    answers that the party actually covers.  Defaults to 1.0 if not supplied.
+    avg_evidence_strength is computed ONLY over positions that overlap with
+    the user's answered items (prevents sectoral parties from padding confidence
+    via high-quality evidence on items the user never answered).
+
+    The resulting score is in 0..1.  A party with average evidence across all
+    dimensions scores ~0.65; a party with many votes and high coverage can
+    reach ~0.85; a new platform-only party with limited coverage scores ~0.35.
     """
     if not party_positions:
         return 0.0
@@ -225,18 +231,19 @@ def compute_confidence_score(
     if matched_positions:
         avg_evidence = sum(p.evidence_strength for p in matched_positions) / len(matched_positions)
     else:
-        # Party has positions but none match user's answers → coverage already 0 → confidence 0
         avg_evidence = sum(p.evidence_strength for p in party_positions) / len(party_positions)
 
     if answer_stability is None:
         answer_stability = compute_answer_stability(user_answers, party_positions)
 
+    volatility_factor = max(0.0, 1.0 - party_volatility)
+
     confidence = (
-        avg_evidence
-        * coverage_score
-        * (1.0 - party_volatility)
-        * answer_stability
-        * high_salience_topic_coverage
+        0.40 * avg_evidence
+        + 0.25 * coverage_score
+        + 0.15 * answer_stability
+        + 0.10 * volatility_factor
+        + 0.10 * high_salience_topic_coverage
     )
     return round(min(1.0, max(0.0, confidence)), 4)
 

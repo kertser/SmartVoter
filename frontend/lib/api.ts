@@ -104,6 +104,14 @@ export interface PartyResult {
   topic_scores: Record<string, number>;
   /** evidence_type → proportion 0..1 */
   evidence_by_type: Record<string, number>;
+  /** Confidence component breakdown for UI decomposition display */
+  confidence_breakdown: {
+    evidence_quality: number;
+    coverage: number;
+    answer_stability: number;
+    volatility_penalty: number;
+    high_salience_coverage: number;
+  };
 }
 
 export interface BestPartyByTopic {

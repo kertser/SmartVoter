@@ -1,0 +1,4378 @@
+{
+  "right_wing": {
+    "session_id": "bb46acbe-f04c-420a-a1d8-117ba45beae0",
+    "run_id": "9699c538-0062-4df4-b3d4-20df91648058",
+    "parties": [
+      {
+        "party_id": "20000000-0000-0000-0000-000000000001",
+        "name": "Likud",
+        "name_he": "הליכוד",
+        "name_ru": "Ликуд",
+        "match_score": 0.9376,
+        "confidence": 0.8876,
+        "evidence_strength": 0.77,
+        "volatility": 0.2685,
+        "coverage": 1.0,
+        "answer_stability": 0.9845,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Likud on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות להליכוד ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Ликуд по 3 ключевым темам.",
+        "top_agreements": [
+          "Civil Rights",
+          "Education",
+          "Welfare"
+        ],
+        "top_agreements_he": [
+          "זכויות אזרח",
+          "חינוך",
+          "רווחה"
+        ],
+        "top_agreements_ru": [
+          "Гражданские права",
+          "Образование",
+          "Социальное обеспечение"
+        ],
+        "top_disagreements": [
+          "Governance & Corruption"
+        ],
+        "top_disagreements_he": [
+          "שלטון ושחיתות"
+        ],
+        "top_disagreements_ru": [
+          "Управление и коррупция"
+        ],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.942,
+          "Economy & Taxes": 0.925,
+          "Religion & State": 0.85,
+          "Security": 0.988,
+          "Civil Rights": 1.0,
+          "Cost of Living": 0.9,
+          "Education": 1.0,
+          "Environment": 0.675,
+          "Governance & Corruption": 0.425,
+          "Healthcare": 0.875,
+          "Housing": 0.9,
+          "Military Service": 0.875,
+          "Settlements": 0.988,
+          "Transport": 0.9,
+          "Welfare": 1.0
+        },
+        "evidence_by_type": {
+          "vote": 0.742,
+          "platform": 0.126,
+          "bill": 0.105,
+          "statement": 0.027
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.77,
+          "coverage": 1.0,
+          "answer_stability": 0.985,
+          "volatility_penalty": 0.269,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000003",
+        "name": "United Torah Judaism",
+        "name_he": "יהדות התורה",
+        "name_ru": "Яхадут ха-Тора",
+        "match_score": 0.8812,
+        "confidence": 0.9276,
+        "evidence_strength": 0.7755,
+        "volatility": 0.0,
+        "coverage": 1.0,
+        "answer_stability": 0.9785,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with United Torah Judaism on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות ליהדות התורה ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Яхадут ха-Тора по 3 ключевым темам.",
+        "top_agreements": [
+          "Healthcare",
+          "Security",
+          "Transport"
+        ],
+        "top_agreements_he": [
+          "בריאות",
+          "ביטחון",
+          "תחבורה"
+        ],
+        "top_agreements_ru": [
+          "Здравоохранение",
+          "Безопасность",
+          "Транспорт"
+        ],
+        "top_disagreements": [],
+        "top_disagreements_he": [],
+        "top_disagreements_ru": [],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.917,
+          "Economy & Taxes": 0.75,
+          "Religion & State": 0.825,
+          "Security": 0.988,
+          "Civil Rights": 0.725,
+          "Cost of Living": 0.875,
+          "Education": 0.725,
+          "Environment": 0.75,
+          "Governance & Corruption": 0.5,
+          "Healthcare": 1.0,
+          "Housing": 0.75,
+          "Military Service": 0.85,
+          "Settlements": 0.938,
+          "Transport": 0.95,
+          "Welfare": 0.55
+        },
+        "evidence_by_type": {
+          "vote": 0.773,
+          "platform": 0.107,
+          "bill": 0.095,
+          "statement": 0.024
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.775,
+          "coverage": 1.0,
+          "answer_stability": 0.979,
+          "volatility_penalty": 0.0,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000005",
+        "name": "New Hope",
+        "name_he": "תקווה חדשה",
+        "name_ru": "Тиква Хадаша (Новая Надежда)",
+        "match_score": 0.8553,
+        "confidence": 0.6729,
+        "evidence_strength": 0.2622,
+        "volatility": 0.3405,
+        "coverage": 1.0,
+        "answer_stability": 0.9852,
+        "is_new_party": true,
+        "explanation": "Based on available evidence, your preferences align with New Hope on 3 key topics. Note: this party has limited parliamentary history. Match score is based on candidate history and declared positions.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות לתקווה חדשה ב-3 נושאים מרכזיים. שים לב: למפלגה זו היסטוריה פרלמנטרית מוגבלת. ציון ההתאמה מבוסס על היסטוריית המועמדים ועמדות מוצהרות.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Тиква Хадаша (Новая Надежда) по 3 ключевым темам. Примечание: у этой партии ограниченная парламентская история. Оценка совпадения основана на истории кандидатов и задекларированных позициях.",
+        "top_agreements": [
+          "Housing",
+          "Welfare",
+          "Economy & Taxes"
+        ],
+        "top_agreements_he": [
+          "דיור",
+          "רווחה",
+          "כלכלה ומיסים"
+        ],
+        "top_agreements_ru": [
+          "Жильё",
+          "Социальное обеспечение",
+          "Экономика и налоги"
+        ],
+        "top_disagreements": [],
+        "top_disagreements_he": [],
+        "top_disagreements_ru": [],
+        "weak_evidence_topics": [
+          "Judiciary",
+          "Cost of Living",
+          "Security"
+        ],
+        "topic_scores": {
+          "Judiciary": 0.825,
+          "Economy & Taxes": 0.95,
+          "Religion & State": 0.7,
+          "Security": 0.913,
+          "Civil Rights": 0.9,
+          "Cost of Living": 0.925,
+          "Education": 0.95,
+          "Environment": 0.725,
+          "Governance & Corruption": 0.65,
+          "Healthcare": 0.925,
+          "Housing": 0.975,
+          "Military Service": 0.8,
+          "Settlements": 0.85,
+          "Transport": 0.925,
+          "Welfare": 0.975
+        },
+        "evidence_by_type": {
+          "platform": 0.724,
+          "public_statement": 0.164,
+          "candidate_past_vote": 0.112
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.262,
+          "coverage": 1.0,
+          "answer_stability": 0.985,
+          "volatility_penalty": 0.341,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000004",
+        "name": "Yesh Atid",
+        "name_he": "יש עתיד",
+        "name_ru": "Еш Атид (Есть будущее)",
+        "match_score": 0.439,
+        "confidence": 0.9096,
+        "evidence_strength": 0.8205,
+        "volatility": 0.2032,
+        "coverage": 1.0,
+        "answer_stability": 0.9649,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Yesh Atid on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות ליש עתיד ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Еш Атид (Есть будущее) по 3 ключевым темам.",
+        "top_agreements": [
+          "Healthcare",
+          "Cost of Living",
+          "Environment"
+        ],
+        "top_agreements_he": [
+          "בריאות",
+          "יוקר המחיה",
+          "סביבה"
+        ],
+        "top_agreements_ru": [
+          "Здравоохранение",
+          "Стоимость жизни",
+          "Экология"
+        ],
+        "top_disagreements": [
+          "Security",
+          "Military Service",
+          "Education"
+        ],
+        "top_disagreements_he": [
+          "ביטחון",
+          "שירות צבאי",
+          "חינוך"
+        ],
+        "top_disagreements_ru": [
+          "Безопасность",
+          "Военная служба",
+          "Образование"
+        ],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.225,
+          "Economy & Taxes": 0.5,
+          "Religion & State": 0.338,
+          "Security": 0.475,
+          "Civil Rights": 0.5,
+          "Cost of Living": 0.95,
+          "Education": 0.45,
+          "Environment": 0.95,
+          "Governance & Corruption": 0.775,
+          "Healthcare": 0.975,
+          "Housing": 0.8,
+          "Military Service": 0.475,
+          "Settlements": 0.412,
+          "Transport": 0.8,
+          "Welfare": 0.825
+        },
+        "evidence_by_type": {
+          "vote": 0.779,
+          "platform": 0.101,
+          "bill": 0.098,
+          "statement": 0.023
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.821,
+          "coverage": 1.0,
+          "answer_stability": 0.965,
+          "volatility_penalty": 0.203,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000002",
+        "name": "Labor",
+        "name_he": "העבודה",
+        "name_ru": "Авода (Труд)",
+        "match_score": 0.3349,
+        "confidence": 0.9438,
+        "evidence_strength": 0.851,
+        "volatility": 0.0,
+        "coverage": 1.0,
+        "answer_stability": 0.9677,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Labor on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות להעבודה ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Авода (Труд) по 3 ключевым темам.",
+        "top_agreements": [
+          "Environment",
+          "Governance & Corruption",
+          "Cost of Living"
+        ],
+        "top_agreements_he": [
+          "סביבה",
+          "שלטון ושחיתות",
+          "יוקר המחיה"
+        ],
+        "top_agreements_ru": [
+          "Экология",
+          "Управление и коррупция",
+          "Стоимость жизни"
+        ],
+        "top_disagreements": [
+          "Economy & Taxes",
+          "Civil Rights",
+          "Education"
+        ],
+        "top_disagreements_he": [
+          "כלכלה ומיסים",
+          "זכויות אזרח",
+          "חינוך"
+        ],
+        "top_disagreements_ru": [
+          "Экономика и налоги",
+          "Гражданские права",
+          "Образование"
+        ],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.2,
+          "Economy & Taxes": 0.45,
+          "Religion & State": 0.312,
+          "Security": 0.338,
+          "Civil Rights": 0.425,
+          "Cost of Living": 0.725,
+          "Education": 0.425,
+          "Environment": 0.85,
+          "Governance & Corruption": 0.75,
+          "Healthcare": 0.625,
+          "Housing": 0.575,
+          "Military Service": 0.425,
+          "Settlements": 0.225,
+          "Transport": 0.725,
+          "Welfare": 0.6
+        },
+        "evidence_by_type": {
+          "bill": 0.552,
+          "vote": 0.327,
+          "platform": 0.097,
+          "statement": 0.024
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.851,
+          "coverage": 1.0,
+          "answer_stability": 0.968,
+          "volatility_penalty": 0.0,
+          "high_salience_coverage": 1.0
+        }
+      }
+    ],
+    "representation_gap": {
+      "has_gap": false,
+      "explanation": "Your closest party (Likud) aligns well with your preferences.",
+      "best_party_by_topic": [
+        {
+          "topic": "Judiciary",
+          "topic_he": "מערכת המשפט",
+          "topic_ru": "Судебная власть",
+          "party": "Likud",
+          "party_he": "הליכוד"
+        },
+        {
+          "topic": "Governance & Corruption",
+          "topic_he": "שלטון ושחיתות",
+          "topic_ru": "Управление и коррупция",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Education",
+          "topic_he": "חינוך",
+          "topic_ru": "Образование",
+          "party": "Likud",
+          "party_he": "הליכוד"
+        },
+        {
+          "topic": "Military Service",
+          "topic_he": "שירות צבאי",
+          "topic_ru": "Военная служба",
+          "party": "Likud",
+          "party_he": "הליכוד"
+        },
+        {
+          "topic": "Economy & Taxes",
+          "topic_he": "כלכלה ומיסים",
+          "topic_ru": "Экономика и налоги",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Religion & State",
+          "topic_he": "דת ומדינה",
+          "topic_ru": "Религия и государство",
+          "party": "Likud",
+          "party_he": "הליכוד"
+        },
+        {
+          "topic": "Security",
+          "topic_he": "ביטחון",
+          "topic_ru": "Безопасность",
+          "party": "Likud",
+          "party_he": "הליכוד"
+        },
+        {
+          "topic": "Settlements",
+          "topic_he": "התנחלויות",
+          "topic_ru": "Поселения",
+          "party": "Likud",
+          "party_he": "הליכוד"
+        },
+        {
+          "topic": "Civil Rights",
+          "topic_he": "זכויות אזרח",
+          "topic_ru": "Гражданские права",
+          "party": "Likud",
+          "party_he": "הליכוד"
+        },
+        {
+          "topic": "Welfare",
+          "topic_he": "רווחה",
+          "topic_ru": "Социальное обеспечение",
+          "party": "Likud",
+          "party_he": "הליכוד"
+        },
+        {
+          "topic": "Housing",
+          "topic_he": "דיור",
+          "topic_ru": "Жильё",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Healthcare",
+          "topic_he": "בריאות",
+          "topic_ru": "Здравоохранение",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Cost of Living",
+          "topic_he": "יוקר המחיה",
+          "topic_ru": "Стоимость жизни",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Transport",
+          "topic_he": "תחבורה",
+          "topic_ru": "Транспорт",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Environment",
+          "topic_he": "סביבה",
+          "topic_ru": "Экология",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        }
+      ]
+    },
+    "discovery_matches": [
+      {
+        "topic": "Environment",
+        "topic_he": "סביבה",
+        "topic_ru": "Экология",
+        "party": "Yesh Atid",
+        "party_he": "יש עתיד",
+        "party_ru": "Еш Атид (Есть будущее)",
+        "party_id": "20000000-0000-0000-0000-000000000004",
+        "similarity": 0.95,
+        "top3_best_similarity": 0.75
+      }
+    ],
+    "_session_id": "bb46acbe-f04c-420a-a1d8-117ba45beae0",
+    "_questions_answered": 21,
+    "_questions_seen": [
+      {
+        "topic": "judiciary",
+        "value": 0.85,
+        "salience": 2.0,
+        "text": "Should the Knesset be able to reinstate a law that the Supre"
+      },
+      {
+        "topic": "governance_corruption",
+        "value": -0.3,
+        "salience": 0.5,
+        "text": "Should an elected Prime Minister be allowed to continue serv"
+      },
+      {
+        "topic": "education",
+        "value": 0.4,
+        "salience": 1.0,
+        "text": "Should ultra-Orthodox schools be allowed to receive state fu"
+      },
+      {
+        "topic": "military_service",
+        "value": 0.5,
+        "salience": 1.0,
+        "text": "Should ultra-Orthodox students enrolled in full-time Torah s"
+      },
+      {
+        "topic": "economy_taxes",
+        "value": -0.4,
+        "salience": 1.0,
+        "text": "Should religious councils receive the same per-capita state "
+      },
+      {
+        "topic": "religion_state",
+        "value": 0.6,
+        "salience": 1.0,
+        "text": "Should Haredi men who study full-time in yeshivas receive a "
+      },
+      {
+        "topic": "security",
+        "value": 0.7,
+        "salience": 2.0,
+        "text": "Should Israel continue to expand Jewish settlements in the W"
+      },
+      {
+        "topic": "settlements",
+        "value": 0.8,
+        "salience": 2.0,
+        "text": "Should Israel formally annex major settlement blocs in the W"
+      },
+      {
+        "topic": "civil_rights",
+        "value": -0.3,
+        "salience": 0.5,
+        "text": "Should same-sex couples have the right to adopt children in "
+      },
+      {
+        "topic": "welfare",
+        "value": 0.2,
+        "salience": 0.5,
+        "text": "Should child allowances be means-tested and limited to lower"
+      },
+      {
+        "topic": "housing",
+        "value": 0.2,
+        "salience": 0.5,
+        "text": "Should landlords be free to set and increase rents without g"
+      },
+      {
+        "topic": "healthcare",
+        "value": 0.1,
+        "salience": 0.5,
+        "text": "Should citizens have the freedom to purchase additional priv"
+      },
+      {
+        "topic": "cost_of_living",
+        "value": -0.0,
+        "salience": 0.5,
+        "text": "Should the government provide direct subsidies to reduce the"
+      },
+      {
+        "topic": "transport",
+        "value": 0.0,
+        "salience": 0.5,
+        "text": "Should the state invest primarily in road infrastructure to "
+      },
+      {
+        "topic": "environment",
+        "value": -0.2,
+        "salience": 0.5,
+        "text": "Should environmental regulations be loosened to support econ"
+      },
+      {
+        "topic": "judiciary",
+        "value": 0.85,
+        "salience": 2.0,
+        "text": "Should a simple majority of Knesset members be able to overr"
+      },
+      {
+        "topic": "settlements",
+        "value": 0.8,
+        "salience": 2.0,
+        "text": "Should the law prohibit any evacuation of settlements even i"
+      },
+      {
+        "topic": "security",
+        "value": -0.7,
+        "salience": 2.0,
+        "text": "Do you support the establishment of an independent Palestini"
+      },
+      {
+        "topic": "judiciary",
+        "value": 0.85,
+        "salience": 2.0,
+        "text": "Should the Judicial Appointments Committee include more elec"
+      },
+      {
+        "topic": "religion_state",
+        "value": 0.6,
+        "salience": 1.0,
+        "text": "Should Jewish Israelis who marry abroad in civil ceremonies "
+      },
+      {
+        "topic": "settlements",
+        "value": -0.8,
+        "salience": 2.0,
+        "text": "Should Israel's ultimate borders be determined through negot"
+      }
+    ]
+  },
+  "center_right": {
+    "session_id": "94a2d31a-c5ad-48e7-939e-d2c7ed761606",
+    "run_id": "c73e164b-7d58-4a6f-81e3-10ba6d174498",
+    "parties": [
+      {
+        "party_id": "20000000-0000-0000-0000-000000000005",
+        "name": "New Hope",
+        "name_he": "תקווה חדשה",
+        "name_ru": "Тиква Хадаша (Новая Надежда)",
+        "match_score": 0.8463,
+        "confidence": 0.67,
+        "evidence_strength": 0.2622,
+        "volatility": 0.3405,
+        "coverage": 1.0,
+        "answer_stability": 0.9684,
+        "is_new_party": true,
+        "explanation": "Based on available evidence, your preferences align with New Hope on 3 key topics. Note: this party has limited parliamentary history. Match score is based on candidate history and declared positions.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות לתקווה חדשה ב-3 נושאים מרכזיים. שים לב: למפלגה זו היסטוריה פרלמנטרית מוגבלת. ציון ההתאמה מבוסס על היסטוריית המועמדים ועמדות מוצהרות.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Тиква Хадаша (Новая Надежда) по 3 ключевым темам. Примечание: у этой партии ограниченная парламентская история. Оценка совпадения основана на истории кандидатов и задекларированных позициях.",
+        "top_agreements": [
+          "Economy & Taxes",
+          "Security",
+          "Education"
+        ],
+        "top_agreements_he": [
+          "כלכלה ומיסים",
+          "ביטחון",
+          "חינוך"
+        ],
+        "top_agreements_ru": [
+          "Экономика и налоги",
+          "Безопасность",
+          "Образование"
+        ],
+        "top_disagreements": [],
+        "top_disagreements_he": [],
+        "top_disagreements_ru": [],
+        "weak_evidence_topics": [
+          "Judiciary",
+          "Cost of Living",
+          "Security"
+        ],
+        "topic_scores": {
+          "Judiciary": 0.887,
+          "Economy & Taxes": 1.0,
+          "Religion & State": 0.9,
+          "Security": 0.988,
+          "Civil Rights": 0.825,
+          "Cost of Living": 0.925,
+          "Education": 0.95,
+          "Environment": 0.675,
+          "Governance & Corruption": 0.537,
+          "Healthcare": 0.775,
+          "Housing": 0.725,
+          "Military Service": 0.65,
+          "Settlements": 0.95,
+          "Transport": 0.925,
+          "Welfare": 0.925
+        },
+        "evidence_by_type": {
+          "platform": 0.724,
+          "public_statement": 0.164,
+          "candidate_past_vote": 0.112
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.262,
+          "coverage": 1.0,
+          "answer_stability": 0.968,
+          "volatility_penalty": 0.341,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000001",
+        "name": "Likud",
+        "name_he": "הליכוד",
+        "name_ru": "Ликуд",
+        "match_score": 0.7393,
+        "confidence": 0.8837,
+        "evidence_strength": 0.77,
+        "volatility": 0.2685,
+        "coverage": 1.0,
+        "answer_stability": 0.9672,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Likud on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות להליכוד ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Ликуд по 3 ключевым темам.",
+        "top_agreements": [
+          "Cost of Living",
+          "Education",
+          "Transport"
+        ],
+        "top_agreements_he": [
+          "יוקר המחיה",
+          "חינוך",
+          "תחבורה"
+        ],
+        "top_agreements_ru": [
+          "Стоимость жизни",
+          "Образование",
+          "Транспорт"
+        ],
+        "top_disagreements": [
+          "Governance & Corruption"
+        ],
+        "top_disagreements_he": [
+          "שלטון ושחיתות"
+        ],
+        "top_disagreements_ru": [
+          "Управление и коррупция"
+        ],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.762,
+          "Economy & Taxes": 0.875,
+          "Religion & State": 0.75,
+          "Security": 0.887,
+          "Civil Rights": 0.713,
+          "Cost of Living": 0.9,
+          "Education": 0.9,
+          "Environment": 0.625,
+          "Governance & Corruption": 0.338,
+          "Healthcare": 0.725,
+          "Housing": 0.65,
+          "Military Service": 0.575,
+          "Settlements": 0.812,
+          "Transport": 0.9,
+          "Welfare": 0.9
+        },
+        "evidence_by_type": {
+          "vote": 0.742,
+          "platform": 0.126,
+          "bill": 0.105,
+          "statement": 0.027
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.77,
+          "coverage": 1.0,
+          "answer_stability": 0.967,
+          "volatility_penalty": 0.269,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000004",
+        "name": "Yesh Atid",
+        "name_he": "יש עתיד",
+        "name_ru": "Еш Атид (Есть будущее)",
+        "match_score": 0.7323,
+        "confidence": 0.9092,
+        "evidence_strength": 0.8205,
+        "volatility": 0.2032,
+        "coverage": 1.0,
+        "answer_stability": 0.9604,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Yesh Atid on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות ליש עתיד ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Еш Атид (Есть будущее) по 3 ключевым темам.",
+        "top_agreements": [
+          "Environment",
+          "Military Service",
+          "Governance & Corruption"
+        ],
+        "top_agreements_he": [
+          "סביבה",
+          "שירות צבאי",
+          "שלטון ושחיתות"
+        ],
+        "top_agreements_ru": [
+          "Экология",
+          "Военная служба",
+          "Управление и коррупция"
+        ],
+        "top_disagreements": [
+          "Judiciary"
+        ],
+        "top_disagreements_he": [
+          "מערכת המשפט"
+        ],
+        "top_disagreements_ru": [
+          "Судебная власть"
+        ],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.487,
+          "Economy & Taxes": 0.55,
+          "Religion & State": 0.738,
+          "Security": 0.575,
+          "Civil Rights": 0.762,
+          "Cost of Living": 0.95,
+          "Education": 0.55,
+          "Environment": 1.0,
+          "Governance & Corruption": 0.963,
+          "Healthcare": 0.825,
+          "Housing": 0.95,
+          "Military Service": 0.975,
+          "Settlements": 0.613,
+          "Transport": 0.8,
+          "Welfare": 0.925
+        },
+        "evidence_by_type": {
+          "vote": 0.779,
+          "platform": 0.101,
+          "bill": 0.098,
+          "statement": 0.023
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.821,
+          "coverage": 1.0,
+          "answer_stability": 0.96,
+          "volatility_penalty": 0.203,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000003",
+        "name": "United Torah Judaism",
+        "name_he": "יהדות התורה",
+        "name_ru": "Яхадут ха-Тора",
+        "match_score": 0.6727,
+        "confidence": 0.9191,
+        "evidence_strength": 0.7755,
+        "volatility": 0.0,
+        "coverage": 1.0,
+        "answer_stability": 0.9483,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with United Torah Judaism on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות ליהדות התורה ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Яхадут ха-Тора по 3 ключевым темам.",
+        "top_agreements": [
+          "Housing",
+          "Transport",
+          "Security"
+        ],
+        "top_agreements_he": [
+          "דיור",
+          "תחבורה",
+          "ביטחון"
+        ],
+        "top_agreements_ru": [
+          "Жильё",
+          "Транспорт",
+          "Безопасность"
+        ],
+        "top_disagreements": [
+          "Religion & State",
+          "Governance & Corruption",
+          "Military Service"
+        ],
+        "top_disagreements_he": [
+          "דת ומדינה",
+          "שלטון ושחיתות",
+          "שירות צבאי"
+        ],
+        "top_disagreements_ru": [
+          "Религия и государство",
+          "Управление и коррупция",
+          "Военная служба"
+        ],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.812,
+          "Economy & Taxes": 0.7,
+          "Religion & State": 0.425,
+          "Security": 0.913,
+          "Civil Rights": 0.562,
+          "Cost of Living": 0.875,
+          "Education": 0.625,
+          "Environment": 0.7,
+          "Governance & Corruption": 0.4,
+          "Healthcare": 0.85,
+          "Housing": 1.0,
+          "Military Service": 0.3,
+          "Settlements": 0.863,
+          "Transport": 0.95,
+          "Welfare": 0.65
+        },
+        "evidence_by_type": {
+          "vote": 0.773,
+          "platform": 0.107,
+          "bill": 0.095,
+          "statement": 0.024
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.775,
+          "coverage": 1.0,
+          "answer_stability": 0.948,
+          "volatility_penalty": 0.0,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000002",
+        "name": "Labor",
+        "name_he": "העבודה",
+        "name_ru": "Авода (Труд)",
+        "match_score": 0.65,
+        "confidence": 0.9424,
+        "evidence_strength": 0.851,
+        "volatility": 0.0,
+        "coverage": 1.0,
+        "answer_stability": 0.955,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Labor on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות להעבודה ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Авода (Труд) по 3 ключевым темам.",
+        "top_agreements": [
+          "Military Service",
+          "Governance & Corruption",
+          "Environment"
+        ],
+        "top_agreements_he": [
+          "שירות צבאי",
+          "שלטון ושחיתות",
+          "סביבה"
+        ],
+        "top_agreements_ru": [
+          "Военная служба",
+          "Управление и коррупция",
+          "Экология"
+        ],
+        "top_disagreements": [
+          "Judiciary",
+          "Security",
+          "Settlements"
+        ],
+        "top_disagreements_he": [
+          "מערכת המשפט",
+          "ביטחון",
+          "התנחלויות"
+        ],
+        "top_disagreements_ru": [
+          "Судебная власть",
+          "Безопасность",
+          "Поселения"
+        ],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.462,
+          "Economy & Taxes": 0.5,
+          "Religion & State": 0.712,
+          "Security": 0.438,
+          "Civil Rights": 0.688,
+          "Cost of Living": 0.725,
+          "Education": 0.525,
+          "Environment": 0.9,
+          "Governance & Corruption": 0.938,
+          "Healthcare": 0.775,
+          "Housing": 0.825,
+          "Military Service": 0.975,
+          "Settlements": 0.425,
+          "Transport": 0.725,
+          "Welfare": 0.7
+        },
+        "evidence_by_type": {
+          "bill": 0.552,
+          "vote": 0.327,
+          "platform": 0.097,
+          "statement": 0.024
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.851,
+          "coverage": 1.0,
+          "answer_stability": 0.955,
+          "volatility_penalty": 0.0,
+          "high_salience_coverage": 1.0
+        }
+      }
+    ],
+    "representation_gap": {
+      "has_gap": false,
+      "explanation": "Your closest party (New Hope) aligns well with your preferences.",
+      "best_party_by_topic": [
+        {
+          "topic": "Judiciary",
+          "topic_he": "מערכת המשפט",
+          "topic_ru": "Судебная власть",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Governance & Corruption",
+          "topic_he": "שלטון ושחיתות",
+          "topic_ru": "Управление и коррупция",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Education",
+          "topic_he": "חינוך",
+          "topic_ru": "Образование",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Military Service",
+          "topic_he": "שירות צבאי",
+          "topic_ru": "Военная служба",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Economy & Taxes",
+          "topic_he": "כלכלה ומיסים",
+          "topic_ru": "Экономика и налоги",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Religion & State",
+          "topic_he": "דת ומדינה",
+          "topic_ru": "Религия и государство",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Security",
+          "topic_he": "ביטחון",
+          "topic_ru": "Безопасность",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Settlements",
+          "topic_he": "התנחלויות",
+          "topic_ru": "Поселения",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Civil Rights",
+          "topic_he": "זכויות אזרח",
+          "topic_ru": "Гражданские права",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Welfare",
+          "topic_he": "רווחה",
+          "topic_ru": "Социальное обеспечение",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Housing",
+          "topic_he": "דיור",
+          "topic_ru": "Жильё",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Healthcare",
+          "topic_he": "בריאות",
+          "topic_ru": "Здравоохранение",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Cost of Living",
+          "topic_he": "יוקר המחיה",
+          "topic_ru": "Стоимость жизни",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Transport",
+          "topic_he": "תחבורה",
+          "topic_ru": "Транспорт",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Environment",
+          "topic_he": "סביבה",
+          "topic_ru": "Экология",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        }
+      ]
+    },
+    "discovery_matches": [],
+    "_session_id": "94a2d31a-c5ad-48e7-939e-d2c7ed761606",
+    "_questions_answered": 21,
+    "_questions_seen": [
+      {
+        "topic": "judiciary",
+        "value": 0.3,
+        "salience": 1.0,
+        "text": "Should the Knesset be able to reinstate a law that the Supre"
+      },
+      {
+        "topic": "governance_corruption",
+        "value": -0.6,
+        "salience": 1.0,
+        "text": "Should an elected Prime Minister be allowed to continue serv"
+      },
+      {
+        "topic": "education",
+        "value": 0.2,
+        "salience": 1.0,
+        "text": "Should ultra-Orthodox schools be allowed to receive state fu"
+      },
+      {
+        "topic": "military_service",
+        "value": -0.6,
+        "salience": 2.0,
+        "text": "Should ultra-Orthodox students enrolled in full-time Torah s"
+      },
+      {
+        "topic": "economy_taxes",
+        "value": -0.3,
+        "salience": 1.0,
+        "text": "Should religious councils receive the same per-capita state "
+      },
+      {
+        "topic": "religion_state",
+        "value": -0.2,
+        "salience": 1.0,
+        "text": "Should Haredi men who study full-time in yeshivas receive a "
+      },
+      {
+        "topic": "security",
+        "value": 0.5,
+        "salience": 2.0,
+        "text": "Should Israel continue to expand Jewish settlements in the W"
+      },
+      {
+        "topic": "settlements",
+        "value": 0.4,
+        "salience": 1.0,
+        "text": "Should Israel formally annex major settlement blocs in the W"
+      },
+      {
+        "topic": "civil_rights",
+        "value": 0.2,
+        "salience": 1.0,
+        "text": "Should same-sex couples have the right to adopt children in "
+      },
+      {
+        "topic": "welfare",
+        "value": 0.0,
+        "salience": 0.5,
+        "text": "Should child allowances be means-tested and limited to lower"
+      },
+      {
+        "topic": "housing",
+        "value": -0.3,
+        "salience": 1.0,
+        "text": "Should landlords be free to set and increase rents without g"
+      },
+      {
+        "topic": "healthcare",
+        "value": -0.2,
+        "salience": 1.0,
+        "text": "Should citizens have the freedom to purchase additional priv"
+      },
+      {
+        "topic": "cost_of_living",
+        "value": -0.0,
+        "salience": 0.5,
+        "text": "Should the government provide direct subsidies to reduce the"
+      },
+      {
+        "topic": "transport",
+        "value": 0.0,
+        "salience": 0.5,
+        "text": "Should the state invest primarily in road infrastructure to "
+      },
+      {
+        "topic": "environment",
+        "value": -0.3,
+        "salience": 0.5,
+        "text": "Should environmental regulations be loosened to support econ"
+      },
+      {
+        "topic": "judiciary",
+        "value": 0.3,
+        "salience": 1.0,
+        "text": "Should a simple majority of Knesset members be able to overr"
+      },
+      {
+        "topic": "security",
+        "value": -0.5,
+        "salience": 2.0,
+        "text": "Do you support the establishment of an independent Palestini"
+      },
+      {
+        "topic": "settlements",
+        "value": 0.4,
+        "salience": 1.0,
+        "text": "Should the law prohibit any evacuation of settlements even i"
+      },
+      {
+        "topic": "religion_state",
+        "value": -0.2,
+        "salience": 1.0,
+        "text": "Should Jewish Israelis who marry abroad in civil ceremonies "
+      },
+      {
+        "topic": "civil_rights",
+        "value": 0.2,
+        "salience": 1.0,
+        "text": "Should Arab citizens of Israel receive equal per-capita budg"
+      },
+      {
+        "topic": "governance_corruption",
+        "value": -0.6,
+        "salience": 1.0,
+        "text": "Should the government be able to limit the scope of State Co"
+      }
+    ]
+  },
+  "left_wing": {
+    "session_id": "5b0fbc3e-dbc1-4665-af93-a7d39fe8aaf9",
+    "run_id": "2a4b028f-90df-4d82-a373-8224c9bfd08c",
+    "parties": [
+      {
+        "party_id": "20000000-0000-0000-0000-000000000002",
+        "name": "Labor",
+        "name_he": "העבודה",
+        "name_ru": "Авода (Труд)",
+        "match_score": 0.9597,
+        "confidence": 0.948,
+        "evidence_strength": 0.851,
+        "volatility": 0.0,
+        "coverage": 1.0,
+        "answer_stability": 0.9917,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Labor on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות להעבודה ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Авода (Труд) по 3 ключевым темам.",
+        "top_agreements": [
+          "Governance & Corruption",
+          "Civil Rights",
+          "Economy & Taxes"
+        ],
+        "top_agreements_he": [
+          "שלטון ושחיתות",
+          "זכויות אזרח",
+          "כלכלה ומיסים"
+        ],
+        "top_agreements_ru": [
+          "Управление и коррупция",
+          "Гражданские права",
+          "Экономика и налоги"
+        ],
+        "top_disagreements": [],
+        "top_disagreements_he": [],
+        "top_disagreements_ru": [],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.975,
+          "Economy & Taxes": 0.975,
+          "Religion & State": 0.963,
+          "Security": 0.875,
+          "Civil Rights": 0.988,
+          "Cost of Living": 0.725,
+          "Education": 0.925,
+          "Environment": 0.9,
+          "Governance & Corruption": 1.0,
+          "Healthcare": 0.975,
+          "Housing": 0.975,
+          "Military Service": 0.975,
+          "Settlements": 0.95,
+          "Transport": 0.725,
+          "Welfare": 0.95
+        },
+        "evidence_by_type": {
+          "bill": 0.552,
+          "vote": 0.327,
+          "platform": 0.097,
+          "statement": 0.024
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.851,
+          "coverage": 1.0,
+          "answer_stability": 0.992,
+          "volatility_penalty": 0.0,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000004",
+        "name": "Yesh Atid",
+        "name_he": "יש עתיד",
+        "name_ru": "Еш Атид (Есть будущее)",
+        "match_score": 0.9011,
+        "confidence": 0.9134,
+        "evidence_strength": 0.8205,
+        "volatility": 0.2032,
+        "coverage": 1.0,
+        "answer_stability": 0.981,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Yesh Atid on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות ליש עתיד ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Еш Атид (Есть будущее) по 3 ключевым темам.",
+        "top_agreements": [
+          "Security",
+          "Economy & Taxes",
+          "Governance & Corruption"
+        ],
+        "top_agreements_he": [
+          "ביטחון",
+          "כלכלה ומיסים",
+          "שלטון ושחיתות"
+        ],
+        "top_agreements_ru": [
+          "Безопасность",
+          "Экономика и налоги",
+          "Управление и коррупция"
+        ],
+        "top_disagreements": [],
+        "top_disagreements_he": [],
+        "top_disagreements_ru": [],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.95,
+          "Economy & Taxes": 0.975,
+          "Religion & State": 0.938,
+          "Security": 1.0,
+          "Civil Rights": 0.938,
+          "Cost of Living": 0.95,
+          "Education": 0.95,
+          "Environment": 0.8,
+          "Governance & Corruption": 0.975,
+          "Healthcare": 0.625,
+          "Housing": 0.8,
+          "Military Service": 0.925,
+          "Settlements": 0.762,
+          "Transport": 0.8,
+          "Welfare": 0.725
+        },
+        "evidence_by_type": {
+          "vote": 0.779,
+          "platform": 0.101,
+          "bill": 0.098,
+          "statement": 0.023
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.821,
+          "coverage": 1.0,
+          "answer_stability": 0.981,
+          "volatility_penalty": 0.203,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000005",
+        "name": "New Hope",
+        "name_he": "תקווה חדשה",
+        "name_ru": "Тиква Хадаша (Новая Надежда)",
+        "match_score": 0.47,
+        "confidence": 0.6694,
+        "evidence_strength": 0.2622,
+        "volatility": 0.3405,
+        "coverage": 1.0,
+        "answer_stability": 0.9722,
+        "is_new_party": true,
+        "explanation": "Based on available evidence, your preferences align with New Hope on 2 key topics. Note: this party has limited parliamentary history. Match score is based on candidate history and declared positions.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות לתקווה חדשה ב-2 נושאים מרכזיים. שים לב: למפלגה זו היסטוריה פרלמנטרית מוגבלת. ציון ההתאמה מבוסס על היסטוריית המועמדים ועמדות מוצהרות.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Тиква Хадаша (Новая Надежда) по 2 ключевым темам. Примечание: у этой партии ограниченная парламентская история. Оценка совпадения основана на истории кандидатов и задекларированных позициях.",
+        "top_agreements": [
+          "Cost of Living",
+          "Transport"
+        ],
+        "top_agreements_he": [
+          "יוקר המחיה",
+          "תחבורה"
+        ],
+        "top_agreements_ru": [
+          "Стоимость жизни",
+          "Транспорт"
+        ],
+        "top_disagreements": [
+          "Environment",
+          "Governance & Corruption",
+          "Judiciary"
+        ],
+        "top_disagreements_he": [
+          "סביבה",
+          "שלטון ושחיתות",
+          "מערכת המשפט"
+        ],
+        "top_disagreements_ru": [
+          "Экология",
+          "Управление и коррупция",
+          "Судебная власть"
+        ],
+        "weak_evidence_topics": [
+          "Judiciary",
+          "Cost of Living",
+          "Security"
+        ],
+        "topic_scores": {
+          "Judiciary": 0.35,
+          "Economy & Taxes": 0.525,
+          "Religion & State": 0.575,
+          "Security": 0.55,
+          "Civil Rights": 0.537,
+          "Cost of Living": 0.925,
+          "Education": 0.55,
+          "Environment": 0.475,
+          "Governance & Corruption": 0.4,
+          "Healthcare": 0.575,
+          "Housing": 0.575,
+          "Military Service": 0.6,
+          "Settlements": 0.325,
+          "Transport": 0.925,
+          "Welfare": 0.575
+        },
+        "evidence_by_type": {
+          "platform": 0.724,
+          "public_statement": 0.164,
+          "candidate_past_vote": 0.112
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.262,
+          "coverage": 1.0,
+          "answer_stability": 0.972,
+          "volatility_penalty": 0.341,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000001",
+        "name": "Likud",
+        "name_he": "הליכוד",
+        "name_ru": "Ликуд",
+        "match_score": 0.3438,
+        "confidence": 0.8807,
+        "evidence_strength": 0.77,
+        "volatility": 0.2685,
+        "coverage": 1.0,
+        "answer_stability": 0.965,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Likud on 2 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות להליכוד ב-2 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Ликуд по 2 ключевым темам.",
+        "top_agreements": [
+          "Cost of Living",
+          "Transport"
+        ],
+        "top_agreements_he": [
+          "יוקר המחיה",
+          "תחבורה"
+        ],
+        "top_agreements_ru": [
+          "Стоимость жизни",
+          "Транспорт"
+        ],
+        "top_disagreements": [
+          "Civil Rights",
+          "Security",
+          "Environment"
+        ],
+        "top_disagreements_he": [
+          "זכויות אזרח",
+          "ביטחון",
+          "סביבה"
+        ],
+        "top_disagreements_ru": [
+          "Гражданские права",
+          "Безопасность",
+          "Экология"
+        ],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.233,
+          "Economy & Taxes": 0.4,
+          "Religion & State": 0.425,
+          "Security": 0.425,
+          "Civil Rights": 0.438,
+          "Cost of Living": 0.9,
+          "Education": 0.5,
+          "Environment": 0.425,
+          "Governance & Corruption": 0.175,
+          "Healthcare": 0.525,
+          "Housing": 0.5,
+          "Military Service": 0.525,
+          "Settlements": 0.188,
+          "Transport": 0.9,
+          "Welfare": 0.55
+        },
+        "evidence_by_type": {
+          "vote": 0.742,
+          "platform": 0.126,
+          "bill": 0.105,
+          "statement": 0.027
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.77,
+          "coverage": 1.0,
+          "answer_stability": 0.965,
+          "volatility_penalty": 0.269,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000003",
+        "name": "United Torah Judaism",
+        "name_he": "יהדות התורה",
+        "name_ru": "Яхадут ха-Тора",
+        "match_score": 0.3021,
+        "confidence": 0.9253,
+        "evidence_strength": 0.7755,
+        "volatility": 0.0,
+        "coverage": 1.0,
+        "answer_stability": 0.9635,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with United Torah Judaism on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות ליהדות התורה ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Яхадут ха-Тора по 3 ключевым темам.",
+        "top_agreements": [
+          "Welfare",
+          "Transport",
+          "Cost of Living"
+        ],
+        "top_agreements_he": [
+          "רווחה",
+          "תחבורה",
+          "יוקר המחיה"
+        ],
+        "top_agreements_ru": [
+          "Социальное обеспечение",
+          "Транспорт",
+          "Стоимость жизни"
+        ],
+        "top_disagreements": [
+          "Security",
+          "Judiciary",
+          "Governance & Corruption"
+        ],
+        "top_disagreements_he": [
+          "ביטחון",
+          "מערכת המשפט",
+          "שלטון ושחיתות"
+        ],
+        "top_disagreements_ru": [
+          "Безопасность",
+          "Судебная власть",
+          "Управление и коррупция"
+        ],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.258,
+          "Economy & Taxes": 0.225,
+          "Religion & State": 0.1,
+          "Security": 0.45,
+          "Civil Rights": 0.213,
+          "Cost of Living": 0.875,
+          "Education": 0.225,
+          "Environment": 0.5,
+          "Governance & Corruption": 0.25,
+          "Healthcare": 0.65,
+          "Housing": 0.85,
+          "Military Service": 0.25,
+          "Settlements": 0.238,
+          "Transport": 0.95,
+          "Welfare": 1.0
+        },
+        "evidence_by_type": {
+          "vote": 0.773,
+          "platform": 0.107,
+          "bill": 0.095,
+          "statement": 0.024
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.775,
+          "coverage": 1.0,
+          "answer_stability": 0.964,
+          "volatility_penalty": 0.0,
+          "high_salience_coverage": 1.0
+        }
+      }
+    ],
+    "representation_gap": {
+      "has_gap": false,
+      "explanation": "Your closest party (Labor) aligns well with your preferences.",
+      "best_party_by_topic": [
+        {
+          "topic": "Judiciary",
+          "topic_he": "מערכת המשפט",
+          "topic_ru": "Судебная власть",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Governance & Corruption",
+          "topic_he": "שלטון ושחיתות",
+          "topic_ru": "Управление и коррупция",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Education",
+          "topic_he": "חינוך",
+          "topic_ru": "Образование",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Military Service",
+          "topic_he": "שירות צבאי",
+          "topic_ru": "Военная служба",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Economy & Taxes",
+          "topic_he": "כלכלה ומיסים",
+          "topic_ru": "Экономика и налоги",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Religion & State",
+          "topic_he": "דת ומדינה",
+          "topic_ru": "Религия и государство",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Security",
+          "topic_he": "ביטחון",
+          "topic_ru": "Безопасность",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Settlements",
+          "topic_he": "התנחלויות",
+          "topic_ru": "Поселения",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Civil Rights",
+          "topic_he": "זכויות אזרח",
+          "topic_ru": "Гражданские права",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Welfare",
+          "topic_he": "רווחה",
+          "topic_ru": "Социальное обеспечение",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Housing",
+          "topic_he": "דיור",
+          "topic_ru": "Жильё",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Healthcare",
+          "topic_he": "בריאות",
+          "topic_ru": "Здравоохранение",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Cost of Living",
+          "topic_he": "יוקר המחיה",
+          "topic_ru": "Стоимость жизни",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Transport",
+          "topic_he": "תחבורה",
+          "topic_ru": "Транспорт",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Environment",
+          "topic_he": "סביבה",
+          "topic_ru": "Экология",
+          "party": "Labor",
+          "party_he": "העבודה"
+        }
+      ]
+    },
+    "discovery_matches": [],
+    "_session_id": "5b0fbc3e-dbc1-4665-af93-a7d39fe8aaf9",
+    "_questions_answered": 21,
+    "_questions_seen": [
+      {
+        "topic": "judiciary",
+        "value": -0.8,
+        "salience": 2.0,
+        "text": "Should the Knesset be able to reinstate a law that the Supre"
+      },
+      {
+        "topic": "governance_corruption",
+        "value": -0.8,
+        "salience": 2.0,
+        "text": "Should an elected Prime Minister be allowed to continue serv"
+      },
+      {
+        "topic": "education",
+        "value": -0.6,
+        "salience": 1.0,
+        "text": "Should ultra-Orthodox schools be allowed to receive state fu"
+      },
+      {
+        "topic": "military_service",
+        "value": -0.7,
+        "salience": 1.0,
+        "text": "Should ultra-Orthodox students enrolled in full-time Torah s"
+      },
+      {
+        "topic": "economy_taxes",
+        "value": 0.65,
+        "salience": 1.0,
+        "text": "Should religious councils receive the same per-capita state "
+      },
+      {
+        "topic": "religion_state",
+        "value": -0.85,
+        "salience": 2.0,
+        "text": "Should Haredi men who study full-time in yeshivas receive a "
+      },
+      {
+        "topic": "security",
+        "value": -0.4,
+        "salience": 1.0,
+        "text": "Should Israel continue to expand Jewish settlements in the W"
+      },
+      {
+        "topic": "settlements",
+        "value": -0.85,
+        "salience": 2.0,
+        "text": "Should Israel formally annex major settlement blocs in the W"
+      },
+      {
+        "topic": "civil_rights",
+        "value": 0.8,
+        "salience": 2.0,
+        "text": "Should same-sex couples have the right to adopt children in "
+      },
+      {
+        "topic": "welfare",
+        "value": -0.7,
+        "salience": 1.0,
+        "text": "Should child allowances be means-tested and limited to lower"
+      },
+      {
+        "topic": "housing",
+        "value": -0.6,
+        "salience": 1.0,
+        "text": "Should landlords be free to set and increase rents without g"
+      },
+      {
+        "topic": "healthcare",
+        "value": -0.6,
+        "salience": 1.0,
+        "text": "Should citizens have the freedom to purchase additional priv"
+      },
+      {
+        "topic": "cost_of_living",
+        "value": -0.0,
+        "salience": 0.5,
+        "text": "Should the government provide direct subsidies to reduce the"
+      },
+      {
+        "topic": "transport",
+        "value": 0.0,
+        "salience": 0.5,
+        "text": "Should the state invest primarily in road infrastructure to "
+      },
+      {
+        "topic": "environment",
+        "value": -0.7,
+        "salience": 1.0,
+        "text": "Should environmental regulations be loosened to support econ"
+      },
+      {
+        "topic": "judiciary",
+        "value": -0.8,
+        "salience": 2.0,
+        "text": "Should a simple majority of Knesset members be able to overr"
+      },
+      {
+        "topic": "settlements",
+        "value": -0.85,
+        "salience": 2.0,
+        "text": "Should the law prohibit any evacuation of settlements even i"
+      },
+      {
+        "topic": "religion_state",
+        "value": -0.85,
+        "salience": 2.0,
+        "text": "Should Jewish Israelis who marry abroad in civil ceremonies "
+      },
+      {
+        "topic": "governance_corruption",
+        "value": 0.8,
+        "salience": 2.0,
+        "text": "Should a sitting Prime Minister who has been indicted on cri"
+      },
+      {
+        "topic": "civil_rights",
+        "value": -0.8,
+        "salience": 2.0,
+        "text": "Should religious institutions be exempt from anti-discrimina"
+      },
+      {
+        "topic": "judiciary",
+        "value": -0.8,
+        "salience": 2.0,
+        "text": "Should the Judicial Appointments Committee include more elec"
+      }
+    ]
+  },
+  "liberal": {
+    "session_id": "6b12626f-1233-4c11-859e-1540fb303330",
+    "run_id": "9c4aa93a-3218-4fe0-8526-b6e3a6e50e31",
+    "parties": [
+      {
+        "party_id": "20000000-0000-0000-0000-000000000004",
+        "name": "Yesh Atid",
+        "name_he": "יש עתיד",
+        "name_ru": "Еш Атид (Есть будущее)",
+        "match_score": 0.9071,
+        "confidence": 0.9124,
+        "evidence_strength": 0.8205,
+        "volatility": 0.2032,
+        "coverage": 1.0,
+        "answer_stability": 0.982,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Yesh Atid on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות ליש עתיד ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Еш Атид (Есть будущее) по 3 ключевым темам.",
+        "top_agreements": [
+          "Civil Rights",
+          "Governance & Corruption",
+          "Welfare"
+        ],
+        "top_agreements_he": [
+          "זכויות אזרח",
+          "שלטון ושחיתות",
+          "רווחה"
+        ],
+        "top_agreements_ru": [
+          "Гражданские права",
+          "Управление и коррупция",
+          "Социальное обеспечение"
+        ],
+        "top_disagreements": [],
+        "top_disagreements_he": [],
+        "top_disagreements_ru": [],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.887,
+          "Economy & Taxes": 0.6,
+          "Religion & State": 0.95,
+          "Security": 0.725,
+          "Civil Rights": 0.988,
+          "Cost of Living": 0.95,
+          "Education": 0.85,
+          "Environment": 0.95,
+          "Governance & Corruption": 0.975,
+          "Healthcare": 0.775,
+          "Housing": 0.9,
+          "Military Service": 0.925,
+          "Settlements": 0.962,
+          "Transport": 0.8,
+          "Welfare": 0.975
+        },
+        "evidence_by_type": {
+          "vote": 0.779,
+          "platform": 0.101,
+          "bill": 0.098,
+          "statement": 0.023
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.821,
+          "coverage": 1.0,
+          "answer_stability": 0.982,
+          "volatility_penalty": 0.203,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000002",
+        "name": "Labor",
+        "name_he": "העבודה",
+        "name_ru": "Авода (Труд)",
+        "match_score": 0.8659,
+        "confidence": 0.9447,
+        "evidence_strength": 0.851,
+        "volatility": 0.0,
+        "coverage": 1.0,
+        "answer_stability": 0.9741,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Labor on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות להעבודה ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Авода (Труд) по 3 ключевым темам.",
+        "top_agreements": [
+          "Military Service",
+          "Religion & State",
+          "Environment"
+        ],
+        "top_agreements_he": [
+          "שירות צבאי",
+          "דת ומדינה",
+          "סביבה"
+        ],
+        "top_agreements_ru": [
+          "Военная служба",
+          "Религия и государство",
+          "Экология"
+        ],
+        "top_disagreements": [],
+        "top_disagreements_he": [],
+        "top_disagreements_ru": [],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.863,
+          "Economy & Taxes": 0.55,
+          "Religion & State": 0.975,
+          "Security": 0.587,
+          "Civil Rights": 0.938,
+          "Cost of Living": 0.725,
+          "Education": 0.825,
+          "Environment": 0.95,
+          "Governance & Corruption": 0.95,
+          "Healthcare": 0.825,
+          "Housing": 0.875,
+          "Military Service": 0.975,
+          "Settlements": 0.775,
+          "Transport": 0.725,
+          "Welfare": 0.8
+        },
+        "evidence_by_type": {
+          "bill": 0.552,
+          "vote": 0.327,
+          "platform": 0.097,
+          "statement": 0.024
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.851,
+          "coverage": 1.0,
+          "answer_stability": 0.974,
+          "volatility_penalty": 0.0,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000005",
+        "name": "New Hope",
+        "name_he": "תקווה חדשה",
+        "name_ru": "Тиква Хадаша (Новая Надежда)",
+        "match_score": 0.6453,
+        "confidence": 0.6693,
+        "evidence_strength": 0.2622,
+        "volatility": 0.3405,
+        "coverage": 1.0,
+        "answer_stability": 0.9743,
+        "is_new_party": true,
+        "explanation": "Based on available evidence, your preferences align with New Hope on 3 key topics. Note: this party has limited parliamentary history. Match score is based on candidate history and declared positions.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות לתקווה חדשה ב-3 נושאים מרכזיים. שים לב: למפלגה זו היסטוריה פרלמנטרית מוגבלת. ציון ההתאמה מבוסס על היסטוריית המועמדים ועמדות מוצהרות.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Тиква Хадаша (Новая Надежда) по 3 ключевым темам. Примечание: у этой партии ограниченная парламентская история. Оценка совпадения основана на истории кандидатов и задекларированных позициях.",
+        "top_agreements": [
+          "Economy & Taxes",
+          "Cost of Living",
+          "Transport"
+        ],
+        "top_agreements_he": [
+          "כלכלה ומיסים",
+          "יוקר המחיה",
+          "תחבורה"
+        ],
+        "top_agreements_ru": [
+          "Экономика и налоги",
+          "Стоимость жизни",
+          "Транспорт"
+        ],
+        "top_disagreements": [
+          "Judiciary",
+          "Governance & Corruption"
+        ],
+        "top_disagreements_he": [
+          "מערכת המשפט",
+          "שלטון ושחיתות"
+        ],
+        "top_disagreements_ru": [
+          "Судебная власть",
+          "Управление и коррупция"
+        ],
+        "weak_evidence_topics": [
+          "Judiciary",
+          "Cost of Living",
+          "Security"
+        ],
+        "topic_scores": {
+          "Judiciary": 0.487,
+          "Economy & Taxes": 0.95,
+          "Religion & State": 0.592,
+          "Security": 0.837,
+          "Civil Rights": 0.575,
+          "Cost of Living": 0.925,
+          "Education": 0.65,
+          "Environment": 0.625,
+          "Governance & Corruption": 0.45,
+          "Healthcare": 0.725,
+          "Housing": 0.675,
+          "Military Service": 0.6,
+          "Settlements": 0.6,
+          "Transport": 0.925,
+          "Welfare": 0.825
+        },
+        "evidence_by_type": {
+          "platform": 0.724,
+          "public_statement": 0.164,
+          "candidate_past_vote": 0.112
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.262,
+          "coverage": 1.0,
+          "answer_stability": 0.974,
+          "volatility_penalty": 0.341,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000001",
+        "name": "Likud",
+        "name_he": "הליכוד",
+        "name_ru": "Ликуд",
+        "match_score": 0.534,
+        "confidence": 0.8811,
+        "evidence_strength": 0.77,
+        "volatility": 0.2685,
+        "coverage": 1.0,
+        "answer_stability": 0.9681,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Likud on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות להליכוד ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Ликуд по 3 ключевым темам.",
+        "top_agreements": [
+          "Cost of Living",
+          "Transport",
+          "Economy & Taxes"
+        ],
+        "top_agreements_he": [
+          "יוקר המחיה",
+          "תחבורה",
+          "כלכלה ומיסים"
+        ],
+        "top_agreements_ru": [
+          "Стоимость жизни",
+          "Транспорт",
+          "Экономика и налоги"
+        ],
+        "top_disagreements": [
+          "Civil Rights",
+          "Settlements",
+          "Religion & State"
+        ],
+        "top_disagreements_he": [
+          "זכויות אזרח",
+          "התנחלויות",
+          "דת ומדינה"
+        ],
+        "top_disagreements_ru": [
+          "Гражданские права",
+          "Поселения",
+          "Религия и государство"
+        ],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.362,
+          "Economy & Taxes": 0.825,
+          "Religion & State": 0.45,
+          "Security": 0.738,
+          "Civil Rights": 0.463,
+          "Cost of Living": 0.9,
+          "Education": 0.6,
+          "Environment": 0.575,
+          "Governance & Corruption": 0.225,
+          "Healthcare": 0.675,
+          "Housing": 0.6,
+          "Military Service": 0.525,
+          "Settlements": 0.462,
+          "Transport": 0.9,
+          "Welfare": 0.8
+        },
+        "evidence_by_type": {
+          "vote": 0.742,
+          "platform": 0.126,
+          "bill": 0.105,
+          "statement": 0.027
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.77,
+          "coverage": 1.0,
+          "answer_stability": 0.968,
+          "volatility_penalty": 0.269,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000003",
+        "name": "United Torah Judaism",
+        "name_he": "יהדות התורה",
+        "name_ru": "Яхадут ха-Тора",
+        "match_score": 0.4086,
+        "confidence": 0.9223,
+        "evidence_strength": 0.7755,
+        "volatility": 0.0,
+        "coverage": 1.0,
+        "answer_stability": 0.9443,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with United Torah Judaism on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות ליהדות התורה ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Яхадут ха-Тора по 3 ключевым темам.",
+        "top_agreements": [
+          "Housing",
+          "Transport",
+          "Cost of Living"
+        ],
+        "top_agreements_he": [
+          "דיור",
+          "תחבורה",
+          "יוקר המחיה"
+        ],
+        "top_agreements_ru": [
+          "Жильё",
+          "Транспорт",
+          "Стоимость жизни"
+        ],
+        "top_disagreements": [
+          "Judiciary",
+          "Education",
+          "Civil Rights"
+        ],
+        "top_disagreements_he": [
+          "מערכת המשפט",
+          "חינוך",
+          "זכויות אזרח"
+        ],
+        "top_disagreements_ru": [
+          "Судебная власть",
+          "Образование",
+          "Гражданские права"
+        ],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.412,
+          "Economy & Taxes": 0.65,
+          "Religion & State": 0.133,
+          "Security": 0.762,
+          "Civil Rights": 0.313,
+          "Cost of Living": 0.875,
+          "Education": 0.325,
+          "Environment": 0.65,
+          "Governance & Corruption": 0.3,
+          "Healthcare": 0.8,
+          "Housing": 0.95,
+          "Military Service": 0.25,
+          "Settlements": 0.512,
+          "Transport": 0.95,
+          "Welfare": 0.75
+        },
+        "evidence_by_type": {
+          "vote": 0.773,
+          "platform": 0.107,
+          "bill": 0.095,
+          "statement": 0.024
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.775,
+          "coverage": 1.0,
+          "answer_stability": 0.944,
+          "volatility_penalty": 0.0,
+          "high_salience_coverage": 1.0
+        }
+      }
+    ],
+    "representation_gap": {
+      "has_gap": false,
+      "explanation": "Your closest party (Yesh Atid) aligns well with your preferences.",
+      "best_party_by_topic": [
+        {
+          "topic": "Judiciary",
+          "topic_he": "מערכת המשפט",
+          "topic_ru": "Судебная власть",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Governance & Corruption",
+          "topic_he": "שלטון ושחיתות",
+          "topic_ru": "Управление и коррупция",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Education",
+          "topic_he": "חינוך",
+          "topic_ru": "Образование",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Military Service",
+          "topic_he": "שירות צבאי",
+          "topic_ru": "Военная служба",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Economy & Taxes",
+          "topic_he": "כלכלה ומיסים",
+          "topic_ru": "Экономика и налоги",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Religion & State",
+          "topic_he": "דת ומדינה",
+          "topic_ru": "Религия и государство",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Security",
+          "topic_he": "ביטחון",
+          "topic_ru": "Безопасность",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Settlements",
+          "topic_he": "התנחלויות",
+          "topic_ru": "Поселения",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Civil Rights",
+          "topic_he": "זכויות אזרח",
+          "topic_ru": "Гражданские права",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Welfare",
+          "topic_he": "רווחה",
+          "topic_ru": "Социальное обеспечение",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Housing",
+          "topic_he": "דיור",
+          "topic_ru": "Жильё",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Healthcare",
+          "topic_he": "בריאות",
+          "topic_ru": "Здравоохранение",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Cost of Living",
+          "topic_he": "יוקר המחיה",
+          "topic_ru": "Стоимость жизни",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Transport",
+          "topic_he": "תחבורה",
+          "topic_ru": "Транспорт",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Environment",
+          "topic_he": "סביבה",
+          "topic_ru": "Экология",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        }
+      ]
+    },
+    "discovery_matches": [],
+    "_session_id": "6b12626f-1233-4c11-859e-1540fb303330",
+    "_questions_answered": 21,
+    "_questions_seen": [
+      {
+        "topic": "judiciary",
+        "value": -0.5,
+        "salience": 1.0,
+        "text": "Should the Knesset be able to reinstate a law that the Supre"
+      },
+      {
+        "topic": "governance_corruption",
+        "value": -0.7,
+        "salience": 1.0,
+        "text": "Should an elected Prime Minister be allowed to continue serv"
+      },
+      {
+        "topic": "education",
+        "value": -0.4,
+        "salience": 1.0,
+        "text": "Should ultra-Orthodox schools be allowed to receive state fu"
+      },
+      {
+        "topic": "military_service",
+        "value": -0.7,
+        "salience": 2.0,
+        "text": "Should ultra-Orthodox students enrolled in full-time Torah s"
+      },
+      {
+        "topic": "economy_taxes",
+        "value": -0.2,
+        "salience": 1.0,
+        "text": "Should religious councils receive the same per-capita state "
+      },
+      {
+        "topic": "religion_state",
+        "value": -0.8,
+        "salience": 2.0,
+        "text": "Should Haredi men who study full-time in yeshivas receive a "
+      },
+      {
+        "topic": "security",
+        "value": 0.2,
+        "salience": 1.0,
+        "text": "Should Israel continue to expand Jewish settlements in the W"
+      },
+      {
+        "topic": "settlements",
+        "value": -0.3,
+        "salience": 1.0,
+        "text": "Should Israel formally annex major settlement blocs in the W"
+      },
+      {
+        "topic": "civil_rights",
+        "value": 0.7,
+        "salience": 2.0,
+        "text": "Should same-sex couples have the right to adopt children in "
+      },
+      {
+        "topic": "welfare",
+        "value": -0.2,
+        "salience": 1.0,
+        "text": "Should child allowances be means-tested and limited to lower"
+      },
+      {
+        "topic": "housing",
+        "value": -0.4,
+        "salience": 1.0,
+        "text": "Should landlords be free to set and increase rents without g"
+      },
+      {
+        "topic": "healthcare",
+        "value": -0.3,
+        "salience": 1.0,
+        "text": "Should citizens have the freedom to purchase additional priv"
+      },
+      {
+        "topic": "cost_of_living",
+        "value": -0.0,
+        "salience": 0.5,
+        "text": "Should the government provide direct subsidies to reduce the"
+      },
+      {
+        "topic": "transport",
+        "value": 0.0,
+        "salience": 0.5,
+        "text": "Should the state invest primarily in road infrastructure to "
+      },
+      {
+        "topic": "environment",
+        "value": -0.4,
+        "salience": 1.0,
+        "text": "Should environmental regulations be loosened to support econ"
+      },
+      {
+        "topic": "judiciary",
+        "value": -0.5,
+        "salience": 1.0,
+        "text": "Should a simple majority of Knesset members be able to overr"
+      },
+      {
+        "topic": "religion_state",
+        "value": -0.8,
+        "salience": 2.0,
+        "text": "Should Jewish Israelis who marry abroad in civil ceremonies "
+      },
+      {
+        "topic": "civil_rights",
+        "value": 0.7,
+        "salience": 2.0,
+        "text": "Should Arab citizens of Israel receive equal per-capita budg"
+      },
+      {
+        "topic": "settlements",
+        "value": -0.3,
+        "salience": 1.0,
+        "text": "Should the law prohibit any evacuation of settlements even i"
+      },
+      {
+        "topic": "religion_state",
+        "value": 0.8,
+        "salience": 2.0,
+        "text": "Should supermarkets and shopping centers be permitted to ope"
+      },
+      {
+        "topic": "security",
+        "value": -0.2,
+        "salience": 1.0,
+        "text": "Do you support the establishment of an independent Palestini"
+      }
+    ]
+  },
+  "religious": {
+    "session_id": "2b72289e-0616-4686-93b9-97cd73df447d",
+    "run_id": "e628f46c-d3bd-42f4-91d2-2dcc132484a4",
+    "parties": [
+      {
+        "party_id": "20000000-0000-0000-0000-000000000003",
+        "name": "United Torah Judaism",
+        "name_he": "יהדות התורה",
+        "name_ru": "Яхадут ха-Тора",
+        "match_score": 0.8975,
+        "confidence": 0.9244,
+        "evidence_strength": 0.7755,
+        "volatility": 0.0,
+        "coverage": 1.0,
+        "answer_stability": 0.9801,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with United Torah Judaism on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות ליהדות התורה ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Яхадут ха-Тора по 3 ключевым темам.",
+        "top_agreements": [
+          "Religion & State",
+          "Judiciary",
+          "Settlements"
+        ],
+        "top_agreements_he": [
+          "דת ומדינה",
+          "מערכת המשפט",
+          "התנחלויות"
+        ],
+        "top_agreements_ru": [
+          "Религия и государство",
+          "Судебная власть",
+          "Поселения"
+        ],
+        "top_disagreements": [
+          "Economy & Taxes"
+        ],
+        "top_disagreements_he": [
+          "כלכלה ומיסים"
+        ],
+        "top_disagreements_ru": [
+          "Экономика и налоги"
+        ],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.962,
+          "Economy & Taxes": 0.35,
+          "Religion & State": 0.975,
+          "Security": 0.8,
+          "Civil Rights": 0.913,
+          "Cost of Living": 0.875,
+          "Education": 0.887,
+          "Environment": 0.85,
+          "Governance & Corruption": 0.65,
+          "Healthcare": 0.8,
+          "Housing": 0.9,
+          "Military Service": 0.95,
+          "Settlements": 0.962,
+          "Transport": 0.95,
+          "Welfare": 0.925
+        },
+        "evidence_by_type": {
+          "vote": 0.773,
+          "platform": 0.107,
+          "bill": 0.095,
+          "statement": 0.024
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.775,
+          "coverage": 1.0,
+          "answer_stability": 0.98,
+          "volatility_penalty": 0.0,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000001",
+        "name": "Likud",
+        "name_he": "הליכוד",
+        "name_ru": "Ликуд",
+        "match_score": 0.7334,
+        "confidence": 0.8799,
+        "evidence_strength": 0.77,
+        "volatility": 0.2685,
+        "coverage": 1.0,
+        "answer_stability": 0.9716,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Likud on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות להליכוד ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Ликуд по 3 ключевым темам.",
+        "top_agreements": [
+          "Judiciary",
+          "Settlements",
+          "Cost of Living"
+        ],
+        "top_agreements_he": [
+          "מערכת המשפט",
+          "התנחלויות",
+          "יוקר המחיה"
+        ],
+        "top_agreements_ru": [
+          "Судебная власть",
+          "Поселения",
+          "Стоимость жизни"
+        ],
+        "top_disagreements": [],
+        "top_disagreements_he": [],
+        "top_disagreements_ru": [],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.962,
+          "Economy & Taxes": 0.525,
+          "Religion & State": 0.7,
+          "Security": 0.775,
+          "Civil Rights": 0.787,
+          "Cost of Living": 0.9,
+          "Education": 0.775,
+          "Environment": 0.775,
+          "Governance & Corruption": 0.575,
+          "Healthcare": 0.675,
+          "Housing": 0.55,
+          "Military Service": 0.675,
+          "Settlements": 0.912,
+          "Transport": 0.9,
+          "Welfare": 0.575
+        },
+        "evidence_by_type": {
+          "vote": 0.742,
+          "platform": 0.126,
+          "bill": 0.105,
+          "statement": 0.027
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.77,
+          "coverage": 1.0,
+          "answer_stability": 0.972,
+          "volatility_penalty": 0.269,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000005",
+        "name": "New Hope",
+        "name_he": "תקווה חדשה",
+        "name_ru": "Тиква Хадаша (Новая Надежда)",
+        "match_score": 0.7146,
+        "confidence": 0.67,
+        "evidence_strength": 0.2622,
+        "volatility": 0.3405,
+        "coverage": 1.0,
+        "answer_stability": 0.9711,
+        "is_new_party": true,
+        "explanation": "Based on available evidence, your preferences align with New Hope on 3 key topics. Note: this party has limited parliamentary history. Match score is based on candidate history and declared positions.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות לתקווה חדשה ב-3 נושאים מרכזיים. שים לב: למפלגה זו היסטוריה פרלמנטרית מוגבלת. ציון ההתאמה מבוסס על היסטוריית המועמדים ועמדות מוצהרות.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Тиква Хадаша (Новая Надежда) по 3 ключевым темам. Примечание: у этой партии ограниченная парламентская история. Оценка совпадения основана на истории кандидатов и задекларированных позициях.",
+        "top_agreements": [
+          "Settlements",
+          "Cost of Living",
+          "Transport"
+        ],
+        "top_agreements_he": [
+          "התנחלויות",
+          "יוקר המחיה",
+          "תחבורה"
+        ],
+        "top_agreements_ru": [
+          "Поселения",
+          "Стоимость жизни",
+          "Транспорт"
+        ],
+        "top_disagreements": [],
+        "top_disagreements_he": [],
+        "top_disagreements_ru": [],
+        "weak_evidence_topics": [
+          "Judiciary",
+          "Cost of Living",
+          "Security"
+        ],
+        "topic_scores": {
+          "Judiciary": 0.913,
+          "Economy & Taxes": 0.65,
+          "Religion & State": 0.55,
+          "Security": 0.9,
+          "Civil Rights": 0.675,
+          "Cost of Living": 0.925,
+          "Education": 0.738,
+          "Environment": 0.825,
+          "Governance & Corruption": 0.8,
+          "Healthcare": 0.725,
+          "Housing": 0.625,
+          "Military Service": 0.6,
+          "Settlements": 0.95,
+          "Transport": 0.925,
+          "Welfare": 0.613
+        },
+        "evidence_by_type": {
+          "platform": 0.724,
+          "public_statement": 0.164,
+          "candidate_past_vote": 0.112
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.262,
+          "coverage": 1.0,
+          "answer_stability": 0.971,
+          "volatility_penalty": 0.341,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000004",
+        "name": "Yesh Atid",
+        "name_he": "יש עתיד",
+        "name_ru": "Еш Атид (Есть будущее)",
+        "match_score": 0.482,
+        "confidence": 0.9052,
+        "evidence_strength": 0.8205,
+        "volatility": 0.2032,
+        "coverage": 1.0,
+        "answer_stability": 0.9401,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Yesh Atid on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות ליש עתיד ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Еш Атид (Есть будущее) по 3 ключевым темам.",
+        "top_agreements": [
+          "Cost of Living",
+          "Economy & Taxes",
+          "Environment"
+        ],
+        "top_agreements_he": [
+          "יוקר המחיה",
+          "כלכלה ומיסים",
+          "סביבה"
+        ],
+        "top_agreements_ru": [
+          "Стоимость жизни",
+          "Экономика и налоги",
+          "Экология"
+        ],
+        "top_disagreements": [
+          "Education",
+          "Judiciary",
+          "Military Service"
+        ],
+        "top_disagreements_he": [
+          "חינוך",
+          "מערכת המשפט",
+          "שירות צבאי"
+        ],
+        "top_disagreements_ru": [
+          "Образование",
+          "Судебная власть",
+          "Военная служба"
+        ],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.288,
+          "Economy & Taxes": 0.9,
+          "Religion & State": 0.188,
+          "Security": 0.65,
+          "Civil Rights": 0.262,
+          "Cost of Living": 0.95,
+          "Education": 0.375,
+          "Environment": 0.85,
+          "Governance & Corruption": 0.625,
+          "Healthcare": 0.775,
+          "Housing": 0.85,
+          "Military Service": 0.275,
+          "Settlements": 0.512,
+          "Transport": 0.8,
+          "Welfare": 0.788
+        },
+        "evidence_by_type": {
+          "vote": 0.779,
+          "platform": 0.101,
+          "bill": 0.098,
+          "statement": 0.023
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.821,
+          "coverage": 1.0,
+          "answer_stability": 0.94,
+          "volatility_penalty": 0.203,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000002",
+        "name": "Labor",
+        "name_he": "העבודה",
+        "name_ru": "Авода (Труд)",
+        "match_score": 0.4619,
+        "confidence": 0.9391,
+        "evidence_strength": 0.851,
+        "volatility": 0.0,
+        "coverage": 1.0,
+        "answer_stability": 0.9253,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Labor on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות להעבודה ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Авода (Труд) по 3 ключевым темам.",
+        "top_agreements": [
+          "Welfare",
+          "Housing",
+          "Economy & Taxes"
+        ],
+        "top_agreements_he": [
+          "רווחה",
+          "דיור",
+          "כלכלה ומיסים"
+        ],
+        "top_agreements_ru": [
+          "Социальное обеспечение",
+          "Жильё",
+          "Экономика и налоги"
+        ],
+        "top_disagreements": [
+          "Settlements",
+          "Judiciary",
+          "Education"
+        ],
+        "top_disagreements_he": [
+          "התנחלויות",
+          "מערכת המשפט",
+          "חינוך"
+        ],
+        "top_disagreements_ru": [
+          "Поселения",
+          "Судебная власть",
+          "Образование"
+        ],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.263,
+          "Economy & Taxes": 0.85,
+          "Religion & State": 0.162,
+          "Security": 0.525,
+          "Civil Rights": 0.188,
+          "Cost of Living": 0.725,
+          "Education": 0.25,
+          "Environment": 0.75,
+          "Governance & Corruption": 0.6,
+          "Healthcare": 0.825,
+          "Housing": 0.925,
+          "Military Service": 0.225,
+          "Settlements": 0.325,
+          "Transport": 0.725,
+          "Welfare": 0.975
+        },
+        "evidence_by_type": {
+          "bill": 0.552,
+          "vote": 0.327,
+          "platform": 0.097,
+          "statement": 0.024
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.851,
+          "coverage": 1.0,
+          "answer_stability": 0.925,
+          "volatility_penalty": 0.0,
+          "high_salience_coverage": 1.0
+        }
+      }
+    ],
+    "representation_gap": {
+      "has_gap": false,
+      "explanation": "Your closest party (United Torah Judaism) aligns well with your preferences.",
+      "best_party_by_topic": [
+        {
+          "topic": "Judiciary",
+          "topic_he": "מערכת המשפט",
+          "topic_ru": "Судебная власть",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Governance & Corruption",
+          "topic_he": "שלטון ושחיתות",
+          "topic_ru": "Управление и коррупция",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Education",
+          "topic_he": "חינוך",
+          "topic_ru": "Образование",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Military Service",
+          "topic_he": "שירות צבאי",
+          "topic_ru": "Военная служба",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Economy & Taxes",
+          "topic_he": "כלכלה ומיסים",
+          "topic_ru": "Экономика и налоги",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Religion & State",
+          "topic_he": "דת ומדינה",
+          "topic_ru": "Религия и государство",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Security",
+          "topic_he": "ביטחון",
+          "topic_ru": "Безопасность",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Settlements",
+          "topic_he": "התנחלויות",
+          "topic_ru": "Поселения",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Civil Rights",
+          "topic_he": "זכויות אזרח",
+          "topic_ru": "Гражданские права",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Welfare",
+          "topic_he": "רווחה",
+          "topic_ru": "Социальное обеспечение",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Housing",
+          "topic_he": "דיור",
+          "topic_ru": "Жильё",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Healthcare",
+          "topic_he": "בריאות",
+          "topic_ru": "Здравоохранение",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Cost of Living",
+          "topic_he": "יוקר המחיה",
+          "topic_ru": "Стоимость жизни",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Transport",
+          "topic_he": "תחבורה",
+          "topic_ru": "Транспорт",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Environment",
+          "topic_he": "סביבה",
+          "topic_ru": "Экология",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        }
+      ]
+    },
+    "discovery_matches": [
+      {
+        "topic": "Economy & Taxes",
+        "topic_he": "כלכלה ומיסים",
+        "topic_ru": "Экономика и налоги",
+        "party": "Yesh Atid",
+        "party_he": "יש עתיד",
+        "party_ru": "Еш Атид (Есть будущее)",
+        "party_id": "20000000-0000-0000-0000-000000000004",
+        "similarity": 0.9,
+        "top3_best_similarity": 0.65
+      },
+      {
+        "topic": "Economy & Taxes",
+        "topic_he": "כלכלה ומיסים",
+        "topic_ru": "Экономика и налоги",
+        "party": "Labor",
+        "party_he": "העבודה",
+        "party_ru": "Авода (Труд)",
+        "party_id": "20000000-0000-0000-0000-000000000002",
+        "similarity": 0.85,
+        "top3_best_similarity": 0.65
+      }
+    ],
+    "_session_id": "2b72289e-0616-4686-93b9-97cd73df447d",
+    "_questions_answered": 21,
+    "_questions_seen": [
+      {
+        "topic": "judiciary",
+        "value": 0.7,
+        "salience": 1.0,
+        "text": "Should the Knesset be able to reinstate a law that the Supre"
+      },
+      {
+        "topic": "governance_corruption",
+        "value": 0.0,
+        "salience": 0.5,
+        "text": "Should an elected Prime Minister be allowed to continue serv"
+      },
+      {
+        "topic": "education",
+        "value": 0.8,
+        "salience": 2.0,
+        "text": "Should ultra-Orthodox schools be allowed to receive state fu"
+      },
+      {
+        "topic": "military_service",
+        "value": 0.9,
+        "salience": 2.0,
+        "text": "Should ultra-Orthodox students enrolled in full-time Torah s"
+      },
+      {
+        "topic": "economy_taxes",
+        "value": 0.4,
+        "salience": 1.0,
+        "text": "Should religious councils receive the same per-capita state "
+      },
+      {
+        "topic": "religion_state",
+        "value": 0.9,
+        "salience": 2.0,
+        "text": "Should Haredi men who study full-time in yeshivas receive a "
+      },
+      {
+        "topic": "security",
+        "value": 0.3,
+        "salience": 0.5,
+        "text": "Should Israel continue to expand Jewish settlements in the W"
+      },
+      {
+        "topic": "settlements",
+        "value": 0.6,
+        "salience": 1.0,
+        "text": "Should Israel formally annex major settlement blocs in the W"
+      },
+      {
+        "topic": "civil_rights",
+        "value": -0.8,
+        "salience": 1.0,
+        "text": "Should same-sex couples have the right to adopt children in "
+      },
+      {
+        "topic": "welfare",
+        "value": -0.6,
+        "salience": 2.0,
+        "text": "Should child allowances be means-tested and limited to lower"
+      },
+      {
+        "topic": "housing",
+        "value": -0.5,
+        "salience": 1.0,
+        "text": "Should landlords be free to set and increase rents without g"
+      },
+      {
+        "topic": "healthcare",
+        "value": -0.3,
+        "salience": 1.0,
+        "text": "Should citizens have the freedom to purchase additional priv"
+      },
+      {
+        "topic": "cost_of_living",
+        "value": -0.0,
+        "salience": 0.5,
+        "text": "Should the government provide direct subsidies to reduce the"
+      },
+      {
+        "topic": "transport",
+        "value": 0.0,
+        "salience": 0.5,
+        "text": "Should the state invest primarily in road infrastructure to "
+      },
+      {
+        "topic": "environment",
+        "value": 0.0,
+        "salience": 0.5,
+        "text": "Should environmental regulations be loosened to support econ"
+      },
+      {
+        "topic": "judiciary",
+        "value": 0.7,
+        "salience": 1.0,
+        "text": "Should a simple majority of Knesset members be able to overr"
+      },
+      {
+        "topic": "religion_state",
+        "value": 0.9,
+        "salience": 2.0,
+        "text": "Should Jewish Israelis who marry abroad in civil ceremonies "
+      },
+      {
+        "topic": "settlements",
+        "value": 0.6,
+        "salience": 1.0,
+        "text": "Should the law prohibit any evacuation of settlements even i"
+      },
+      {
+        "topic": "civil_rights",
+        "value": -0.8,
+        "salience": 1.0,
+        "text": "Should Arab citizens of Israel receive equal per-capita budg"
+      },
+      {
+        "topic": "education",
+        "value": 0.8,
+        "salience": 2.0,
+        "text": "Should the state provide vouchers allowing parents to choose"
+      },
+      {
+        "topic": "welfare",
+        "value": -0.6,
+        "salience": 2.0,
+        "text": "Should welfare payments be strictly means-tested and tied to"
+      }
+    ]
+  },
+  "secular_progressive": {
+    "session_id": "9df53f59-f26a-4637-aa6b-9b73fec41b16",
+    "run_id": "ffa393a6-698a-43eb-9170-3d22dcfa3248",
+    "parties": [
+      {
+        "party_id": "20000000-0000-0000-0000-000000000002",
+        "name": "Labor",
+        "name_he": "העבודה",
+        "name_ru": "Авода (Труд)",
+        "match_score": 0.9284,
+        "confidence": 0.9479,
+        "evidence_strength": 0.851,
+        "volatility": 0.0,
+        "coverage": 1.0,
+        "answer_stability": 0.9913,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Labor on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות להעבודה ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Авода (Труд) по 3 ключевым темам.",
+        "top_agreements": [
+          "Economy & Taxes",
+          "Healthcare",
+          "Housing"
+        ],
+        "top_agreements_he": [
+          "כלכלה ומיסים",
+          "בריאות",
+          "דיור"
+        ],
+        "top_agreements_ru": [
+          "Экономика и налоги",
+          "Здравоохранение",
+          "Жильё"
+        ],
+        "top_disagreements": [],
+        "top_disagreements_he": [],
+        "top_disagreements_ru": [],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.925,
+          "Economy & Taxes": 1.0,
+          "Religion & State": 0.913,
+          "Security": 0.975,
+          "Civil Rights": 0.962,
+          "Cost of Living": 0.725,
+          "Education": 0.975,
+          "Environment": 0.825,
+          "Governance & Corruption": 0.95,
+          "Healthcare": 0.975,
+          "Housing": 0.975,
+          "Military Service": 0.925,
+          "Settlements": 0.925,
+          "Transport": 0.725,
+          "Welfare": 0.925
+        },
+        "evidence_by_type": {
+          "bill": 0.552,
+          "vote": 0.327,
+          "platform": 0.097,
+          "statement": 0.024
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.851,
+          "coverage": 1.0,
+          "answer_stability": 0.991,
+          "volatility_penalty": 0.0,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000004",
+        "name": "Yesh Atid",
+        "name_he": "יש עתיד",
+        "name_ru": "Еш Атид (Есть будущее)",
+        "match_score": 0.855,
+        "confidence": 0.9135,
+        "evidence_strength": 0.8205,
+        "volatility": 0.2032,
+        "coverage": 1.0,
+        "answer_stability": 0.9816,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Yesh Atid on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות ליש עתיד ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Еш Атид (Есть будущее) по 3 ключевым темам.",
+        "top_agreements": [
+          "Education",
+          "Economy & Taxes",
+          "Cost of Living"
+        ],
+        "top_agreements_he": [
+          "חינוך",
+          "כלכלה ומיסים",
+          "יוקר המחיה"
+        ],
+        "top_agreements_ru": [
+          "Образование",
+          "Экономика и налоги",
+          "Стоимость жизни"
+        ],
+        "top_disagreements": [],
+        "top_disagreements_he": [],
+        "top_disagreements_ru": [],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.9,
+          "Economy & Taxes": 0.95,
+          "Religion & State": 0.887,
+          "Security": 0.9,
+          "Civil Rights": 0.887,
+          "Cost of Living": 0.95,
+          "Education": 1.0,
+          "Environment": 0.725,
+          "Governance & Corruption": 0.925,
+          "Healthcare": 0.575,
+          "Housing": 0.75,
+          "Military Service": 0.875,
+          "Settlements": 0.738,
+          "Transport": 0.8,
+          "Welfare": 0.7
+        },
+        "evidence_by_type": {
+          "vote": 0.779,
+          "platform": 0.101,
+          "bill": 0.098,
+          "statement": 0.023
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.821,
+          "coverage": 1.0,
+          "answer_stability": 0.982,
+          "volatility_penalty": 0.203,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000005",
+        "name": "New Hope",
+        "name_he": "תקווה חדשה",
+        "name_ru": "Тиква Хадаша (Новая Надежда)",
+        "match_score": 0.4274,
+        "confidence": 0.6695,
+        "evidence_strength": 0.2622,
+        "volatility": 0.3405,
+        "coverage": 1.0,
+        "answer_stability": 0.9729,
+        "is_new_party": true,
+        "explanation": "Based on available evidence, your preferences align with New Hope on 2 key topics. Note: this party has limited parliamentary history. Match score is based on candidate history and declared positions.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות לתקווה חדשה ב-2 נושאים מרכזיים. שים לב: למפלגה זו היסטוריה פרלמנטרית מוגבלת. ציון ההתאמה מבוסס על היסטוריית המועמדים ועמדות מוצהרות.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Тиква Хадаша (Новая Надежда) по 2 ключевым темам. Примечание: у этой партии ограниченная парламентская история. Оценка совпадения основана на истории кандидатов и задекларированных позициях.",
+        "top_agreements": [
+          "Cost of Living",
+          "Transport"
+        ],
+        "top_agreements_he": [
+          "יוקר המחיה",
+          "תחבורה"
+        ],
+        "top_agreements_ru": [
+          "Стоимость жизни",
+          "Транспорт"
+        ],
+        "top_disagreements": [
+          "Civil Rights",
+          "Security",
+          "Environment"
+        ],
+        "top_disagreements_he": [
+          "זכויות אזרח",
+          "ביטחון",
+          "סביבה"
+        ],
+        "top_disagreements_ru": [
+          "Гражданские права",
+          "Безопасность",
+          "Экология"
+        ],
+        "weak_evidence_topics": [
+          "Judiciary",
+          "Cost of Living",
+          "Security"
+        ],
+        "topic_scores": {
+          "Judiciary": 0.3,
+          "Economy & Taxes": 0.5,
+          "Religion & State": 0.525,
+          "Security": 0.45,
+          "Civil Rights": 0.487,
+          "Cost of Living": 0.925,
+          "Education": 0.5,
+          "Environment": 0.4,
+          "Governance & Corruption": 0.35,
+          "Healthcare": 0.525,
+          "Housing": 0.525,
+          "Military Service": 0.55,
+          "Settlements": 0.3,
+          "Transport": 0.925,
+          "Welfare": 0.55
+        },
+        "evidence_by_type": {
+          "platform": 0.724,
+          "public_statement": 0.164,
+          "candidate_past_vote": 0.112
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.262,
+          "coverage": 1.0,
+          "answer_stability": 0.973,
+          "volatility_penalty": 0.341,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000001",
+        "name": "Likud",
+        "name_he": "הליכוד",
+        "name_ru": "Ликуд",
+        "match_score": 0.3044,
+        "confidence": 0.8809,
+        "evidence_strength": 0.77,
+        "volatility": 0.2685,
+        "coverage": 1.0,
+        "answer_stability": 0.9663,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Likud on 2 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות להליכוד ב-2 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Ликуд по 2 ключевым темам.",
+        "top_agreements": [
+          "Cost of Living",
+          "Transport"
+        ],
+        "top_agreements_he": [
+          "יוקר המחיה",
+          "תחבורה"
+        ],
+        "top_agreements_ru": [
+          "Стоимость жизни",
+          "Транспорт"
+        ],
+        "top_disagreements": [
+          "Healthcare",
+          "Military Service",
+          "Education"
+        ],
+        "top_disagreements_he": [
+          "בריאות",
+          "שירות צבאי",
+          "חינוך"
+        ],
+        "top_disagreements_ru": [
+          "Здравоохранение",
+          "Военная служба",
+          "Образование"
+        ],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.183,
+          "Economy & Taxes": 0.375,
+          "Religion & State": 0.375,
+          "Security": 0.325,
+          "Civil Rights": 0.388,
+          "Cost of Living": 0.9,
+          "Education": 0.45,
+          "Environment": 0.35,
+          "Governance & Corruption": 0.125,
+          "Healthcare": 0.475,
+          "Housing": 0.45,
+          "Military Service": 0.475,
+          "Settlements": 0.162,
+          "Transport": 0.9,
+          "Welfare": 0.525
+        },
+        "evidence_by_type": {
+          "vote": 0.742,
+          "platform": 0.126,
+          "bill": 0.105,
+          "statement": 0.027
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.77,
+          "coverage": 1.0,
+          "answer_stability": 0.966,
+          "volatility_penalty": 0.269,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000003",
+        "name": "United Torah Judaism",
+        "name_he": "יהדות התורה",
+        "name_ru": "Яхадут ха-Тора",
+        "match_score": 0.258,
+        "confidence": 0.9254,
+        "evidence_strength": 0.7755,
+        "volatility": 0.0,
+        "coverage": 1.0,
+        "answer_stability": 0.9643,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with United Torah Judaism on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות ליהדות התורה ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Яхадут ха-Тора по 3 ключевым темам.",
+        "top_agreements": [
+          "Welfare",
+          "Transport",
+          "Cost of Living"
+        ],
+        "top_agreements_he": [
+          "רווחה",
+          "תחבורה",
+          "יוקר המחיה"
+        ],
+        "top_agreements_ru": [
+          "Социальное обеспечение",
+          "Транспорт",
+          "Стоимость жизни"
+        ],
+        "top_disagreements": [
+          "Environment",
+          "Security",
+          "Settlements"
+        ],
+        "top_disagreements_he": [
+          "סביבה",
+          "ביטחון",
+          "התנחלויות"
+        ],
+        "top_disagreements_ru": [
+          "Экология",
+          "Безопасность",
+          "Поселения"
+        ],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.208,
+          "Economy & Taxes": 0.2,
+          "Religion & State": 0.05,
+          "Security": 0.35,
+          "Civil Rights": 0.162,
+          "Cost of Living": 0.875,
+          "Education": 0.175,
+          "Environment": 0.425,
+          "Governance & Corruption": 0.2,
+          "Healthcare": 0.6,
+          "Housing": 0.8,
+          "Military Service": 0.2,
+          "Settlements": 0.212,
+          "Transport": 0.95,
+          "Welfare": 0.975
+        },
+        "evidence_by_type": {
+          "vote": 0.773,
+          "platform": 0.107,
+          "bill": 0.095,
+          "statement": 0.024
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.775,
+          "coverage": 1.0,
+          "answer_stability": 0.964,
+          "volatility_penalty": 0.0,
+          "high_salience_coverage": 1.0
+        }
+      }
+    ],
+    "representation_gap": {
+      "has_gap": false,
+      "explanation": "Your closest party (Labor) aligns well with your preferences.",
+      "best_party_by_topic": [
+        {
+          "topic": "Judiciary",
+          "topic_he": "מערכת המשפט",
+          "topic_ru": "Судебная власть",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Governance & Corruption",
+          "topic_he": "שלטון ושחיתות",
+          "topic_ru": "Управление и коррупция",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Education",
+          "topic_he": "חינוך",
+          "topic_ru": "Образование",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Military Service",
+          "topic_he": "שירות צבאי",
+          "topic_ru": "Военная служба",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Economy & Taxes",
+          "topic_he": "כלכלה ומיסים",
+          "topic_ru": "Экономика и налоги",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Religion & State",
+          "topic_he": "דת ומדינה",
+          "topic_ru": "Религия и государство",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Security",
+          "topic_he": "ביטחון",
+          "topic_ru": "Безопасность",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Settlements",
+          "topic_he": "התנחלויות",
+          "topic_ru": "Поселения",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Civil Rights",
+          "topic_he": "זכויות אזרח",
+          "topic_ru": "Гражданские права",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Welfare",
+          "topic_he": "רווחה",
+          "topic_ru": "Социальное обеспечение",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Housing",
+          "topic_he": "דיור",
+          "topic_ru": "Жильё",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Healthcare",
+          "topic_he": "בריאות",
+          "topic_ru": "Здравоохранение",
+          "party": "Labor",
+          "party_he": "העבודה"
+        },
+        {
+          "topic": "Cost of Living",
+          "topic_he": "יוקר המחיה",
+          "topic_ru": "Стоимость жизни",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Transport",
+          "topic_he": "תחבורה",
+          "topic_ru": "Транспорт",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Environment",
+          "topic_he": "סביבה",
+          "topic_ru": "Экология",
+          "party": "Labor",
+          "party_he": "העבודה"
+        }
+      ]
+    },
+    "discovery_matches": [],
+    "_session_id": "9df53f59-f26a-4637-aa6b-9b73fec41b16",
+    "_questions_answered": 21,
+    "_questions_seen": [
+      {
+        "topic": "judiciary",
+        "value": -0.9,
+        "salience": 2.0,
+        "text": "Should the Knesset be able to reinstate a law that the Supre"
+      },
+      {
+        "topic": "governance_corruption",
+        "value": -0.9,
+        "salience": 2.0,
+        "text": "Should an elected Prime Minister be allowed to continue serv"
+      },
+      {
+        "topic": "education",
+        "value": -0.7,
+        "salience": 1.0,
+        "text": "Should ultra-Orthodox schools be allowed to receive state fu"
+      },
+      {
+        "topic": "military_service",
+        "value": -0.8,
+        "salience": 2.0,
+        "text": "Should ultra-Orthodox students enrolled in full-time Torah s"
+      },
+      {
+        "topic": "economy_taxes",
+        "value": 0.7,
+        "salience": 1.0,
+        "text": "Should religious councils receive the same per-capita state "
+      },
+      {
+        "topic": "religion_state",
+        "value": -0.95,
+        "salience": 2.0,
+        "text": "Should Haredi men who study full-time in yeshivas receive a "
+      },
+      {
+        "topic": "security",
+        "value": -0.6,
+        "salience": 1.0,
+        "text": "Should Israel continue to expand Jewish settlements in the W"
+      },
+      {
+        "topic": "settlements",
+        "value": -0.9,
+        "salience": 2.0,
+        "text": "Should Israel formally annex major settlement blocs in the W"
+      },
+      {
+        "topic": "civil_rights",
+        "value": 0.9,
+        "salience": 2.0,
+        "text": "Should same-sex couples have the right to adopt children in "
+      },
+      {
+        "topic": "welfare",
+        "value": -0.75,
+        "salience": 1.0,
+        "text": "Should child allowances be means-tested and limited to lower"
+      },
+      {
+        "topic": "housing",
+        "value": -0.7,
+        "salience": 1.0,
+        "text": "Should landlords be free to set and increase rents without g"
+      },
+      {
+        "topic": "healthcare",
+        "value": -0.7,
+        "salience": 1.0,
+        "text": "Should citizens have the freedom to purchase additional priv"
+      },
+      {
+        "topic": "cost_of_living",
+        "value": -0.0,
+        "salience": 0.5,
+        "text": "Should the government provide direct subsidies to reduce the"
+      },
+      {
+        "topic": "transport",
+        "value": 0.0,
+        "salience": 0.5,
+        "text": "Should the state invest primarily in road infrastructure to "
+      },
+      {
+        "topic": "environment",
+        "value": -0.85,
+        "salience": 2.0,
+        "text": "Should environmental regulations be loosened to support econ"
+      },
+      {
+        "topic": "judiciary",
+        "value": -0.9,
+        "salience": 2.0,
+        "text": "Should a simple majority of Knesset members be able to overr"
+      },
+      {
+        "topic": "settlements",
+        "value": -0.9,
+        "salience": 2.0,
+        "text": "Should the law prohibit any evacuation of settlements even i"
+      },
+      {
+        "topic": "religion_state",
+        "value": -0.95,
+        "salience": 2.0,
+        "text": "Should Jewish Israelis who marry abroad in civil ceremonies "
+      },
+      {
+        "topic": "governance_corruption",
+        "value": 0.9,
+        "salience": 2.0,
+        "text": "Should a sitting Prime Minister who has been indicted on cri"
+      },
+      {
+        "topic": "civil_rights",
+        "value": -0.9,
+        "salience": 2.0,
+        "text": "Should religious institutions be exempt from anti-discrimina"
+      },
+      {
+        "topic": "judiciary",
+        "value": -0.9,
+        "salience": 2.0,
+        "text": "Should the Judicial Appointments Committee include more elec"
+      }
+    ]
+  },
+  "center_neutral": {
+    "session_id": "59e07985-1539-405a-b523-9c49b37f3d81",
+    "run_id": "dcfc2fc0-f61c-4d9a-9093-3b9e4e98d40f",
+    "parties": [
+      {
+        "party_id": "20000000-0000-0000-0000-000000000005",
+        "name": "New Hope",
+        "name_he": "תקווה חדשה",
+        "name_ru": "Тиква Хадаша (Новая Надежда)",
+        "match_score": 0.7963,
+        "confidence": 0.6723,
+        "evidence_strength": 0.2622,
+        "volatility": 0.3405,
+        "coverage": 1.0,
+        "answer_stability": 0.9836,
+        "is_new_party": true,
+        "explanation": "Based on available evidence, your preferences align with New Hope on 3 key topics. Note: this party has limited parliamentary history. Match score is based on candidate history and declared positions.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות לתקווה חדשה ב-3 נושאים מרכזיים. שים לב: למפלגה זו היסטוריה פרלמנטרית מוגבלת. ציון ההתאמה מבוסס על היסטוריית המועמדים ועמדות מוצהרות.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Тиква Хадаша (Новая Надежда) по 3 ключевым темам. Примечание: у этой партии ограниченная парламентская история. Оценка совпадения основана на истории кандидатов и задекларированных позициях.",
+        "top_agreements": [
+          "Cost of Living",
+          "Transport",
+          "Religion & State"
+        ],
+        "top_agreements_he": [
+          "יוקר המחיה",
+          "תחבורה",
+          "דת ומדינה"
+        ],
+        "top_agreements_ru": [
+          "Стоимость жизни",
+          "Транспорт",
+          "Религия и государство"
+        ],
+        "top_disagreements": [],
+        "top_disagreements_he": [],
+        "top_disagreements_ru": [],
+        "weak_evidence_topics": [
+          "Judiciary",
+          "Cost of Living",
+          "Security"
+        ],
+        "topic_scores": {
+          "Judiciary": 0.738,
+          "Economy & Taxes": 0.85,
+          "Religion & State": 0.9,
+          "Security": 0.837,
+          "Civil Rights": 0.825,
+          "Cost of Living": 0.925,
+          "Education": 0.85,
+          "Environment": 0.725,
+          "Governance & Corruption": 0.637,
+          "Healthcare": 0.825,
+          "Housing": 0.775,
+          "Military Service": 0.8,
+          "Settlements": 0.75,
+          "Transport": 0.925,
+          "Welfare": 0.875
+        },
+        "evidence_by_type": {
+          "platform": 0.724,
+          "public_statement": 0.164,
+          "candidate_past_vote": 0.112
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.262,
+          "coverage": 1.0,
+          "answer_stability": 0.984,
+          "volatility_penalty": 0.341,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000004",
+        "name": "Yesh Atid",
+        "name_he": "יש עתיד",
+        "name_ru": "Еш Атид (Есть будущее)",
+        "match_score": 0.7961,
+        "confidence": 0.9117,
+        "evidence_strength": 0.8205,
+        "volatility": 0.2032,
+        "coverage": 1.0,
+        "answer_stability": 0.9772,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Yesh Atid on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות ליש עתיד ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Еш Атид (Есть будущее) по 3 ключевым темам.",
+        "top_agreements": [
+          "Housing",
+          "Welfare",
+          "Cost of Living"
+        ],
+        "top_agreements_he": [
+          "דיור",
+          "רווחה",
+          "יוקר המחיה"
+        ],
+        "top_agreements_ru": [
+          "Жильё",
+          "Социальное обеспечение",
+          "Стоимость жизни"
+        ],
+        "top_disagreements": [],
+        "top_disagreements_he": [],
+        "top_disagreements_ru": [],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.637,
+          "Economy & Taxes": 0.7,
+          "Religion & State": 0.738,
+          "Security": 0.725,
+          "Civil Rights": 0.762,
+          "Cost of Living": 0.95,
+          "Education": 0.65,
+          "Environment": 0.95,
+          "Governance & Corruption": 0.863,
+          "Healthcare": 0.875,
+          "Housing": 1.0,
+          "Military Service": 0.875,
+          "Settlements": 0.812,
+          "Transport": 0.8,
+          "Welfare": 0.975
+        },
+        "evidence_by_type": {
+          "vote": 0.779,
+          "platform": 0.101,
+          "bill": 0.098,
+          "statement": 0.023
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.821,
+          "coverage": 1.0,
+          "answer_stability": 0.977,
+          "volatility_penalty": 0.203,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000002",
+        "name": "Labor",
+        "name_he": "העבודה",
+        "name_ru": "Авода (Труд)",
+        "match_score": 0.7019,
+        "confidence": 0.9464,
+        "evidence_strength": 0.851,
+        "volatility": 0.0,
+        "coverage": 1.0,
+        "answer_stability": 0.9818,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Labor on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות להעבודה ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Авода (Труд) по 3 ключевым темам.",
+        "top_agreements": [
+          "Environment",
+          "Governance & Corruption",
+          "Military Service"
+        ],
+        "top_agreements_he": [
+          "סביבה",
+          "שלטון ושחיתות",
+          "שירות צבאי"
+        ],
+        "top_agreements_ru": [
+          "Экология",
+          "Управление и коррупция",
+          "Военная служба"
+        ],
+        "top_disagreements": [],
+        "top_disagreements_he": [],
+        "top_disagreements_ru": [],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.613,
+          "Economy & Taxes": 0.65,
+          "Religion & State": 0.712,
+          "Security": 0.587,
+          "Civil Rights": 0.688,
+          "Cost of Living": 0.725,
+          "Education": 0.625,
+          "Environment": 0.85,
+          "Governance & Corruption": 0.838,
+          "Healthcare": 0.725,
+          "Housing": 0.775,
+          "Military Service": 0.825,
+          "Settlements": 0.625,
+          "Transport": 0.725,
+          "Welfare": 0.75
+        },
+        "evidence_by_type": {
+          "bill": 0.552,
+          "vote": 0.327,
+          "platform": 0.097,
+          "statement": 0.024
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.851,
+          "coverage": 1.0,
+          "answer_stability": 0.982,
+          "volatility_penalty": 0.0,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000001",
+        "name": "Likud",
+        "name_he": "הליכוד",
+        "name_ru": "Ликуд",
+        "match_score": 0.687,
+        "confidence": 0.8852,
+        "evidence_strength": 0.77,
+        "volatility": 0.2685,
+        "coverage": 1.0,
+        "answer_stability": 0.9776,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with Likud on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות להליכוד ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Ликуд по 3 ключевым темам.",
+        "top_agreements": [
+          "Cost of Living",
+          "Transport",
+          "Welfare"
+        ],
+        "top_agreements_he": [
+          "יוקר המחיה",
+          "תחבורה",
+          "רווחה"
+        ],
+        "top_agreements_ru": [
+          "Стоимость жизни",
+          "Транспорт",
+          "Социальное обеспечение"
+        ],
+        "top_disagreements": [
+          "Governance & Corruption"
+        ],
+        "top_disagreements_he": [
+          "שלטון ושחיתות"
+        ],
+        "top_disagreements_ru": [
+          "Управление и коррупция"
+        ],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.613,
+          "Economy & Taxes": 0.725,
+          "Religion & State": 0.75,
+          "Security": 0.738,
+          "Civil Rights": 0.713,
+          "Cost of Living": 0.9,
+          "Education": 0.8,
+          "Environment": 0.675,
+          "Governance & Corruption": 0.438,
+          "Healthcare": 0.775,
+          "Housing": 0.7,
+          "Military Service": 0.725,
+          "Settlements": 0.613,
+          "Transport": 0.9,
+          "Welfare": 0.85
+        },
+        "evidence_by_type": {
+          "vote": 0.742,
+          "platform": 0.126,
+          "bill": 0.105,
+          "statement": 0.027
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.77,
+          "coverage": 1.0,
+          "answer_stability": 0.978,
+          "volatility_penalty": 0.269,
+          "high_salience_coverage": 1.0
+        }
+      },
+      {
+        "party_id": "20000000-0000-0000-0000-000000000003",
+        "name": "United Torah Judaism",
+        "name_he": "יהדות התורה",
+        "name_ru": "Яхадут ха-Тора",
+        "match_score": 0.6281,
+        "confidence": 0.9219,
+        "evidence_strength": 0.7755,
+        "volatility": 0.0,
+        "coverage": 1.0,
+        "answer_stability": 0.9671,
+        "is_new_party": false,
+        "explanation": "Based on available evidence, your preferences align with United Torah Judaism on 3 key topics.",
+        "explanation_he": "בהתבסס על הראיות הזמינות, העדפותיך מתאימות ליהדות התורה ב-3 נושאים מרכזיים.",
+        "explanation_ru": "На основе имеющихся данных ваши предпочтения совпадают с позицией Яхадут ха-Тора по 3 ключевым темам.",
+        "top_agreements": [
+          "Housing",
+          "Transport",
+          "Healthcare"
+        ],
+        "top_agreements_he": [
+          "דיור",
+          "תחבורה",
+          "בריאות"
+        ],
+        "top_agreements_ru": [
+          "Жильё",
+          "Транспорт",
+          "Здравоохранение"
+        ],
+        "top_disagreements": [
+          "Military Service",
+          "Religion & State"
+        ],
+        "top_disagreements_he": [
+          "שירות צבאי",
+          "דת ומדינה"
+        ],
+        "top_disagreements_ru": [
+          "Военная служба",
+          "Религия и государство"
+        ],
+        "weak_evidence_topics": [],
+        "topic_scores": {
+          "Judiciary": 0.662,
+          "Economy & Taxes": 0.55,
+          "Religion & State": 0.425,
+          "Security": 0.762,
+          "Civil Rights": 0.562,
+          "Cost of Living": 0.875,
+          "Education": 0.525,
+          "Environment": 0.75,
+          "Governance & Corruption": 0.5,
+          "Healthcare": 0.9,
+          "Housing": 0.95,
+          "Military Service": 0.45,
+          "Settlements": 0.663,
+          "Transport": 0.95,
+          "Welfare": 0.7
+        },
+        "evidence_by_type": {
+          "vote": 0.773,
+          "platform": 0.107,
+          "bill": 0.095,
+          "statement": 0.024
+        },
+        "agenda_breadth": 1.0,
+        "is_sectoral": false,
+        "high_salience_coverage": 1.0,
+        "confidence_breakdown": {
+          "evidence_quality": 0.775,
+          "coverage": 1.0,
+          "answer_stability": 0.967,
+          "volatility_penalty": 0.0,
+          "high_salience_coverage": 1.0
+        }
+      }
+    ],
+    "representation_gap": {
+      "has_gap": false,
+      "explanation": "Your closest party (New Hope) aligns well with your preferences.",
+      "best_party_by_topic": [
+        {
+          "topic": "Judiciary",
+          "topic_he": "מערכת המשפט",
+          "topic_ru": "Судебная власть",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Governance & Corruption",
+          "topic_he": "שלטון ושחיתות",
+          "topic_ru": "Управление и коррупция",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Education",
+          "topic_he": "חינוך",
+          "topic_ru": "Образование",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Military Service",
+          "topic_he": "שירות צבאי",
+          "topic_ru": "Военная служба",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Economy & Taxes",
+          "topic_he": "כלכלה ומיסים",
+          "topic_ru": "Экономика и налоги",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Religion & State",
+          "topic_he": "דת ומדינה",
+          "topic_ru": "Религия и государство",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Security",
+          "topic_he": "ביטחון",
+          "topic_ru": "Безопасность",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Settlements",
+          "topic_he": "התנחלויות",
+          "topic_ru": "Поселения",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Civil Rights",
+          "topic_he": "זכויות אזרח",
+          "topic_ru": "Гражданские права",
+          "party": "New Hope",
+          "party_he": "תקווה חדשה"
+        },
+        {
+          "topic": "Welfare",
+          "topic_he": "רווחה",
+          "topic_ru": "Социальное обеспечение",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Housing",
+          "topic_he": "דיור",
+          "topic_ru": "Жильё",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Healthcare",
+          "topic_he": "בריאות",
+          "topic_ru": "Здравоохранение",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Cost of Living",
+          "topic_he": "יוקר המחיה",
+          "topic_ru": "Стоимость жизни",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        },
+        {
+          "topic": "Transport",
+          "topic_he": "תחבורה",
+          "topic_ru": "Транспорт",
+          "party": "United Torah Judaism",
+          "party_he": "יהדות התורה"
+        },
+        {
+          "topic": "Environment",
+          "topic_he": "סביבה",
+          "topic_ru": "Экология",
+          "party": "Yesh Atid",
+          "party_he": "יש עתיד"
+        }
+      ]
+    },
+    "discovery_matches": [],
+    "_session_id": "59e07985-1539-405a-b523-9c49b37f3d81",
+    "_questions_answered": 21,
+    "_questions_seen": [
+      {
+        "topic": "judiciary",
+        "value": 0.0,
+        "salience": 1.0,
+        "text": "Should the Knesset be able to reinstate a law that the Supre"
+      },
+      {
+        "topic": "governance_corruption",
+        "value": -0.4,
+        "salience": 1.0,
+        "text": "Should an elected Prime Minister be allowed to continue serv"
+      },
+      {
+        "topic": "education",
+        "value": 0.0,
+        "salience": 1.0,
+        "text": "Should ultra-Orthodox schools be allowed to receive state fu"
+      },
+      {
+        "topic": "military_service",
+        "value": -0.3,
+        "salience": 1.0,
+        "text": "Should ultra-Orthodox students enrolled in full-time Torah s"
+      },
+      {
+        "topic": "economy_taxes",
+        "value": -0.0,
+        "salience": 1.0,
+        "text": "Should religious councils receive the same per-capita state "
+      },
+      {
+        "topic": "religion_state",
+        "value": -0.2,
+        "salience": 1.0,
+        "text": "Should Haredi men who study full-time in yeshivas receive a "
+      },
+      {
+        "topic": "security",
+        "value": 0.2,
+        "salience": 1.0,
+        "text": "Should Israel continue to expand Jewish settlements in the W"
+      },
+      {
+        "topic": "settlements",
+        "value": 0.0,
+        "salience": 1.0,
+        "text": "Should Israel formally annex major settlement blocs in the W"
+      },
+      {
+        "topic": "civil_rights",
+        "value": 0.2,
+        "salience": 1.0,
+        "text": "Should same-sex couples have the right to adopt children in "
+      },
+      {
+        "topic": "welfare",
+        "value": -0.1,
+        "salience": 1.0,
+        "text": "Should child allowances be means-tested and limited to lower"
+      },
+      {
+        "topic": "housing",
+        "value": -0.2,
+        "salience": 1.0,
+        "text": "Should landlords be free to set and increase rents without g"
+      },
+      {
+        "topic": "healthcare",
+        "value": -0.1,
+        "salience": 1.0,
+        "text": "Should citizens have the freedom to purchase additional priv"
+      },
+      {
+        "topic": "cost_of_living",
+        "value": -0.0,
+        "salience": 0.5,
+        "text": "Should the government provide direct subsidies to reduce the"
+      },
+      {
+        "topic": "transport",
+        "value": 0.0,
+        "salience": 0.5,
+        "text": "Should the state invest primarily in road infrastructure to "
+      },
+      {
+        "topic": "environment",
+        "value": -0.2,
+        "salience": 1.0,
+        "text": "Should environmental regulations be loosened to support econ"
+      },
+      {
+        "topic": "judiciary",
+        "value": 0.0,
+        "salience": 1.0,
+        "text": "Should a simple majority of Knesset members be able to overr"
+      },
+      {
+        "topic": "settlements",
+        "value": 0.0,
+        "salience": 1.0,
+        "text": "Should the law prohibit any evacuation of settlements even i"
+      },
+      {
+        "topic": "religion_state",
+        "value": -0.2,
+        "salience": 1.0,
+        "text": "Should Jewish Israelis who marry abroad in civil ceremonies "
+      },
+      {
+        "topic": "security",
+        "value": -0.2,
+        "salience": 1.0,
+        "text": "Do you support the establishment of an independent Palestini"
+      },
+      {
+        "topic": "civil_rights",
+        "value": 0.2,
+        "salience": 1.0,
+        "text": "Should Arab citizens of Israel receive equal per-capita budg"
+      },
+      {
+        "topic": "governance_corruption",
+        "value": -0.4,
+        "salience": 1.0,
+        "text": "Should the government be able to limit the scope of State Co"
+      }
+    ]
+  }
+}

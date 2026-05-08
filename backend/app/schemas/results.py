@@ -32,6 +32,8 @@ class PartyResult(BaseModel):
     agenda_breadth: float = 1.0          # 0..1 fraction of all system topics covered
     is_sectoral: bool = False            # True when agenda_breadth < SECTORAL_THRESHOLD
     high_salience_coverage: float = 1.0  # fraction of user's very-important topics covered
+    # Confidence score decomposition (for UI display)
+    confidence_breakdown: dict[str, float] = {}
 
 
 class BestPartyByTopic(BaseModel):

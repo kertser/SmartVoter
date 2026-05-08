@@ -99,9 +99,9 @@ class TestSelectNextQuestionBasics:
         """Hard max should be 40 (not 15)."""
         assert HARD_MAX == 40
 
-    def test_min_questions_is_8(self):
-        """Min questions before offering results should be 8."""
-        assert MIN_QUESTIONS == 8
+    def test_min_questions_is_20(self):
+        """Min questions before offering results should be 20."""
+        assert MIN_QUESTIONS == 20
 
 
 # ── Section 2: Evidence quality preference ────────────────────────────────────
@@ -459,17 +459,17 @@ class TestAggregateSalienceByTopic:
 # ── Section 8: Stop conditions ────────────────────────────────────────────────
 
 class TestStopConditions:
-    def test_offer_results_after_8_stable_all_covered(self):
-        """Results offered when stable AND all topics covered AND min answered."""
-        assert should_offer_results(8, 0.85, True) is True
+    def test_offer_results_after_20_stable_all_covered(self):
+        """Results offered when stable AND all topics covered AND min answered (MIN_QUESTIONS=20)."""
+        assert should_offer_results(20, 0.85, True) is True
 
     def test_no_offer_when_unstable(self):
         """Not offered when ranking unstable."""
-        assert should_offer_results(8, 0.70, True) is False
+        assert should_offer_results(20, 0.70, True) is False
 
-    def test_no_offer_before_8_questions(self):
+    def test_no_offer_before_min_questions(self):
         """Not offered before MIN_QUESTIONS even if stable."""
-        assert should_offer_results(7, 0.95, True) is False
+        assert should_offer_results(19, 0.95, True) is False
 
     def test_force_results_at_hard_max(self):
         """Force results at HARD_MAX (40)."""
@@ -478,15 +478,15 @@ class TestStopConditions:
 
     def test_no_offer_when_topics_not_covered(self):
         """Not offered when not all topics covered yet."""
-        assert should_offer_results(8, 0.85, False) is False
+        assert should_offer_results(20, 0.85, False) is False
 
     def test_offer_requires_all_three_conditions(self):
         """All three conditions (count, stability, coverage) must hold."""
         # CONVERGENCE_THRESHOLD = 0.80 — must be >= to trigger
-        assert should_offer_results(8, 0.80, True) is True    # exactly at threshold → offered
-        assert should_offer_results(8, 0.79, True) is False   # just below threshold → not offered
-        assert should_offer_results(8, 0.81, True) is True
-        assert should_offer_results(8, 0.81, False) is False  # topics not covered
+        assert should_offer_results(20, 0.80, True) is True    # exactly at threshold → offered
+        assert should_offer_results(20, 0.79, True) is False   # just below threshold → not offered
+        assert should_offer_results(20, 0.81, True) is True
+        assert should_offer_results(20, 0.81, False) is False  # topics not covered
 
 
 # ── Section 9: End-to-end values discovery scenario ──────────────────────────
