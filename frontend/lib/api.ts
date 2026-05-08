@@ -116,11 +116,24 @@ export interface RepresentationGap {
   best_party_by_topic: BestPartyByTopic[];
 }
 
+export interface DiscoveryMatch {
+  topic: string;
+  topic_he?: string;
+  topic_ru?: string;
+  party: string;
+  party_he?: string;
+  party_ru?: string;
+  party_id: string;
+  similarity: number;
+  top3_best_similarity: number;
+}
+
 export interface ResultsOut {
   session_id: string;
   run_id: string;
   parties: PartyResult[];
   representation_gap: RepresentationGap;
+  discovery_matches?: DiscoveryMatch[];
 }
 
 async function apiFetch<T>(
@@ -179,6 +192,13 @@ export async function submitAnswer(answer: AnswerIn): Promise<AnswerOut> {
 
 export async function getResults(sessionId: string): Promise<ResultsOut> {
   return apiFetch<ResultsOut>(`/api/results/${sessionId}`);
+}
+
+export async function getQuestionContext(
+  questionId: string,
+  lang: string = "en",
+): Promise<{ question_id: string; context_note: string | null; topic_name: string | null; lang: string }> {
+  return apiFetch(`/api/questions/${questionId}/context?lang=${lang}`);
 }
 
 export async function getMethodology(): Promise<object> {

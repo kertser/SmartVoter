@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 import uuid
 import logging
 
 from backend.app.db import get_db
+from backend.app.config import get_settings, Settings
 from backend.app.models.user_session import UserSession
 from backend.app.models.question import Question, AnswerScaleType
 from backend.app.models.user_answer import UserAnswer
@@ -27,6 +28,31 @@ from backend.app.services.questionnaire import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["questionnaire"])
+
+
+# ── Background pre-warming helper ─────────────────────────────────────────────
+
+def _prefetch_questions_background(settings: Settings) -> None:
+    """
+    Background task: generate discovery + niche questions in advance so
+    the user doesn't wait for LLM calls during the depth phase.
+    Runs at most once per session creation.
+    Only runs when OPENAI_API_KEY is configured.
+    Errors are logged but never bubble up to the user.
+    """
+    if not settings.openai_api_key:
+        return
+    try:
+        from backend.app.db.session import SessionLocal
+        from backend.app.services.ingestion.question_pipeline import run_niche_discovery_pipeline
+        bg_db = SessionLocal()
+        try:
+            stats = run_niche_discovery_pipeline(bg_db, settings, limit=12, max_workers=3)
+            logger.info("Session prefetch: discovery pipeline → %s", stats)
+        finally:
+            bg_db.close()
+    except Exception as exc:
+        logger.debug("Background question prefetch failed (non-critical): %s", exc)
 
 
 def _ui_strings() -> dict:
@@ -301,9 +327,14 @@ def _build_convergence_meta(
 
 @router.post("/sessions", response_model=SessionOut)
 def create_or_get_session(
-    body: SessionCreate, db: Session = Depends(get_db)
+    body: SessionCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
 ) -> SessionOut:
-    """Upsert an anonymous session. Client provides UUID or gets a new one."""
+    """Upsert an anonymous session. Client provides UUID or gets a new one.
+    Also fires a background task to pre-warm discovery questions.
+    """
     session_id = body.session_id or uuid.uuid4()
     session = db.query(UserSession).filter(UserSession.id == session_id).first()
     if not session:
@@ -311,6 +342,8 @@ def create_or_get_session(
         db.add(session)
         db.commit()
         db.refresh(session)
+        # Pre-warm niche/discovery questions in background (non-blocking)
+        background_tasks.add_task(_prefetch_questions_background, settings)
     return SessionOut(session_id=session.id, created_at=session.created_at)
 
 
@@ -626,6 +659,15 @@ def get_next_question(
     else:
         why = _ui_strings()["why_selected"]["adaptive_question"]
 
+    # Populate context_note from policy item description (no migration needed)
+    context_note: str | None = None
+    if q.policy_item_id:
+        pi_for_note = db.query(PolicyItem).filter(PolicyItem.id == q.policy_item_id).first()
+        if pi_for_note and pi_for_note.description:
+            context_note = pi_for_note.description
+    if not context_note and topic and topic.description:
+        context_note = topic.description
+
     return QuestionOut(
         id=q.id,
         question_text_en=q.question_text_en,
@@ -636,7 +678,7 @@ def get_next_question(
         topic_slug=topic.slug if topic else "unknown",
         topic_name_he=topic.name_he if topic else None,
         topic_name_ru=topic.name_ru if topic else None,
-        context_note=None,
+        context_note=context_note,
         why_selected=why,
         is_root_question=q.is_root_question,
         can_show_results=conv["can_show_results"],
@@ -648,3 +690,55 @@ def get_next_question(
         is_discovery_question=is_discovery,
         outsider_signal_strength=round(best.outsider_party_signal, 3),
     )
+
+
+@router.get("/questions/{question_id}/context")
+def get_question_context(
+    question_id: uuid.UUID,
+    lang: str = "en",
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    Return a plain-language explanation of what this question is about.
+    Uses the policy item description and topic description as context.
+    No LLM call — returns stored data only (fast, no latency).
+    """
+    q = db.query(Question).filter(Question.id == question_id).first()
+    if not q:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    context_note: str | None = None
+    topic_name: str | None = None
+
+    if q.policy_item_id:
+        pi = db.query(PolicyItem).filter(PolicyItem.id == q.policy_item_id).first()
+        if pi and pi.description:
+            context_note = pi.description
+        if pi and pi.topic_id:
+            topic = db.query(Topic).filter(Topic.id == pi.topic_id).first()
+            if topic:
+                if lang == "he" and topic.name_he:
+                    topic_name = topic.name_he
+                elif lang == "ru" and topic.name_ru:
+                    topic_name = topic.name_ru
+                else:
+                    topic_name = topic.name_en
+
+    if not context_note and q.topic_id:
+        topic = db.query(Topic).filter(Topic.id == q.topic_id).first()
+        if topic:
+            context_note = topic.description
+            if lang == "he" and topic.name_he:
+                topic_name = topic.name_he
+            elif lang == "ru" and topic.name_ru:
+                topic_name = topic.name_ru
+            else:
+                topic_name = topic.name_en
+
+    return {
+        "question_id": str(question_id),
+        "context_note": context_note,
+        "topic_name": topic_name,
+        "lang": lang,
+    }
+

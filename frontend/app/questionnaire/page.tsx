@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getOrCreateSessionId } from "@/lib/session";
-import { createSession, getNextQuestion, submitAnswer, Question } from "@/lib/api";
+import { createSession, getNextQuestion, submitAnswer, getQuestionContext, Question } from "@/lib/api";
 import { useT, useLang } from "@/lib/i18n";
 import { Tooltip } from "@/components/Tooltip";
 
@@ -13,9 +13,12 @@ import { Tooltip } from "@/components/Tooltip";
  *
  * Stopping logic (backend-driven, not hardcoded):
  * - When the API returns null → redirect to results immediately.
- * - When question.can_show_results === true → show convergence banner
+ * - When question.can_show_results === true AND answeredCount >= 20 → show convergence banner
  *   (user may view results now or keep going).
  * - Hard max is enforced server-side (HARD_MAX = 40).
+ *
+ * Questions are pre-generated in background on session creation so the user
+ * never waits for LLM calls. On-the-fly auto-generation covers gaps.
  */
 export default function QuestionnairePage() {
   const router = useRouter();
@@ -31,14 +34,20 @@ export default function QuestionnairePage() {
   const [submitting, setSubmitting] = useState(false);
   const [showWhy, setShowWhy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Convergence banner state
+  // Convergence banner state — only shown after 20+ answers
   const [showConvergenceBanner, setShowConvergenceBanner] = useState(false);
+  // Explain-question state
+  const [showExplain, setShowExplain] = useState(false);
+  const [explainText, setExplainText] = useState<string | null>(null);
+  const [explainLoading, setExplainLoading] = useState(false);
 
   const loadNextQuestion = useCallback(async (sid: string) => {
     setLoading(true);
     setSelectedAnswer(null);
     setSalience(1.0);
     setShowWhy(false);
+    setShowExplain(false);
+    setExplainText(null);
     setError(null);
     setShowConvergenceBanner(false);
     try {
@@ -48,8 +57,8 @@ export default function QuestionnairePage() {
         return;
       }
       setQuestion(nextQuestion);
-      // Show convergence banner if backend says results are ready (but don't force)
-      if (nextQuestion.can_show_results) {
+      // Show convergence banner only after 20 answers to encourage more questions
+      if (nextQuestion.can_show_results && (nextQuestion.answered_count ?? 0) >= 20) {
         setShowConvergenceBanner(true);
       }
     } catch {
@@ -99,6 +108,36 @@ export default function QuestionnairePage() {
     router.push(`/results?session_id=${sessionId}`);
   };
 
+  /** Explain this question — use stored context_note if available, else fetch from API. */
+  const handleExplain = async () => {
+    if (showExplain) {
+      setShowExplain(false);
+      return;
+    }
+    if (explainText !== null) {
+      // Already fetched — just toggle
+      setShowExplain(true);
+      return;
+    }
+    // Use context note already on question if available (fast, no round-trip)
+    if (question?.context_note) {
+      setExplainText(question.context_note);
+      setShowExplain(true);
+      return;
+    }
+    // Otherwise fetch from API (returns stored descriptions — no LLM latency)
+    setExplainLoading(true);
+    setShowExplain(true);
+    try {
+      const ctx = await getQuestionContext(question!.id, lang);
+      setExplainText(ctx.context_note ?? null);
+    } catch {
+      setExplainText(null);
+    } finally {
+      setExplainLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center gap-4 py-20">
@@ -133,35 +172,30 @@ export default function QuestionnairePage() {
     { label: q.salience.veryImportant, value: 2.0 },
   ];
 
-  // Progress bar: survey phase fills proportionally to topics covered;
-  // depth phase shows answered count / 40 (hard max).
+  // Progress — simple linear: answered / 40
+  const HARD_MAX = 40;
+  const progressPct = Math.min((answeredCount / HARD_MAX) * 100, 100);
+
   const topicsCovered = question?.topics_covered ?? 0;
   const topicsTotal = question?.topics_total ?? 15;
-  const phase = question?.phase ?? "survey";
-  const rankingStability = question?.ranking_stability ?? 0;
-
-  const progressPct =
-    phase === "survey"
-      ? Math.min((topicsCovered / Math.max(topicsTotal, 1)) * 100, 100)
-      : Math.min((answeredCount / 40) * 100, 100);
-
-  const phaseLabel =
-    phase === "survey" ? q.phaseSurveyLabel : q.phaseDepthLabel;
-
   const topicsLeftCount = topicsTotal - topicsCovered;
+
+  // Topic coverage dots (filled = covered)
+  const maxDots = Math.min(topicsTotal, 15);
+  const coveredDots = Math.min(topicsCovered, maxDots);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      {/* Progress bar */}
-      <div className="space-y-1">
-        <div className="flex justify-between text-xs text-slate-500">
-          <span>{q.progressLabel(answeredCount + 1)}</span>
-          <span className="flex items-center gap-3">
-            {/* Topic coverage indicator */}
-            <span className={topicsCovered >= topicsTotal ? "text-green-600 font-medium" : ""}>
-              {q.topicsCoveredLabel(topicsCovered, topicsTotal)}
-            </span>
-            {answeredCount >= 8 && (
+      {/* ── Progress section ── */}
+      <div className="space-y-2">
+        {/* Row: question counter + optional early-exit */}
+        <div className="flex justify-between items-center text-sm">
+          <span className="font-semibold text-slate-700">
+            {q.progressLabel(answeredCount + 1)}
+          </span>
+          <span className="flex items-center gap-3 text-xs text-slate-500">
+            {/* Show results only after 20 questions */}
+            {answeredCount >= 20 && (
               <button
                 onClick={handleViewResults}
                 className="text-brand-600 hover:underline font-medium"
@@ -171,35 +205,43 @@ export default function QuestionnairePage() {
             )}
           </span>
         </div>
-        {/* Dual-stage progress bar */}
-        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+
+        {/* Main progress bar — linear 0–40 */}
+        <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all duration-300 ${
-              phase === "survey" ? "bg-brand-500" : "bg-indigo-500"
-            }`}
+            className="h-full rounded-full transition-all duration-500 bg-brand-500"
             style={{ width: `${progressPct}%` }}
           />
         </div>
-        <div className="flex justify-between text-xs text-slate-400">
-          <span>{phaseLabel}</span>
-          {phase === "depth" && rankingStability > 0 && (
-            <span>
-              {q.stabilityReadyLabel}:{" "}
-              <span
-                className={
-                  rankingStability >= 0.8
-                    ? "text-green-600 font-medium"
-                    : "text-slate-500"
-                }
-              >
-                {Math.round(rankingStability * 100)}%
-              </span>
+
+        {/* Topic coverage row */}
+        <div className="flex items-center justify-between text-xs text-slate-400">
+          {/* Mini dot-grid for topic coverage */}
+          <span className="flex items-center gap-1.5">
+            <span className="flex gap-0.5">
+              {Array.from({ length: maxDots }).map((_, i) => (
+                <span
+                  key={i}
+                  className={`inline-block h-1.5 w-1.5 rounded-full transition-colors ${
+                    i < coveredDots ? "bg-brand-400" : "bg-slate-200"
+                  }`}
+                />
+              ))}
+            </span>
+            <span className={topicsCovered >= topicsTotal ? "text-green-600 font-medium" : ""}>
+              {q.topicsCoveredLabel(topicsCovered, topicsTotal)}
+            </span>
+          </span>
+
+          {topicsLeftCount > 0 && (
+            <span className="text-slate-400">
+              {q.convergenceTopicsLeft(topicsLeftCount)}
             </span>
           )}
         </div>
       </div>
 
-      {/* Convergence banner — shown when ranking is stable */}
+      {/* Convergence banner — shown when ranking is stable AND ≥20 answers */}
       {showConvergenceBanner && (
         <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 flex flex-wrap items-center gap-3 text-sm">
           <span className="text-green-800 flex-1">{q.convergenceOfferResults}</span>
@@ -218,13 +260,6 @@ export default function QuestionnairePage() {
             </button>
           </div>
         </div>
-      )}
-
-      {/* Topics left indicator in survey phase */}
-      {phase === "survey" && topicsLeftCount > 0 && (
-        <p className="text-xs text-slate-400 text-center">
-          {q.convergenceTopicsLeft(topicsLeftCount)}
-        </p>
       )}
 
       {question && (
@@ -257,9 +292,36 @@ export default function QuestionnairePage() {
               : question.question_text_en}
           </h2>
 
+          {/* ── Explain this question button ── */}
+          <div>
+            <button
+              onClick={handleExplain}
+              className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors"
+            >
+              {showExplain ? q.explainHide : q.explainBtn}
+            </button>
+            {showExplain && (
+              <div className="mt-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2.5 text-xs text-blue-800 leading-relaxed">
+                {explainLoading ? (
+                  <span className="text-slate-400 italic">{q.explainLoading}</span>
+                ) : explainText ? (
+                  explainText
+                ) : (
+                  <span className="text-slate-400 italic">
+                    {lang === "he"
+                      ? "אין הסבר זמין לשאלה זו"
+                      : lang === "ru"
+                      ? "Для этого вопроса нет дополнительного объяснения"
+                      : "No additional explanation available for this question"}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Likert scale */}
           <div className="space-y-2">
-            <Tooltip content={q.positionTooltip} position="bottom">
+            <Tooltip content={q.positionTooltip} position="bottom" wide>
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide cursor-help">
                 {q.positionLabel} ⓘ
               </p>
@@ -281,9 +343,9 @@ export default function QuestionnairePage() {
             </div>
           </div>
 
-          {/* Importance selector */}
+          {/* Importance selector — wide tooltip to prevent clipping */}
           <div className="space-y-2">
-            <Tooltip content={q.importanceTooltip} position="bottom">
+            <Tooltip content={q.importanceTooltip} position="bottom" wide>
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide cursor-help">
                 {q.importanceLabel} ⓘ
               </p>

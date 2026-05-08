@@ -16,6 +16,7 @@ from backend.app.schemas.results import (
     PartyResult,
     RepresentationGap,
     BestPartyByTopic,
+    DiscoveryMatch,
 )
 from backend.app.services.scoring import (
     AnswerData,
@@ -24,6 +25,9 @@ from backend.app.services.scoring import (
     compute_confidence_score,
     compute_coverage_score,
     compute_answer_stability,
+    compute_agenda_breadth,
+    compute_high_salience_topic_coverage,
+    SECTORAL_THRESHOLD,
 )
 from backend.app.services.volatility import get_party_volatility
 
@@ -71,6 +75,17 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
     all_topics: dict = {t.id: t for t in db.query(Topic).all()}
     answered_item_ids_global: set = {a.policy_item_id for a in user_answers_rows}
 
+    # Build a mapping policy_item_id → topic_slug for high-salience coverage check
+    answered_item_to_topic: dict[uuid.UUID, str] = {}
+    for a in user_answers_rows:
+        pi = all_policy_items.get(a.policy_item_id)
+        if pi and pi.topic_id:
+            topic = all_topics.get(pi.topic_id)
+            if topic:
+                answered_item_to_topic[a.policy_item_id] = topic.slug
+
+    total_topics_count = len(all_topics)
+
     party_results: list[PartyResult] = []
 
     for party in party_instances:
@@ -106,8 +121,26 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
         coverage = compute_coverage_score(user_answers, positions)
         answer_stability = compute_answer_stability(user_answers, positions)
         volatility = get_party_volatility(party.id, db)
+
+        # Agenda-breadth: distinct topics this party has positions on
+        party_topics_set: set[str] = set()
+        for p in positions_rows:
+            pi_obj = all_policy_items.get(p.policy_item_id)
+            if pi_obj and pi_obj.topic_id:
+                t_obj = all_topics.get(pi_obj.topic_id)
+                if t_obj:
+                    party_topics_set.add(t_obj.slug)
+        agenda_breadth = compute_agenda_breadth(positions, len(party_topics_set), total_topics_count)
+        is_sectoral = agenda_breadth < SECTORAL_THRESHOLD
+
+        # High-salience topic coverage: fraction of user's very-important topics covered
+        high_salience_coverage = compute_high_salience_topic_coverage(
+            user_answers, answered_item_to_topic, party_topics_set
+        )
+
         confidence = compute_confidence_score(
-            positions, user_answers, volatility, coverage, answer_stability
+            positions, user_answers, volatility, coverage, answer_stability,
+            high_salience_topic_coverage=high_salience_coverage,
         )
 
         avg_evidence_strength = sum(p.evidence_strength for p in positions) / len(positions)
@@ -199,6 +232,21 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
                 "Оценка совпадения основана на истории кандидатов и задекларированных позициях."
             )
 
+        if is_sectoral:
+            explanation += (
+                " Note: this is a sector-focused party. Its high match score reflects "
+                "agreement on its narrow agenda; it may not represent your views on many other topics."
+            )
+            explanation_he += (
+                " שים לב: זוהי מפלגה סקטוריאלית. ציון ההתאמה הגבוה משקף הסכמה על אג'נדה מצומצמת "
+                "בלבד; ייתכן שהיא אינה מייצגת את עמדותיך בנושאים אחרים רבים."
+            )
+            explanation_ru += (
+                " Примечание: это партия с узкой повесткой. Высокий балл совпадения отражает "
+                "согласие по её ограниченной программе; она может не представлять ваши взгляды "
+                "по многим другим темам."
+            )
+
         party_results.append(
             PartyResult(
                 party_id=party.id,
@@ -212,6 +260,9 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
                 coverage=round(coverage, 4),
                 answer_stability=round(answer_stability, 4),
                 is_new_party=is_new_party,
+                agenda_breadth=round(agenda_breadth, 4),
+                is_sectoral=is_sectoral,
+                high_salience_coverage=round(high_salience_coverage, 4),
                 explanation=explanation,
                 explanation_he=explanation_he,
                 explanation_ru=explanation_ru,
@@ -286,6 +337,46 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
         best_party_by_topic=best_by_topic,
     )
 
+    # ── Discovery / unexpected matches ────────────────────────────────────────
+    # Find topics where a NON-top-3 party aligns significantly better with the
+    # user than any of the top-3 parties.  Threshold: outsider_sim > top3_best + 0.15
+    # and outsider_sim >= 0.70 (must be an actually good match, not just "least bad").
+    DISCOVERY_ADVANTAGE = 0.15
+    DISCOVERY_MIN_SIM = 0.68
+
+    top_3_ids = {pr.party_id for pr in party_results[:3]}
+    discovery_matches: list[DiscoveryMatch] = []
+
+    for topic_name in answered_topics:
+        top3_best = max(
+            (pr.topic_scores.get(topic_name, 0.0) for pr in party_results if pr.party_id in top_3_ids),
+            default=0.0,
+        )
+        for pr in party_results:
+            if pr.party_id in top_3_ids:
+                continue
+            outsider_sim = pr.topic_scores.get(topic_name, 0.0)
+            if outsider_sim >= DISCOVERY_MIN_SIM and outsider_sim > top3_best + DISCOVERY_ADVANTAGE:
+                topic_he, topic_ru = all_topic_names_i18n.get(topic_name, (None, None))
+                discovery_matches.append(
+                    DiscoveryMatch(
+                        topic=topic_name,
+                        topic_he=topic_he,
+                        topic_ru=topic_ru,
+                        party=pr.name,
+                        party_he=pr.name_he,
+                        party_ru=pr.name_ru,
+                        party_id=pr.party_id,
+                        similarity=round(outsider_sim, 3),
+                        top3_best_similarity=round(top3_best, 3),
+                    )
+                )
+
+    # Sort by advantage (how much better than top-3)
+    discovery_matches.sort(key=lambda m: -(m.similarity - m.top3_best_similarity))
+    # Cap at 6 most significant discoveries
+    discovery_matches = discovery_matches[:6]
+
     # Persist recommendation run
     run = RecommendationRun(
         session_id=session_id,
@@ -293,6 +384,7 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
         result_json={
             "parties": [p.model_dump(mode="json") for p in party_results],
             "representation_gap": representation_gap.model_dump(),
+            "discovery_matches": [d.model_dump(mode="json") for d in discovery_matches],
         },
         methodology_version="0.1.0",
     )
@@ -305,5 +397,6 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
         run_id=run.id,
         parties=party_results,
         representation_gap=representation_gap,
+        discovery_matches=discovery_matches,
     )
 

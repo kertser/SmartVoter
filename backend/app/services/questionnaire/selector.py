@@ -47,7 +47,7 @@ from dataclasses import dataclass
 # Configuration constants (can be overridden by callers)
 # ──────────────────────────────────────────────────────────────────────────────
 
-MIN_QUESTIONS = 8          # earliest point to offer results
+MIN_QUESTIONS = 20         # earliest point to offer results (was 8)
 HARD_MAX = 40              # absolute maximum questions
 SURVEY_MAX_PER_TOPIC = 1   # Phase-1 cap per topic
 DEPTH_MAX_PER_TOPIC = 3    # Phase-2 max additional questions per topic

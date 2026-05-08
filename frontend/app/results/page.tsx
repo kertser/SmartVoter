@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { getResults, ResultsOut, PartyResult, deleteSession } from "@/lib/api";
+import { getResults, ResultsOut, PartyResult, DiscoveryMatch, deleteSession } from "@/lib/api";
 import { clearSession, saveCompletedSessionId, clearCompletedSession } from "@/lib/session";
 import { formatPercent, confidenceLabel, confidenceColor } from "@/lib/utils";
 import Link from "next/link";
@@ -148,6 +148,16 @@ function ResultsContent() {
         </div>
       </section>
 
+      {/* ── Section 1b: Unexpected / discovery matches ── */}
+      {results.discovery_matches && results.discovery_matches.length > 0 && (
+        <DiscoveryMatchesSection
+          matches={results.discovery_matches}
+          r={r}
+          lang={lang}
+          onEvidenceClick={(id, name, topic) => setDrawerParty({ id, name, topic })}
+        />
+      )}
+
       {/* ── Section 2: Topic comparison ── */}
       {results.parties.some((p) => Object.keys(p.topic_scores).length > 0) && (
         <section className="space-y-4">
@@ -278,6 +288,78 @@ function ResultsContent() {
         />
       )}
     </div>
+  );
+}
+
+function DiscoveryMatchesSection({
+  matches, r, lang, onEvidenceClick,
+}: {
+  matches: DiscoveryMatch[];
+  r: Translations["results"];
+  lang: string;
+  onEvidenceClick: (partyId: string, name: string, topic?: string) => void;
+}) {
+  // Group matches by party to avoid clutter — show max 4 items
+  const shown = matches.slice(0, 4);
+
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="text-lg font-semibold text-slate-800">{r.discoveryMatchesHeading}</h2>
+        <p className="text-sm text-slate-500 mt-0.5">{r.discoveryMatchesSubtitle}</p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {shown.map((dm, i) => {
+          const topicLabel =
+            lang === "he" ? (dm.topic_he ?? dm.topic) :
+            lang === "ru" ? (dm.topic_ru ?? dm.topic) :
+            dm.topic;
+          const partyLabel =
+            lang === "he" ? (dm.party_he ?? dm.party) :
+            lang === "ru" ? (dm.party_ru ?? dm.party) :
+            dm.party;
+
+          // How much better this non-top party is vs the top-3 best for this topic
+          const diff = dm.similarity - dm.top3_best_similarity;
+          const diffPct = Math.round(diff * 100);
+
+          return (
+            <div
+              key={i}
+              className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2 cursor-pointer hover:bg-amber-100 transition-colors"
+              onClick={() => onEvidenceClick(dm.party_id, partyLabel, dm.topic)}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-xs font-medium text-amber-700 uppercase tracking-wide">
+                    {topicLabel}
+                  </p>
+                  <p className="font-semibold text-slate-900 mt-0.5" dir={lang === "he" ? "rtl" : "ltr"}>
+                    {partyLabel}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-lg font-bold text-amber-700">
+                    {Math.round(dm.similarity * 100)}%
+                  </p>
+                  {diffPct > 0 && (
+                    <p className="text-xs text-amber-600">+{diffPct}% vs top</p>
+                  )}
+                </div>
+              </div>
+              {/* Similarity bar */}
+              <div className="h-1.5 bg-amber-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-amber-500 rounded-full"
+                  style={{ width: `${Math.round(dm.similarity * 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-amber-700 opacity-75">{r.discoveryMatchNote}</p>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

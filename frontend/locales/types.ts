@@ -65,6 +65,7 @@ export interface Translations {
 
   questionnaire: {
     progressLabel: (current: number) => string;
+    progressTotal: number;
     showResultsNow: string;
     positionLabel: string;
     positionTooltip: string;
@@ -73,14 +74,16 @@ export interface Translations {
     whyAsked: string;
     whyAskedHide: string;
     whyAskedShow: string;
+    // Explain this question (context note, LLM-powered)
+    explainBtn: string;
+    explainHide: string;
+    explainLoading: string;
     submitNext: string;
     submitting: string;
     loadingQuestion: string;
     errorLoad: string;
     errorSubmit: string;
     tryAgain: string;
-    // Discovery badge — shown when the question was selected to surface an
-    // unexpected niche party match
     discoveryBadge: string;
     discoveryTooltip: string;
     // Convergence / topic coverage
@@ -138,6 +141,12 @@ export interface Translations {
     topicComparisonHeading: string;
     evidenceQualityHeading: string;
     partyLineageHeading: string;
+    // Discovery / unexpected matches section
+    discoveryMatchesHeading: string;
+    discoveryMatchesSubtitle: string;
+    discoveryMatchPartyLabel: string;
+    discoveryMatchSimilarityLabel: string;
+    discoveryMatchNote: string;
     noTopicData: string;
     evidenceDrawerTitle: string;
     evidenceDrawerClose: string;

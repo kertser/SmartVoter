@@ -28,6 +28,8 @@ interface TooltipProps {
   children: ReactNode;
   /** Position relative to trigger. Default: "top" */
   position?: "top" | "bottom";
+  /** Use wider tooltip bubble with text wrapping (for long content) */
+  wide?: boolean;
   className?: string;
 }
 
@@ -35,12 +37,12 @@ export function Tooltip({
   content,
   children,
   position = "top",
+  wide = false,
   className = "",
 }: TooltipProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
-  // Before mount: no wrapper — nothing for browser extensions to inject into.
   if (!mounted) {
     return <>{children}</>;
   }
@@ -58,9 +60,9 @@ export function Tooltip({
           pointer-events-none absolute z-[9999]
           left-1/2 -translate-x-1/2
           ${above ? "bottom-full mb-2" : "top-full mt-2"}
-          px-2.5 py-1.5
-          bg-slate-800 text-white text-xs leading-snug rounded-lg
-          whitespace-nowrap max-w-[240px] text-center
+          px-3 py-2
+          bg-slate-800 text-white text-xs leading-relaxed rounded-lg
+          ${wide ? "whitespace-normal w-72 text-start" : "whitespace-nowrap max-w-[240px] text-center"}
           opacity-0 group-hover:opacity-100 group-focus-within:opacity-100
           transition-opacity duration-150
           shadow-lg

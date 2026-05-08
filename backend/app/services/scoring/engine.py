@@ -28,6 +28,16 @@ NEW_PARTY_COEFFICIENTS: dict[str, float] = {
     "public_statements": 0.10,
 }
 
+# Agenda breadth threshold: party is "sectoral" when it covers fewer
+# than this fraction of all topics in the system.
+SECTORAL_THRESHOLD = 0.35
+
+# Minimum similarity to count as an "agreement" on a topic
+AGREEMENT_THRESHOLD = 0.65
+
+# Maximum similarity to count as a "disagreement" on a topic
+DISAGREEMENT_THRESHOLD = 0.50
+
 
 @dataclass
 class AnswerData:
@@ -55,6 +65,9 @@ def compute_match_score(
     similarity = 1 - distance / 2
     weighted_similarity = similarity * salience * evidence_strength
     match_score = sum(weighted_sim) / sum(salience * evidence_strength)
+
+    Only policy items present in BOTH user answers AND party positions contribute.
+    Returns 0.0 when no overlap or when denominator is zero.
     """
     position_map = {p.policy_item_id: p for p in party_positions}
 
@@ -83,6 +96,9 @@ def compute_coverage_score(
     """
     Fraction of answered policy items that have evidence for this party.
     High-salience answers are weighted more in coverage check.
+
+    This measures how much of the USER's answered questions the party covers.
+    Distinct from agenda_breadth which measures the party's overall topic spread.
     """
     if not user_answers:
         return 0.0
@@ -99,6 +115,53 @@ def compute_coverage_score(
     if total_weight == 0:
         return 0.0
     return round(covered_weight / total_weight, 4)
+
+
+def compute_agenda_breadth(
+    party_positions: list[PositionData],
+    party_topic_count: int,
+    total_topics_count: int,
+) -> float:
+    """
+    Fraction of all topics in the system that this party has at least one
+    position on.  party_topic_count must be pre-computed by the caller
+    who has access to topic metadata.
+
+    Returns 0..1. A party covering 3 of 15 topics returns 0.20.
+    WARNING: is_sectoral if this value < SECTORAL_THRESHOLD.
+    """
+    if total_topics_count == 0:
+        return 1.0
+    return round(min(1.0, party_topic_count / total_topics_count), 4)
+
+
+def compute_high_salience_topic_coverage(
+    user_answers: list[AnswerData],
+    answered_item_to_topic: dict[uuid.UUID, str],
+    party_covered_topics: set[str],
+) -> float:
+    """
+    Fraction of topics where the user has VERY IMPORTANT (salience=2.0) answers
+    that the party actually covers with at least one position.
+
+    If the user has no high-salience answers, returns 1.0 (no penalty).
+    This penalizes parties that ignore the user's most important concerns.
+
+    answered_item_to_topic: mapping policy_item_id → topic_slug (caller provides)
+    party_covered_topics: set of topic slugs the party has at least one position on
+    """
+    high_sal_topics: set[str] = set()
+    for answer in user_answers:
+        if answer.salience >= 2.0:
+            topic = answered_item_to_topic.get(answer.policy_item_id)
+            if topic:
+                high_sal_topics.add(topic)
+
+    if not high_sal_topics:
+        return 1.0  # user has no very-important answers → no penalty
+
+    covered = high_sal_topics & party_covered_topics
+    return round(len(covered) / len(high_sal_topics), 4)
 
 
 def compute_answer_stability(
@@ -132,15 +195,38 @@ def compute_confidence_score(
     party_volatility: float,
     coverage_score: float,
     answer_stability: float | None = None,
+    high_salience_topic_coverage: float = 1.0,
 ) -> float:
     """
-    AGENTS.MD Section 12.2:
-    confidence = avg_evidence_strength * coverage * (1 - volatility) * answer_stability
+    AGENTS.MD Section 12.2 with sectoral correction:
+
+    confidence = avg_evidence_strength_matched
+                 * coverage
+                 * (1 - volatility)
+                 * answer_stability
+                 * high_salience_topic_coverage
+
+    BUG FIX vs original spec:
+    avg_evidence_strength is now computed over ONLY positions that overlap
+    with the user's answered items (not all party positions).  This prevents
+    sectoral parties from inflating confidence via high-quality evidence on
+    items the user never answered.
+
+    high_salience_topic_coverage: fraction of topics where user has very-important
+    answers that the party actually covers.  Defaults to 1.0 if not supplied.
     """
     if not party_positions:
         return 0.0
 
-    avg_evidence = sum(p.evidence_strength for p in party_positions) / len(party_positions)
+    answered_ids = {a.policy_item_id for a in user_answers}
+
+    # Evidence quality — computed only over MATCHED positions (answered items)
+    matched_positions = [p for p in party_positions if p.policy_item_id in answered_ids]
+    if matched_positions:
+        avg_evidence = sum(p.evidence_strength for p in matched_positions) / len(matched_positions)
+    else:
+        # Party has positions but none match user's answers → coverage already 0 → confidence 0
+        avg_evidence = sum(p.evidence_strength for p in party_positions) / len(party_positions)
 
     if answer_stability is None:
         answer_stability = compute_answer_stability(user_answers, party_positions)
@@ -150,6 +236,7 @@ def compute_confidence_score(
         * coverage_score
         * (1.0 - party_volatility)
         * answer_stability
+        * high_salience_topic_coverage
     )
     return round(min(1.0, max(0.0, confidence)), 4)
 
