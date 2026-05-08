@@ -80,6 +80,8 @@ const he: Translations = {
     errorLoad: "\u05d8\u05e2\u05d9\u05e0\u05ea \u05d4\u05e9\u05d0\u05dc\u05d4 \u05e0\u05db\u05e9\u05dc\u05d4. \u05e0\u05d0 \u05e8\u05e2\u05e0\u05df.",
     errorSubmit: "\u05e9\u05dc\u05d9\u05d7\u05ea \u05d4\u05ea\u05e9\u05d5\u05d1\u05d4 \u05e0\u05db\u05e9\u05dc\u05d4. \u05e0\u05d0 \u05e0\u05e1\u05d4 \u05e9\u05e0\u05d9\u05ea.",
     tryAgain: "\u05e0\u05e1\u05d4 \u05e9\u05e0\u05d9\u05ea",
+    discoveryBadge: "💡 התאמה בלתי צפויה",
+    discoveryTooltip: "שאלה זו בוחנת תחום ספציפי שבו לחלק מהמפלגות יש עמדה חקיקתית עקבית ומגובה ראיות. תשובתך עשויה לחשוף התאמה בלתי צפויה.",
     topicsCoveredLabel: (covered, total) => `${covered} מתוך ${total} נושאים`,
     phaseSurveyLabel: "סקר — מיפוי סדרי עדיפויות",
     phaseDepthLabel: "העמקה — בדיקת הנושאים החשובים",

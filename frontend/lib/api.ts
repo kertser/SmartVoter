@@ -54,6 +54,10 @@ export interface Question {
   topics_total?: number;
   answered_count?: number;
   ranking_stability?: number;
+  // Discovery metadata — set when the question was selected to surface a
+  // non-top party with a niche/unexpected distinctive position
+  is_discovery_question?: boolean;
+  outsider_signal_strength?: number;
 }
 
 export interface AnswerIn {

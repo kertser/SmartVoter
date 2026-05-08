@@ -314,7 +314,75 @@ def generate_questions(
     }
 
 
-class ClassifyPolicyBody(BaseModel):
+class DiscoveryQuestionsBody(BaseModel):
+    limit: int = 20
+    max_workers: int = 4
+
+
+@admin_router.post("/llm/generate-discovery-questions")
+def generate_discovery_questions(
+    body: DiscoveryQuestionsBody,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    settings=Depends(get_settings),
+) -> dict:
+    """
+    Generate niche/discovery questions for policy items where a non-mainstream
+    party has a strong, evidence-backed legislative position.
+
+    These questions feed the adaptive questionnaire's discovery phase, which
+    progressively surfaces unexpected party matches (e.g. Party D with consistent
+    gun-rights votes, or new Party E with a specific platform plank).
+
+    All generated questions start as 'needs_review' and require human approval.
+    Uses the 'discovery_question_from_niche' LLM prompt template.
+
+    Returns a job_id; poll /api/admin/ingest/status/{job_id} for progress.
+    """
+    from backend.app.services.ingestion.question_pipeline import run_niche_discovery_pipeline
+
+    job_id = str(uuid.uuid4())[:8]
+    _ingestion_jobs[job_id] = {
+        "job_id": job_id,
+        "status": "queued",
+        "step": "generate-discovery-questions",
+        "limit": body.limit,
+        "max_workers": body.max_workers,
+    }
+
+    def _run():
+        _ingestion_jobs[job_id]["status"] = "running"
+        try:
+            # Run in the background — creates its own DB sessions per worker
+            from backend.app.db.session import SessionLocal
+            bg_db = SessionLocal()
+            try:
+                stats = run_niche_discovery_pipeline(
+                    bg_db, settings,
+                    limit=body.limit,
+                    max_workers=body.max_workers,
+                )
+                _ingestion_jobs[job_id].update({
+                    "status": "done",
+                    "results": stats,
+                })
+            finally:
+                bg_db.close()
+        except Exception as exc:
+            _ingestion_jobs[job_id].update({"status": "error", "error": str(exc)})
+
+    background_tasks.add_task(_run)
+    return {
+        "job_id": job_id,
+        "status": "queued",
+        "limit": body.limit,
+        "message": (
+            f"Discovery question generation started (limit={body.limit}). "
+            "Targets niche policy items with strong outsider-party positions."
+        ),
+    }
+
+
     policy_item_id: str
 
 

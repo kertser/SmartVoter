@@ -89,6 +89,24 @@ class LLMProvider(ABC):
             "generate_follow_up_from_salience not implemented by this provider."
         )
 
+    def generate_discovery_question(self, input_data: dict) -> dict:
+        """
+        Generate a question for a niche policy item where a non-mainstream party
+        has a strong, evidence-backed legislative position.  Uses the
+        'discovery_question_from_niche' prompt which explicitly frames questions
+        as revealing unexpected policy areas users may not have considered.
+
+        Default: falls back to generate_question. Override in concrete providers
+        to use the dedicated discovery prompt.
+
+        input_data keys:
+            title, description, directional_axis, evidence_context
+        Returns: question_en, question_he, question_ru, context_note_en,
+                 everyday_life_hook, answer_scale, discovery_rationale,
+                 neutrality_risk, neutrality_score, is_loaded, etc.
+        """
+        return self.generate_question(input_data)
+
     @abstractmethod
     def infer_party_position(self, input_data: dict) -> dict:
         """Returns: party_position_mean, uncertainty, evidence_strength,

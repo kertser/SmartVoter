@@ -18,15 +18,30 @@ Phase 2 — "Depth Drilling" (questions after survey phase):
         - Never re-ask the SAME policy_item_id unless the user rated it Very
           Important (salience=2.0) and a second question exists.
         - Prefer questions that best separate currently top-ranked parties.
+        - Gradually surface "discovery" questions from parties outside the
+          current top-N, so unexpected niche matches are not missed.
+
+Phase 2 — "Discovery" blending:
+    After the survey phase, the scoring formula blends two components:
+      · separation_score  — how much TOP parties differ (discrimination)
+      · outsider_signal   — how strongly a NON-TOP party has a distinctive,
+                            evidence-backed position on this item
+    The discovery weight grows from ~0.10 → DISCOVERY_MAX_WEIGHT as depth
+    answers accumulate.  This means the first few depth questions still refine
+    the known ranking, while later questions deliberately probe niche areas
+    where unknown parties (e.g. Party D with consistent gun-rights votes, or
+    new Party E with a specific platform plank) might surface as better matches.
 
 Convergence / stopping:
     - After MIN_QUESTIONS, offer "see results" if ranking is stable.
     - After HARD_MAX questions, always stop.
     - Ranking stability = Kendall-τ correlation between last two ranked orderings.
+    - Note: a discovery question that disrupts the ranking LOWERS stability,
+      which is correct — it means the user needs more questions.
 """
 import math
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Configuration constants (can be overridden by callers)
@@ -40,6 +55,11 @@ DEPTH_FOLLOW_UPS = 2       # extra questions for Very-Important topics
 POLICY_REPEAT_SALIENCE_THRESHOLD = 1.8  # require salience >= this to re-ask same policy_item
 CONVERGENCE_THRESHOLD = 0.80  # Kendall-τ above this → ranking stable
 
+# Discovery blending — controls how aggressively niche/outsider parties are surfaced
+DISCOVERY_MAX_WEIGHT = 0.45   # max fraction of score driven by outsider_discovery_signal
+DISCOVERY_RAMP_ANSWERS = 8    # depth answers before DISCOVERY_MAX_WEIGHT is reached
+DISCOVERY_SIGNAL_THRESHOLD = 0.20  # outsider_party_signal >= this → question is flagged
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Data classes
@@ -50,13 +70,15 @@ class QuestionCandidate:
     question_id: uuid.UUID
     policy_item_id: uuid.UUID
     topic_slug: str
-    evidence_quality: float  # average evidence_strength for this policy_item across parties
+    evidence_quality: float          # average evidence_strength across ALL parties
+    outsider_party_signal: float = 0.0  # max divergence of non-top parties from top consensus
 
 
 @dataclass
 class PartyPositionSlim:
     policy_item_id: uuid.UUID
     position_mean: float
+    evidence_strength: float = 0.5   # used to weight outsider signal
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -82,6 +104,65 @@ def _party_separation_score(
     mean = sum(positions) / len(positions)
     variance = sum((p - mean) ** 2 for p in positions) / len(positions)
     return variance
+
+
+def _outsider_discovery_score(
+    policy_item_id: uuid.UUID,
+    top_party_positions: list[list[PartyPositionSlim]],
+    outsider_positions: list[PartyPositionSlim],
+) -> float:
+    """
+    Measures how much a NON-top party has a distinctive, evidence-backed
+    position on this policy item vs. the top-parties' consensus.
+
+    Formula for each outsider position:
+        signal = abs(outsider_pos - top_consensus_mean) * outsider_evidence_strength
+
+    Returns the maximum signal across all outsider parties.
+
+    This ensures that questions about niche issues where Party D consistently
+    voted one way (while mainstream parties were absent or mixed) will be
+    surfaced during the depth phase — even if top parties A/B/C don't differ
+    much on this item.
+    """
+    # Compute top-party consensus mean for this policy item
+    top_pos_values = [
+        pos.position_mean
+        for party_pos_list in top_party_positions
+        for pos in party_pos_list
+        if pos.policy_item_id == policy_item_id
+    ]
+    top_mean = sum(top_pos_values) / len(top_pos_values) if top_pos_values else 0.0
+
+    # Find max divergence × evidence_strength among outsider parties
+    max_signal = 0.0
+    for pos in outsider_positions:
+        if pos.policy_item_id != policy_item_id:
+            continue
+        signal = abs(pos.position_mean - top_mean) * pos.evidence_strength
+        if signal > max_signal:
+            max_signal = signal
+
+    return max_signal
+
+
+def _compute_discovery_weight(answered_count: int, n_topics: int) -> float:
+    """
+    Return the discovery blending weight [0..DISCOVERY_MAX_WEIGHT].
+
+    In survey phase (answered_count < n_topics): 0.0 — pure breadth.
+    In depth phase: ramps linearly from 0.10 to DISCOVERY_MAX_WEIGHT over
+    the first DISCOVERY_RAMP_ANSWERS depth questions.
+
+    Rationale: the first few depth questions should still clarify the ranking
+    among known top parties; discovery kicks in progressively afterward so
+    that niche matches are not missed.
+    """
+    depth_answers = max(0, answered_count - n_topics)
+    if depth_answers <= 0:
+        return 0.0
+    ramp = min(depth_answers / DISCOVERY_RAMP_ANSWERS, 1.0)
+    return 0.10 + (DISCOVERY_MAX_WEIGHT - 0.10) * ramp
 
 
 def _topic_interest_factor(
@@ -191,25 +272,37 @@ def select_next_question(
     answered_policy_item_counts: dict[uuid.UUID, int] | None = None,
     salience_by_policy_item: dict[uuid.UUID, float] | None = None,
     all_topic_slugs: set[str] | None = None,
+    outsider_positions: list[PartyPositionSlim] | None = None,
 ) -> QuestionCandidate | None:
     """
-    Phase-aware adaptive question selector.
+    Phase-aware adaptive question selector with discovery blending.
 
-    Scoring formula:
-        question_value = party_separation_score   (how much parties differ)
-                       * evidence_quality          (reliability of the evidence)
-                       * topic_interest_factor     (breadth in survey / salience in depth)
-                       * policy_item_repeat_penalty (avoid asking same policy item twice)
-                       * fatigue_penalty            (gentler slow-down over time)
+    Scoring formula (depth phase):
+        question_value =
+            [ separation_score * (1 - discovery_weight)          ← discriminate top parties
+            + outsider_signal  * discovery_weight   ]             ← surface hidden parties
+            * evidence_quality
+            * topic_interest_factor
+            * policy_item_repeat_penalty
+            * fatigue_penalty
 
-    Phases:
-        survey  → cover all topics once; topic_interest_factor is near-zero for
-                  topics already asked → strong breadth bias.
-        depth   → salience-driven follow-up; repeated topics allowed when the
-                  user rated them Very Important.
+    discovery_weight grows from 0.0 (survey) → 0.10 (start of depth) →
+    DISCOVERY_MAX_WEIGHT (after DISCOVERY_RAMP_ANSWERS depth questions).
 
-    Returns the best unasked candidate, or None when the hard maximum is reached
-    or no candidates remain.
+    This means:
+    - Survey phase: pure breadth, no discovery bias.
+    - Early depth: mostly discrimination; small discovery nudge.
+    - Later depth: up to 45% of score driven by outsider discovery, so niche
+      parties (Party D with gun-rights votes, new Party E with a specific
+      platform) have a real chance of surfacing.
+
+    outsider_positions: flat list of PartyPositionSlim for ALL parties NOT in
+    the current top-N ranking.  Pre-computed by the caller (questions.py).
+    Each candidate already has outsider_party_signal pre-computed; this
+    parameter is kept for future use in per-call recomputation if needed.
+
+    Returns the best unasked candidate, or None when the hard maximum is
+    reached or no candidates remain.
     """
     answered_count = len(answered_ids)
     if answered_count >= HARD_MAX:
@@ -226,7 +319,15 @@ def select_next_question(
     topic_slugs = all_topic_slugs or {c.topic_slug for c in candidates}
 
     phase = _determine_phase(answered_count, answered_topic_counts, topic_slugs)
-    fatigue_penalty = math.exp(-answered_count / 20.0)  # slower decay than before
+    n_topics = len(topic_slugs)
+    fatigue_penalty = math.exp(-answered_count / 20.0)
+
+    # Discovery weight is 0 in survey phase; ramps up in depth phase
+    discovery_weight = (
+        _compute_discovery_weight(answered_count, n_topics)
+        if phase == "depth"
+        else 0.0
+    )
 
     scored: list[tuple[float, QuestionCandidate]] = []
     for candidate in unanswered:
@@ -240,10 +341,14 @@ def select_next_question(
             candidate.policy_item_id, pi_count_map, pi_salience_map
         )
 
-        # Small baseline (0.01) so evidence_quality always contributes even
-        # when party-separation data is unavailable.
+        # Blend separation (known-top discrimination) and discovery (outsider surfacing)
+        blended_signal = (
+            (separation + 0.01) * (1.0 - discovery_weight)
+            + candidate.outsider_party_signal * discovery_weight
+        )
+
         value = (
-            (separation + 0.01)
+            blended_signal
             * max(candidate.evidence_quality, 0.05)
             * interest_factor
             * repeat_penalty

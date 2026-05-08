@@ -21,8 +21,7 @@ from backend.app.services.questionnaire import (
     force_results,
     QuestionCandidate,
     PartyPositionSlim,
-    HARD_MAX,
-    MIN_QUESTIONS,
+    DISCOVERY_SIGNAL_THRESHOLD,
 )
 
 logger = logging.getLogger(__name__)
@@ -47,6 +46,11 @@ def _ui_strings() -> dict:
             "depth_question": (
                 "You rated this topic as very important — this question explores it further."
             ),
+            "discovery_question": (
+                "This question explores a specific policy area where some parties have a "
+                "consistent, evidence-backed legislative track record that your top results "
+                "may not yet reflect. You might find an unexpected match here."
+            ),
             "auto_generated": (
                 "This question was automatically generated because no pre-existing "
                 "question covered this policy area."
@@ -58,6 +62,57 @@ def _ui_strings() -> dict:
 # approved  = human-curated seed questions (highest quality)
 # llm_generated = auto-generated on-the-fly, pending post-hoc admin review
 _SERVABLE_STATUSES = {ReviewStatus.approved, ReviewStatus.llm_generated}
+
+
+def _get_current_top_party_ids(
+    db: Session,
+    answered_rows: list[UserAnswer],
+    all_positions: list[PartyPosition],
+    n: int = 3,
+) -> list[uuid.UUID]:
+    """
+    Return current top-N party IDs ranked by match score given existing answers.
+    Used to split positions into top-party vs outsider groups for discovery scoring.
+    Returns empty list if fewer than 2 answers have been submitted.
+    """
+    if len(answered_rows) < 2:
+        return []
+    try:
+        from backend.app.services.scoring.engine import (
+            compute_match_score,
+            AnswerData,
+            PositionData,
+        )
+        answer_data = [
+            AnswerData(
+                policy_item_id=a.policy_item_id,
+                answer_value=a.answer_value,
+                salience=a.salience,
+            )
+            for a in answered_rows
+            if a.policy_item_id is not None
+        ]
+        if not answer_data:
+            return []
+        party_ids = list({p.party_instance_id for p in all_positions})
+        scores: dict[uuid.UUID, float] = {}
+        for pid in party_ids:
+            pos_data = [
+                PositionData(
+                    policy_item_id=p.policy_item_id,
+                    position_mean=p.position_mean,
+                    position_uncertainty=p.position_uncertainty,
+                    evidence_strength=p.evidence_strength,
+                    evidence_type=p.evidence_type or "platform",
+                )
+                for p in all_positions
+                if p.party_instance_id == pid
+            ]
+            scores[pid] = compute_match_score(answer_data, pos_data)
+        return sorted(party_ids, key=lambda pid: scores[pid], reverse=True)[:n]
+    except Exception as exc:
+        logger.debug("_get_current_top_party_ids failed: %s", exc)
+        return []
 
 
 def _auto_generate_question(
@@ -407,6 +462,11 @@ def get_next_question(
     candidates: list[QuestionCandidate] = []
     topic_lookup: dict[uuid.UUID, Topic] = {}  # question_id → Topic
 
+    # Fetch ALL positions once; split into top-party vs outsider groups
+    all_positions = db.query(PartyPosition).all()
+    top_party_ids = _get_current_top_party_ids(db, answered_rows, all_positions, n=3)
+    top_party_ids_set = set(top_party_ids)
+
     for q in servable_questions:
         if q.id in set(answered_ids):
             continue
@@ -417,16 +477,27 @@ def get_next_question(
         topic_slug = topic.slug if topic else "unknown"
         topic_lookup[q.id] = topic
 
-        positions = (
-            db.query(PartyPosition)
-            .filter(PartyPosition.policy_item_id == q.policy_item_id)
-            .all()
-        )
+        positions = [p for p in all_positions if p.policy_item_id == q.policy_item_id]
         avg_evidence = (
             sum(p.evidence_strength for p in positions) / len(positions)
-            if positions
-            else 0.0
+            if positions else 0.0
         )
+
+        # Compute outsider discovery signal: how much a non-top party diverges
+        # from the top-parties' consensus on this item, weighted by evidence strength
+        top_pos_values = [
+            p.position_mean for p in positions
+            if p.party_instance_id in top_party_ids_set
+        ]
+        top_mean = sum(top_pos_values) / len(top_pos_values) if top_pos_values else 0.0
+
+        outsider_signal = 0.0
+        for p in positions:
+            if p.party_instance_id in top_party_ids_set:
+                continue
+            signal = abs(p.position_mean - top_mean) * p.evidence_strength
+            if signal > outsider_signal:
+                outsider_signal = signal
 
         candidates.append(
             QuestionCandidate(
@@ -434,17 +505,19 @@ def get_next_question(
                 policy_item_id=q.policy_item_id,
                 topic_slug=topic_slug,
                 evidence_quality=avg_evidence,
+                outsider_party_signal=outsider_signal,
             )
         )
 
-    # Top-party positions (use all parties, capped at 5 for performance)
-    all_positions = db.query(PartyPosition).all()
+    # Top-party positions (capped at 5 for performance, sufficient for separation score)
     party_ids = list({p.party_instance_id for p in all_positions})
     top_party_positions: list[list[PartyPositionSlim]] = []
     for pid in party_ids[:5]:
         party_pos = [
             PartyPositionSlim(
-                policy_item_id=p.policy_item_id, position_mean=p.position_mean
+                policy_item_id=p.policy_item_id,
+                position_mean=p.position_mean,
+                evidence_strength=p.evidence_strength,
             )
             for p in all_positions
             if p.party_instance_id == pid
@@ -461,6 +534,15 @@ def get_next_question(
         salience_by_policy_item=salience_by_policy_item,
         all_topic_slugs=all_topic_slugs,
     )
+    if not best:
+        answered_policy_ids = {a.policy_item_id for a in answered_rows}
+        servable_pi_ids = {q.policy_item_id for q in servable_questions}
+
+        candidate_pis = (
+            db.query(PolicyItem)
+            .filter(PolicyItem.id.notin_(answered_policy_ids | servable_pi_ids))
+            .all()
+        )
 
     # ── Auto-generate on-the-fly when no pre-existing question is available ──
     if not best:
@@ -526,12 +608,19 @@ def get_next_question(
             PolicyItem.id == q.policy_item_id
         ).first()
 
-    # Determine why-selected message based on phase and salience
+    # Determine why-selected message based on phase, salience, and discovery signal
     answered_count = len(answered_ids)
+    is_discovery = (
+        conv["phase"] == "depth"
+        and best.outsider_party_signal >= DISCOVERY_SIGNAL_THRESHOLD
+    )
+
     if answered_count == 0:
         why = _ui_strings()["why_selected"]["first_question"]
     elif conv["phase"] == "survey":
         why = _ui_strings()["why_selected"]["survey_question"]
+    elif is_discovery:
+        why = _ui_strings()["why_selected"]["discovery_question"]
     elif topic and user_salience_by_topic.get(topic.slug if topic else "", 1.0) >= 1.8:
         why = _ui_strings()["why_selected"]["depth_question"]
     else:
@@ -556,4 +645,6 @@ def get_next_question(
         topics_total=topics_total,
         answered_count=answered_count,
         ranking_stability=conv["ranking_stability"],
+        is_discovery_question=is_discovery,
+        outsider_signal_strength=round(best.outsider_party_signal, 3),
     )

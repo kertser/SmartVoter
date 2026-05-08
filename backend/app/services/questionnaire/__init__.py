@@ -9,6 +9,7 @@ from backend.app.services.questionnaire.selector import (
     PartyPositionSlim,
     HARD_MAX,
     MIN_QUESTIONS,
+    DISCOVERY_SIGNAL_THRESHOLD,
 )
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "PartyPositionSlim",
     "HARD_MAX",
     "MIN_QUESTIONS",
+    "DISCOVERY_SIGNAL_THRESHOLD",
 ]

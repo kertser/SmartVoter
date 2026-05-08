@@ -224,6 +224,21 @@ class AuditedLLMService:
             "generate_root_question", "question", entity_id,
         )
 
+    def generate_discovery_question(
+        self, input_data: dict, entity_id: uuid.UUID | None = None
+    ) -> dict:
+        """
+        Generate a niche/discovery question using the 'discovery_question_from_niche'
+        prompt.  Used by run_niche_discovery_pipeline to surface questions about
+        non-mainstream party legislative positions.
+        Results are audited and stored like all other LLM calls.
+        """
+        return _run_and_store(
+            self.db, self.provider,
+            self.provider.generate_discovery_question, input_data,
+            "discovery_question_from_niche", "question", entity_id,
+        )
+
     def infer_party_position(self, input_data: dict, entity_id: uuid.UUID | None = None) -> dict:
         return _run_and_store(
             self.db, self.provider,

@@ -79,6 +79,10 @@ export interface Translations {
     errorLoad: string;
     errorSubmit: string;
     tryAgain: string;
+    // Discovery badge — shown when the question was selected to surface an
+    // unexpected niche party match
+    discoveryBadge: string;
+    discoveryTooltip: string;
     // Convergence / topic coverage
     topicsCoveredLabel: (covered: number, total: number) => string;
     phaseSurveyLabel: string;

@@ -81,6 +81,14 @@ class FallbackLLMProvider(LLMProvider):
     def generate_root_question(self, input_data: dict) -> dict:
         return self._call_with_retry("generate_root_question", input_data)
 
+    def generate_discovery_question(self, input_data: dict) -> dict:
+        # Fallback: delegate to primary via retry, which will use generate_question
+        # if discovery_question_from_niche is not available in mock
+        try:
+            return self._call_with_retry("discovery_question_from_niche", input_data)
+        except Exception:
+            return self._call_with_retry("generate_question", input_data)
+
     def infer_party_position(self, input_data: dict) -> dict:
         return self._call_with_retry("infer_party_position", input_data)
 

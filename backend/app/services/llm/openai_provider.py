@@ -252,10 +252,74 @@ class OpenAIProvider(LLMProvider):
             "_input_hash": _input_hash(input_data),
         }
 
-    # ── 7.5 Neutral question generation ───────────────────────────────────────
+    # ── Discovery question (niche legislative positions) ─────────────────────
 
-    def generate_question(self, input_data: dict) -> dict:
-        tmpl, pv = _get_template("generate_question")
+    def generate_discovery_question(self, input_data: dict) -> dict:
+        """
+        Generate a question for a niche policy item using the dedicated
+        'discovery_question_from_niche' prompt.  Frames the question as an
+        unexpected topic where some parties have a distinctive track record.
+
+        input_data keys required:
+            title, description, directional_axis, evidence_context
+        """
+        tmpl, pv = _get_template("discovery_question_from_niche")
+        user_msg = tmpl.format_map({
+            "title": input_data.get("title", ""),
+            "description": input_data.get("description", ""),
+            "directional_axis": input_data.get("directional_axis", ""),
+            "evidence_context": input_data.get("evidence_context", ""),
+        })
+        messages = [
+            {"role": "system", "content": SYSTEM_NEUTRAL},
+            {"role": "user", "content": user_msg},
+        ]
+        result = _call(self.client, self.model, messages)
+
+        question_en = result.get("question_en", "")
+        is_loaded = bool(result.get("is_loaded", False))
+        if is_loaded and result.get("suggested_revision"):
+            question_en = result["suggested_revision"]
+
+        neutrality_risk = result.get("neutrality_risk", "medium")
+        if is_loaded:
+            neutrality_score = 0.4
+        elif neutrality_risk == "low":
+            neutrality_score = 0.9
+        elif neutrality_risk == "high":
+            neutrality_score = 0.5
+        else:
+            neutrality_score = 0.7
+
+        return {
+            "question": question_en,
+            "question_en": question_en,
+            "question_he": result.get("question_he", ""),
+            "question_ru": result.get("question_ru", ""),
+            "context_note_en": result.get("context_note_en", ""),
+            "everyday_life_hook": result.get("everyday_life_hook", ""),
+            "discovery_rationale": result.get("discovery_rationale", ""),
+            "answer_scale": result.get("answer_scale", [
+                "Strongly oppose", "Somewhat oppose", "Neutral / unsure",
+                "Somewhat support", "Strongly support",
+            ]),
+            "neutrality_risk": neutrality_risk,
+            "loaded_terms": result.get("loaded_terms", []),
+            "is_loaded": is_loaded,
+            "bias_direction": result.get("bias_direction"),
+            "suggested_revision": result.get("suggested_revision"),
+            "reading_level": result.get("reading_level", "general public"),
+            "requires_context": bool(result.get("requires_context", False)),
+            "context_note": result.get("context_note"),
+            "neutrality_score": neutrality_score,
+            "_prompt_version": pv,
+            "_input_hash": _input_hash(input_data),
+        }
+
+    # ── 7.6 Question critique ──────────────────────────────────────────────────
+
+    def critique_question(self, input_data: dict) -> dict:
+        tmpl, pv = _get_template("critique_question")
         user_msg = tmpl.format_map({
             "title": input_data.get("title", ""),
             "description": input_data.get("description", ""),
@@ -486,7 +550,6 @@ class OpenAIProvider(LLMProvider):
     # ── 7.6 Question critique ──────────────────────────────────────────────────
 
     def critique_question(self, input_data: dict) -> dict:
-        tmpl, pv = _get_template("critique_question")
         user_msg = tmpl.format_map({"question": input_data.get("question", "")})
         messages = [
             {"role": "system", "content": SYSTEM_NEUTRAL},

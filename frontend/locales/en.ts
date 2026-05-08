@@ -80,6 +80,8 @@ const en: Translations = {
     errorLoad: "Failed to load next question. Please refresh.",
     errorSubmit: "Failed to submit answer. Please try again.",
     tryAgain: "Try again",
+    discoveryBadge: "💡 Unexpected match",
+    discoveryTooltip: "This question explores a niche policy area where some parties have a distinctive legislative track record. Your answer here might surface an unexpected match.",
     topicsCoveredLabel: (covered, total) => `${covered} of ${total} topics covered`,
     phaseSurveyLabel: "Survey — mapping your priorities",
     phaseDepthLabel: "Depth — exploring your key topics",

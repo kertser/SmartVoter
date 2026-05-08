@@ -229,14 +229,24 @@ export default function QuestionnairePage() {
 
       {question && (
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-6 space-y-6">
-          {/* Topic badge */}
-          <span className="inline-block rounded-full bg-slate-100 px-3 py-0.5 text-xs font-medium text-slate-600 capitalize">
-            {lang === "he" && question.topic_name_he
-              ? question.topic_name_he
-              : lang === "ru" && question.topic_name_ru
-              ? question.topic_name_ru
-              : question.topic_slug.replace("_", " ")}
-          </span>
+          {/* Topic badge + discovery badge */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-block rounded-full bg-slate-100 px-3 py-0.5 text-xs font-medium text-slate-600 capitalize">
+              {lang === "he" && question.topic_name_he
+                ? question.topic_name_he
+                : lang === "ru" && question.topic_name_ru
+                ? question.topic_name_ru
+                : question.topic_slug.replace("_", " ")}
+            </span>
+            {question.is_discovery_question && (
+              <span
+                title={q.discoveryTooltip}
+                className="inline-flex items-center rounded-full bg-amber-50 border border-amber-200 px-3 py-0.5 text-xs font-medium text-amber-700 cursor-help"
+              >
+                {q.discoveryBadge}
+              </span>
+            )}
+          </div>
 
           {/* Question text — language-aware (AGENTS.MD Phase 8) */}
           <h2 className="text-xl font-semibold text-slate-900 leading-snug">
@@ -305,7 +315,11 @@ export default function QuestionnairePage() {
                 {showWhy ? q.whyAskedHide : q.whyAskedShow}
               </button>
               {showWhy && (
-                <p className="mt-2 text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                <p className={`mt-2 text-xs rounded-lg px-3 py-2 border ${
+                  question.is_discovery_question
+                    ? "text-amber-700 bg-amber-50 border-amber-100"
+                    : "text-slate-500 bg-slate-50 border-slate-100"
+                }`}>
                   {question.why_selected}
                 </p>
               )}

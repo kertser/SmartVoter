@@ -25,6 +25,11 @@ class QuestionOut(BaseModel):
     answered_count: int = 0                 # questions answered before this one
     ranking_stability: float = 0.0          # Kendall-τ [0..1]
 
+    # Discovery metadata — set when this question was selected to surface a
+    # non-top party that might be a better match on a niche/unexpected topic
+    is_discovery_question: bool = False     # question selected via outsider discovery signal
+    outsider_signal_strength: float = 0.0  # raw outsider_party_signal value [0..1]
+
     model_config = {"from_attributes": True}
 
 
