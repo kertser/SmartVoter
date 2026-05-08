@@ -763,16 +763,25 @@ def explain_question(
     if not q:
         raise HTTPException(status_code=404, detail="Question not found")
 
-    # Resolve the language used for the question text
-    if lang == "he" and q.question_text_he:
-        question_text = q.question_text_he
-        language_name = "Hebrew (עברית)"
-    elif lang == "ru" and q.question_text_ru:
-        question_text = q.question_text_ru
-        language_name = "Russian (русский)"
+    # Always derive language_name from the requested lang — regardless of whether
+    # the question has a translation in that language.  The LLM is given the best
+    # available question text as *context only* (it reads any language) but must
+    # produce ALL output fields in the language the user requested.
+    _LANG_NAMES = {
+        "he": "Hebrew (עברית)",
+        "ru": "Russian (русский)",
+        "en": "English",
+    }
+    language_name = _LANG_NAMES.get(lang, "English")
+
+    # Use the translated question text when available; fall back to English as
+    # context.  The LLM will still write the explanation in language_name.
+    if lang == "he":
+        question_text = q.question_text_he or q.question_text_en
+    elif lang == "ru":
+        question_text = q.question_text_ru or q.question_text_en
     else:
         question_text = q.question_text_en
-        language_name = "English"
 
     # Gather policy item + topic context for the prompt
     policy_description = ""
@@ -836,12 +845,15 @@ def explain_question(
         except Exception as exc:
             logger.warning("LLM explain_question_context failed for %s: %s", question_id, exc)
 
-    # Graceful fallback: return stored description without LLM
+    # Graceful fallback — LLM not available.
+    # Do NOT return raw English policy_description as it would show English text
+    # to users whose UI language is Hebrew or Russian.  Return empty fields so the
+    # frontend displays the localised "explanation not available" message.
     return {
         "question_id": str(question_id),
         "lang": lang,
         "topic_name": topic_name_str,
-        "background": policy_description or "",
+        "background": "",
         "why_relevant": "",
         "support_side": "",
         "oppose_side": "",

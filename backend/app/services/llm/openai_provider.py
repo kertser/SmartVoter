@@ -316,10 +316,11 @@ class OpenAIProvider(LLMProvider):
             "_input_hash": _input_hash(input_data),
         }
 
-    # ── 7.6 Question critique ──────────────────────────────────────────────────
+    # ── 7.5 Question generation ────────────────────────────────────────────────
 
-    def critique_question(self, input_data: dict) -> dict:
-        tmpl, pv = _get_template("critique_question")
+    def generate_question(self, input_data: dict) -> dict:
+        """Generate a neutral closed survey question in three languages."""
+        tmpl, pv = _get_template("generate_question")
         user_msg = tmpl.format_map({
             "title": input_data.get("title", ""),
             "description": input_data.get("description", ""),
@@ -330,9 +331,10 @@ class OpenAIProvider(LLMProvider):
             {"role": "user", "content": user_msg},
         ]
         result = _call(self.client, self.model, messages)
+        question_en = result.get("question_en", "") or result.get("question", "")
         return {
-            "question": result.get("question_en", ""),
-            "question_en": result.get("question_en", ""),
+            "question": question_en,
+            "question_en": question_en,
             "question_he": result.get("question_he", ""),
             "question_ru": result.get("question_ru", ""),
             "context_note_en": result.get("context_note_en", ""),
@@ -346,6 +348,8 @@ class OpenAIProvider(LLMProvider):
             "_prompt_version": pv,
             "_input_hash": _input_hash(input_data),
         }
+
+    # ── 7.6 Question critique ──────────────────────────────────────────────────
 
     # ── OPTIMISED: generate + critique in one call ────────────────────────────
 
@@ -550,6 +554,7 @@ class OpenAIProvider(LLMProvider):
     # ── 7.6 Question critique ──────────────────────────────────────────────────
 
     def critique_question(self, input_data: dict) -> dict:
+        tmpl, pv = _get_template("critique_question")
         user_msg = tmpl.format_map({"question": input_data.get("question", "")})
         messages = [
             {"role": "system", "content": SYSTEM_NEUTRAL},
