@@ -87,3 +87,4 @@ tmp/
 temp/
 .tmp/
 /backend/alembic/versions/0c562b9360f6_initial_schema.py
+/backup/smartvoter_backup.json

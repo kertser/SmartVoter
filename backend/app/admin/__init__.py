@@ -1505,6 +1505,7 @@ def backup_database(db: Session = Depends(get_db)) -> Response:
 
     def _serialize_row(row) -> dict:
         """Convert a SQLAlchemy model instance to a JSON-safe dict."""
+        from datetime import date as date_type
         result = {}
         for col in row.__table__.columns:
             val = getattr(row, col.name)
@@ -1513,6 +1514,9 @@ def backup_database(db: Session = Depends(get_db)) -> Response:
             elif isinstance(val, uuid.UUID):
                 result[col.name] = str(val)
             elif isinstance(val, datetime):
+                # datetime is a subclass of date — check it first
+                result[col.name] = val.isoformat()
+            elif isinstance(val, date_type):
                 result[col.name] = val.isoformat()
             elif hasattr(val, "value"):  # Enum
                 result[col.name] = val.value

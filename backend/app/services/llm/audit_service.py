@@ -253,3 +253,17 @@ class AuditedLLMService:
             "infer_party_lineage", "party_lineage_edge", entity_id,
         )
 
+    def explain_question_context(
+        self, input_data: dict, entity_id: uuid.UUID | None = None
+    ) -> dict:
+        """
+        Generate (and cache) a detailed background explanation for a question.
+        The LLM audit system ensures identical inputs return cached results at zero cost.
+        entity_id should be the question UUID.
+        """
+        return _run_and_store(
+            self.db, self.provider,
+            self.provider.explain_question_context, input_data,
+            "explain_question_context", "question", entity_id,
+        )
+

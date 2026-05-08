@@ -89,6 +89,19 @@ class LLMProvider(ABC):
             "generate_follow_up_from_salience not implemented by this provider."
         )
 
+    def explain_question_context(self, input_data: dict) -> dict:
+        """
+        Generate a detailed, language-specific background explanation of an Israeli
+        political question for a general voter.
+
+        input_data keys:
+            question_text, topic_name, policy_description, directional_axis, language_name
+
+        Returns: background, why_relevant, support_side, oppose_side, everyday_example
+        All values in the requested language.
+        """
+        raise NotImplementedError("explain_question_context not implemented by this provider.")
+
     def generate_discovery_question(self, input_data: dict) -> dict:
         """
         Generate a question for a niche policy item where a non-mainstream party

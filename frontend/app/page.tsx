@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n";
@@ -50,6 +51,19 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col items-center text-center gap-10 py-12">
+      {/* Hero banner image */}
+      <div className="w-full max-w-4xl rounded-2xl overflow-hidden shadow-md" style={{ height: "220px" }}>
+        <Image
+          src="/banner.png"
+          alt=""
+          role="presentation"
+          width={1200}
+          height={400}
+          className="w-full h-full object-cover object-center"
+          priority
+        />
+      </div>
+
       {/* Hero */}
       <div className="max-w-2xl space-y-4">
         <div className="inline-block rounded-full bg-brand-50 border border-brand-100 px-4 py-1 text-xs font-medium text-brand-700 mb-2">

@@ -78,6 +78,12 @@ export interface Translations {
     explainBtn: string;
     explainHide: string;
     explainLoading: string;
+    explainBackground: string;
+    explainWhyRelevant: string;
+    explainSupportSide: string;
+    explainOpposeSide: string;
+    explainEverydayExample: string;
+    explainNoData: string;
     submitNext: string;
     submitting: string;
     loadingQuestion: string;

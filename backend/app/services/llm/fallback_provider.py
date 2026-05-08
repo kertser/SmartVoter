@@ -95,3 +95,6 @@ class FallbackLLMProvider(LLMProvider):
     def infer_party_lineage(self, input_data: dict) -> dict:
         return self._call_with_retry("infer_party_lineage", input_data)
 
+    def explain_question_context(self, input_data: dict) -> dict:
+        return self._call_with_retry("explain_question_context", input_data)
+

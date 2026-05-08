@@ -201,6 +201,25 @@ export async function getQuestionContext(
   return apiFetch(`/api/questions/${questionId}/context?lang=${lang}`);
 }
 
+export interface QuestionExplanation {
+  question_id: string;
+  lang: string;
+  topic_name: string;
+  background: string;
+  why_relevant: string;
+  support_side: string;
+  oppose_side: string;
+  everyday_example: string;
+  source: "llm" | "stored";
+}
+
+export async function explainQuestion(
+  questionId: string,
+  lang: string = "en",
+): Promise<QuestionExplanation> {
+  return apiFetch(`/api/questions/${questionId}/explain?lang=${lang}`);
+}
+
 export async function getMethodology(): Promise<object> {
   return apiFetch<object>("/api/methodology");
 }

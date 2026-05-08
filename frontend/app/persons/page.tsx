@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { getPersons, PersonListItem } from "@/lib/api";
 import { useLang, useT } from "@/lib/i18n";
@@ -98,14 +99,22 @@ export default function PersonsPage() {
 
   return (
     <div className="space-y-6 pb-16">
-      {/* Header */}
-      <div className="space-y-1">
-        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{b.evidenceBrowser}</p>
-        <h1 className="text-3xl font-bold text-slate-900">{b.personsHeading}</h1>
-        <p className="text-slate-500 text-sm">
-          {b.personsDesc}{" "}
-          <Link href="/methodology" className="text-brand-600 hover:underline">{b.methodologyLink}</Link>
-        </p>
+      {/* Banner */}
+      <div className="relative w-full h-48 sm:h-64 rounded-2xl overflow-hidden shadow-md">
+        <Image
+          src="/knesset_members.png"
+          alt={b.personsHeading}
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex flex-col justify-end p-6">
+          <h1 className="text-3xl font-bold text-white">{b.personsHeading}</h1>
+          <p className="text-white/80 text-sm mt-1">
+            {b.personsDesc}{" "}
+            <Link href="/methodology" className="text-white underline hover:text-white/90">{b.methodologyLink}</Link>
+          </p>
+        </div>
       </div>
 
       {/* Controls */}

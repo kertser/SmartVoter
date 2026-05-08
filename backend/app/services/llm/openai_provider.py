@@ -595,6 +595,36 @@ class OpenAIProvider(LLMProvider):
             "_input_hash": _input_hash(input_data),
         }
 
+    # ── Question context explanation (Section 14A.10) ────────────────────────
+
+    def explain_question_context(self, input_data: dict) -> dict:
+        """
+        Generate a detailed, language-aware background explanation for a question.
+        Used by the "Explain this question" button in the questionnaire UI.
+        """
+        tmpl, pv = _get_template("explain_question_context")
+        user_msg = tmpl.format_map({
+            "question_text": input_data.get("question_text", ""),
+            "topic_name": input_data.get("topic_name", ""),
+            "policy_description": input_data.get("policy_description", ""),
+            "directional_axis": input_data.get("directional_axis", ""),
+            "language_name": input_data.get("language_name", "English"),
+        })
+        messages = [
+            {"role": "system", "content": SYSTEM_NEUTRAL},
+            {"role": "user", "content": user_msg},
+        ]
+        result = _call(self.client, self.model, messages, temperature=0.3)
+        return {
+            "background": result.get("background", ""),
+            "why_relevant": result.get("why_relevant", ""),
+            "support_side": result.get("support_side", ""),
+            "oppose_side": result.get("oppose_side", ""),
+            "everyday_example": result.get("everyday_example", ""),
+            "_prompt_version": pv,
+            "_input_hash": _input_hash(input_data),
+        }
+
     # ── Party lineage inference ────────────────────────────────────────────────
 
     def infer_party_lineage(self, input_data: dict) -> dict:

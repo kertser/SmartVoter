@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getOrCreateSessionId } from "@/lib/session";
-import { createSession, getNextQuestion, submitAnswer, getQuestionContext, Question } from "@/lib/api";
+import { createSession, getNextQuestion, submitAnswer, explainQuestion, QuestionExplanation, Question } from "@/lib/api";
 import { useT, useLang } from "@/lib/i18n";
 import { Tooltip } from "@/components/Tooltip";
 
@@ -38,7 +38,7 @@ export default function QuestionnairePage() {
   const [showConvergenceBanner, setShowConvergenceBanner] = useState(false);
   // Explain-question state
   const [showExplain, setShowExplain] = useState(false);
-  const [explainText, setExplainText] = useState<string | null>(null);
+  const [explainData, setExplainData] = useState<QuestionExplanation | null>(null);
   const [explainLoading, setExplainLoading] = useState(false);
 
   const loadNextQuestion = useCallback(async (sid: string) => {
@@ -47,7 +47,7 @@ export default function QuestionnairePage() {
     setSalience(1.0);
     setShowWhy(false);
     setShowExplain(false);
-    setExplainText(null);
+    setExplainData(null);
     setError(null);
     setShowConvergenceBanner(false);
     try {
@@ -108,31 +108,24 @@ export default function QuestionnairePage() {
     router.push(`/results?session_id=${sessionId}`);
   };
 
-  /** Explain this question — use stored context_note if available, else fetch from API. */
+  /** Explain this question — calls the /explain endpoint for rich, language-aware background. */
   const handleExplain = async () => {
     if (showExplain) {
       setShowExplain(false);
       return;
     }
-    if (explainText !== null) {
+    if (explainData !== null) {
       // Already fetched — just toggle
       setShowExplain(true);
       return;
     }
-    // Use context note already on question if available (fast, no round-trip)
-    if (question?.context_note) {
-      setExplainText(question.context_note);
-      setShowExplain(true);
-      return;
-    }
-    // Otherwise fetch from API (returns stored descriptions — no LLM latency)
     setExplainLoading(true);
     setShowExplain(true);
     try {
-      const ctx = await getQuestionContext(question!.id, lang);
-      setExplainText(ctx.context_note ?? null);
+      const data = await explainQuestion(question!.id, lang);
+      setExplainData(data);
     } catch {
-      setExplainText(null);
+      setExplainData(null);
     } finally {
       setExplainLoading(false);
     }
@@ -301,19 +294,48 @@ export default function QuestionnairePage() {
               {showExplain ? q.explainHide : q.explainBtn}
             </button>
             {showExplain && (
-              <div className="mt-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2.5 text-xs text-blue-800 leading-relaxed">
+              <div className="mt-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-3 text-xs text-blue-900 leading-relaxed space-y-3">
                 {explainLoading ? (
                   <span className="text-slate-400 italic">{q.explainLoading}</span>
-                ) : explainText ? (
-                  explainText
+                ) : explainData && (explainData.background || explainData.why_relevant) ? (
+                  <>
+                    {explainData.background && (
+                      <div>
+                        <p className="font-semibold text-blue-700 mb-0.5">{q.explainBackground}</p>
+                        <p>{explainData.background}</p>
+                      </div>
+                    )}
+                    {explainData.why_relevant && (
+                      <div>
+                        <p className="font-semibold text-blue-700 mb-0.5">{q.explainWhyRelevant}</p>
+                        <p>{explainData.why_relevant}</p>
+                      </div>
+                    )}
+                    {(explainData.support_side || explainData.oppose_side) && (
+                      <div className="grid grid-cols-2 gap-2">
+                        {explainData.support_side && (
+                          <div className="rounded bg-green-50 border border-green-100 px-2 py-1.5">
+                            <p className="font-semibold text-green-700 mb-0.5">{q.explainSupportSide}</p>
+                            <p className="text-green-800">{explainData.support_side}</p>
+                          </div>
+                        )}
+                        {explainData.oppose_side && (
+                          <div className="rounded bg-red-50 border border-red-100 px-2 py-1.5">
+                            <p className="font-semibold text-red-700 mb-0.5">{q.explainOpposeSide}</p>
+                            <p className="text-red-800">{explainData.oppose_side}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {explainData.everyday_example && (
+                      <div className="border-t border-blue-100 pt-2">
+                        <p className="font-semibold text-blue-700 mb-0.5">💡 {q.explainEverydayExample}</p>
+                        <p className="italic">{explainData.everyday_example}</p>
+                      </div>
+                    )}
+                  </>
                 ) : (
-                  <span className="text-slate-400 italic">
-                    {lang === "he"
-                      ? "אין הסבר זמין לשאלה זו"
-                      : lang === "ru"
-                      ? "Для этого вопроса нет дополнительного объяснения"
-                      : "No additional explanation available for this question"}
-                  </span>
+                  <span className="text-slate-400 italic">{q.explainNoData}</span>
                 )}
               </div>
             )}
