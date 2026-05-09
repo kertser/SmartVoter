@@ -536,6 +536,7 @@ function QuestionBankPanel() {
   const [workers, setWorkers] = useState(8);
   const [rootsPerTopic, setRootsPerTopic] = useState(3);
   const [force, setForce] = useState(false);
+  const [generateExplanations, setGenerateExplanations] = useState(false);
   const [job, setJob] = useState<QuestionBankJobStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [staleMsg, setStaleMsg] = useState<string | null>(null);
@@ -560,6 +561,7 @@ function QuestionBankPanel() {
         max_workers: workers,
         force_regenerate: force,
         root_questions_per_topic: rootsPerTopic,
+        generate_explanations: generateExplanations,
       });
       setJob({ job_id: res.job_id, status: "queued", max_questions: maxQ, depth_levels: depth });
       pollRef.current = setInterval(async () => {
@@ -637,6 +639,23 @@ function QuestionBankPanel() {
           <input type="checkbox" checked={force} onChange={e => setForce(e.target.checked)} disabled={isRunning} className="rounded" />
           {a.questionBankForceLabel}
         </label>
+        <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer pt-4">
+          <input
+            type="checkbox"
+            checked={generateExplanations}
+            onChange={e => setGenerateExplanations(e.target.checked)}
+            disabled={isRunning}
+            className="rounded"
+          />
+          <span className="flex flex-col gap-0.5">
+            <span>{a.questionBankGenerateExplanationsLabel}</span>
+            {generateExplanations && (
+              <span className="text-amber-700 font-medium">
+                ⚠️ Значительно увеличивает время генерации (×3 вызова LLM на вопрос)
+              </span>
+            )}
+          </span>
+        </label>
       </div>
 
       <div className="flex gap-3 flex-wrap items-center">
@@ -646,12 +665,6 @@ function QuestionBankPanel() {
           className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
         >
           {isRunning ? "⏳ " + a.questionBankGenerating : a.questionBankGenerateBtn}
-        </button>
-        <button
-          onClick={handleMarkStale}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 whitespace-nowrap"
-        >
-          {a.markStaleBtn}
         </button>
       </div>
 
@@ -665,7 +678,9 @@ function QuestionBankPanel() {
               </div>
               <p className="text-xs text-slate-600">
                 {job.step
-                  ? a.questionBankRunning(job.step, job.step_completed ?? 0, job.step_total ?? 0)
+                  ? job.step === "generate_explanations"
+                    ? `💬 Генерация объяснений: ${job.step_completed ?? 0} / ${job.step_total ?? 0}`
+                    : a.questionBankRunning(job.step, job.step_completed ?? 0, job.step_total ?? 0)
                   : a.questionBankGenerating}
               </p>
             </>
@@ -673,6 +688,12 @@ function QuestionBankPanel() {
           {job.status === "done" && (
             <p className="text-xs text-green-700 font-medium">
               ✅ {a.questionBankDone(job.created ?? 0, job.skipped ?? 0, job.errors ?? 0, job.stale_marked ?? 0)}
+              {job.explanations_generated !== undefined && (
+                <span className="ms-2 text-slate-600">
+                  · {job.explanations_generated} объяснений сгенерировано
+                  {job.explanations_errors ? `, ${job.explanations_errors} ошибок` : ""}
+                </span>
+              )}
             </p>
           )}
           {job.status === "error" && (

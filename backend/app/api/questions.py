@@ -8,6 +8,7 @@ from backend.app.config import get_settings, Settings
 from backend.app.models.user_session import UserSession
 from backend.app.models.question import Question, AnswerScaleType
 from backend.app.models.user_answer import UserAnswer
+from backend.app.models.user_skipped_question import UserSkippedQuestion
 from backend.app.models.policy_item import PolicyItem, ReviewStatus
 from backend.app.models.topic import Topic
 from backend.app.models.party_position import PartyPosition
@@ -214,20 +215,29 @@ def _compute_session_state(
 
     for answer in answered_rows:
         answered_ids.append(answer.question_id)
+        topic: Topic | None = None
+
         if answer.policy_item_id:
             answered_policy_item_counts[answer.policy_item_id] = (
                 answered_policy_item_counts.get(answer.policy_item_id, 0) + 1
             )
             answer_pi_salience_pairs.append((answer.policy_item_id, answer.salience))
+            # Resolve topic via policy_item → topic
+            pi = db.query(PolicyItem).filter(PolicyItem.id == answer.policy_item_id).first()
+            if pi and pi.topic_id:
+                topic = db.query(Topic).filter(Topic.id == pi.topic_id).first()
+        else:
+            # Root question: policy_item_id is NULL → resolve topic directly from
+            # Question.topic_id (set on all root questions by the seeder/question bank pipeline).
+            q_obj = db.query(Question).filter(Question.id == answer.question_id).first()
+            if q_obj and q_obj.topic_id:
+                topic = db.query(Topic).filter(Topic.id == q_obj.topic_id).first()
 
-        pi = db.query(PolicyItem).filter(PolicyItem.id == answer.policy_item_id).first()
-        if pi:
-            topic = db.query(Topic).filter(Topic.id == pi.topic_id).first()
-            if topic:
-                answered_topic_counts[topic.slug] = (
-                    answered_topic_counts.get(topic.slug, 0) + 1
-                )
-                answer_salience_pairs.append((topic.slug, answer.salience))
+        if topic:
+            answered_topic_counts[topic.slug] = (
+                answered_topic_counts.get(topic.slug, 0) + 1
+            )
+            answer_salience_pairs.append((topic.slug, answer.salience))
 
     user_salience_by_topic = aggregate_salience_by_topic(answer_salience_pairs)
     salience_by_policy_item = aggregate_salience_by_policy_item(answer_pi_salience_pairs)
@@ -380,6 +390,16 @@ def get_next_question(
     topics_covered = state["topics_covered"]
     topics_total = state["topics_total"]
 
+    # Load any questions the user has explicitly skipped (excluded from all future selection)
+    skipped_rows = (
+        db.query(UserSkippedQuestion)
+        .filter(UserSkippedQuestion.session_id == session_id)
+        .all()
+    )
+    skipped_question_ids: set[uuid.UUID] = {s.question_id for s in skipped_rows}
+    # Merge skipped IDs into answered_ids so the rest of the selection logic ignores them
+    answered_ids_set = set(answered_ids) | skipped_question_ids
+
     if force_results(len(answered_ids)):
         return None
 
@@ -389,10 +409,13 @@ def get_next_question(
         all_topic_slugs, topics_covered, topics_total,
     )
 
-    # Build candidates from servable questions (approved + llm_generated) not yet answered
+    # Build candidates from servable questions (approved + llm_generated, not stale) not yet answered
     servable_questions = (
         db.query(Question)
-        .filter(Question.human_review_status.in_(list(_SERVABLE_STATUSES)))
+        .filter(
+            Question.human_review_status.in_(list(_SERVABLE_STATUSES)),
+            Question.is_stale == False,  # noqa: E712
+        )
         .all()
     )
 
@@ -406,8 +429,6 @@ def get_next_question(
     # so that ALL topics get at least one question during Phase 1.
     from backend.app.services.questionnaire.selector import _determine_phase
     phase = _determine_phase(len(answered_ids), answered_topic_counts, all_topic_slugs)
-
-    answered_ids_set = set(answered_ids)
 
     unanswered_root_qs = [
         q for q in servable_questions
@@ -504,7 +525,7 @@ def get_next_question(
     top_party_ids_set = set(top_party_ids)
 
     for q in servable_questions:
-        if q.id in set(answered_ids):
+        if q.id in answered_ids_set:  # includes both answered and skipped
             continue
         pi = db.query(PolicyItem).filter(PolicyItem.id == q.policy_item_id).first()
         if not pi:
@@ -759,19 +780,69 @@ def explain_question(
     Return a detailed, language-specific background explanation of the political
     issue behind this question — who, why, and how it became contested in Israel.
 
-    Uses LLM (cached via audit system — same input never triggers a second API call).
+    Cache strategy:
+      1. Check `question_explanations` table by (question_id, lang).
+         If present → return immediately (zero LLM cost).
+      2. On cache miss → call LLM (also logged via audit system).
+      3. Store result in `question_explanations` for all future requests.
+
     Falls back to stored policy-item description if LLM is unavailable.
 
     lang: "en" | "he" | "ru"
     """
+    from backend.app.models.question_explanation import QuestionExplanation
+
     q = db.query(Question).filter(Question.id == question_id).first()
     if not q:
         raise HTTPException(status_code=404, detail="Question not found")
 
-    # Always derive language_name from the requested lang — regardless of whether
-    # the question has a translation in that language.  The LLM is given the best
-    # available question text as *context only* (it reads any language) but must
-    # produce ALL output fields in the language the user requested.
+    # ── Step 1: dedicated explanation cache ──────────────────────────────────
+    cached = (
+        db.query(QuestionExplanation)
+        .filter(
+            QuestionExplanation.question_id == question_id,
+            QuestionExplanation.lang == lang,
+        )
+        .first()
+    )
+    if cached:
+        logger.debug(
+            "explanation cache hit: question_id=%s lang=%s", question_id, lang
+        )
+        topic_name_str = ""
+        if q.topic_id:
+            topic = db.query(Topic).filter(Topic.id == q.topic_id).first()
+            if topic:
+                if lang == "he" and topic.name_he:
+                    topic_name_str = topic.name_he
+                elif lang == "ru" and topic.name_ru:
+                    topic_name_str = topic.name_ru
+                else:
+                    topic_name_str = topic.name_en
+        elif q.policy_item_id:
+            pi = db.query(PolicyItem).filter(PolicyItem.id == q.policy_item_id).first()
+            if pi and pi.topic_id:
+                topic = db.query(Topic).filter(Topic.id == pi.topic_id).first()
+                if topic:
+                    if lang == "he" and topic.name_he:
+                        topic_name_str = topic.name_he
+                    elif lang == "ru" and topic.name_ru:
+                        topic_name_str = topic.name_ru
+                    else:
+                        topic_name_str = topic.name_en
+        return {
+            "question_id": str(question_id),
+            "lang": lang,
+            "topic_name": topic_name_str,
+            "background": cached.background or "",
+            "why_relevant": cached.why_relevant or "",
+            "support_side": cached.support_side or "",
+            "oppose_side": cached.oppose_side or "",
+            "everyday_example": cached.everyday_example or "",
+            "source": "cached",
+        }
+
+    # ── Step 2: build context for LLM ────────────────────────────────────────
     _LANG_NAMES = {
         "he": "Hebrew (עברית)",
         "ru": "Russian (русский)",
@@ -779,8 +850,6 @@ def explain_question(
     }
     language_name = _LANG_NAMES.get(lang, "English")
 
-    # Use the translated question text when available; fall back to English as
-    # context.  The LLM will still write the explanation in language_name.
     if lang == "he":
         question_text = q.question_text_he or q.question_text_en
     elif lang == "ru":
@@ -788,7 +857,6 @@ def explain_question(
     else:
         question_text = q.question_text_en
 
-    # Gather policy item + topic context for the prompt
     policy_description = ""
     directional_axis = ""
     topic_name_str = ""
@@ -817,7 +885,7 @@ def explain_question(
         if not policy_description and topic.description:
             policy_description = topic.description
 
-    # Attempt LLM-powered rich explanation (cached automatically)
+    # ── Step 3: LLM call (with audit-level caching as secondary) ─────────────
     if settings.openai_api_key:
         try:
             from backend.app.services.llm import get_llm_provider
@@ -832,9 +900,33 @@ def explain_question(
                 "policy_description": policy_description,
                 "directional_axis": directional_axis,
                 "language_name": language_name,
-                "lang": lang,  # included in hash so each language is cached separately
+                "lang": lang,
             }
             result = svc.explain_question_context(input_data, entity_id=question_id)
+
+            # ── Step 4: store in dedicated cache ─────────────────────────────
+            try:
+                expl = QuestionExplanation(
+                    question_id=question_id,
+                    lang=lang,
+                    background=result.get("background", ""),
+                    why_relevant=result.get("why_relevant", ""),
+                    support_side=result.get("support_side", ""),
+                    oppose_side=result.get("oppose_side", ""),
+                    everyday_example=result.get("everyday_example", ""),
+                    source="llm",
+                )
+                db.add(expl)
+                db.commit()
+                logger.info(
+                    "explanation cached: question_id=%s lang=%s", question_id, lang
+                )
+            except Exception as cache_exc:
+                db.rollback()
+                logger.warning(
+                    "Failed to cache explanation for %s lang=%s: %s",
+                    question_id, lang, cache_exc,
+                )
 
             return {
                 "question_id": str(question_id),
@@ -850,10 +942,7 @@ def explain_question(
         except Exception as exc:
             logger.warning("LLM explain_question_context failed for %s: %s", question_id, exc)
 
-    # Graceful fallback — LLM not available.
-    # Do NOT return raw English policy_description as it would show English text
-    # to users whose UI language is Hebrew or Russian.  Return empty fields so the
-    # frontend displays the localised "explanation not available" message.
+    # ── Graceful fallback — LLM not available ────────────────────────────────
     return {
         "question_id": str(question_id),
         "lang": lang,
@@ -867,3 +956,66 @@ def explain_question(
     }
 
 
+@router.post("/questions/{question_id}/skip")
+def skip_question(
+    question_id: uuid.UUID,
+    session_id: uuid.UUID,
+    reason: str = "outdated",
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    Mark a question as skipped by the user for this session.
+    The question will not be shown again to this session.
+    reason: "outdated" | "not_relevant" | "other"
+    """
+    session = db.query(UserSession).filter(UserSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    q = db.query(Question).filter(Question.id == question_id).first()
+    if not q:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    # Idempotent — don't insert duplicate skip records
+    existing = (
+        db.query(UserSkippedQuestion)
+        .filter(
+            UserSkippedQuestion.session_id == session_id,
+            UserSkippedQuestion.question_id == question_id,
+        )
+        .first()
+    )
+    if not existing:
+        skip = UserSkippedQuestion(
+            session_id=session_id,
+            question_id=question_id,
+            reason=reason,
+        )
+        db.add(skip)
+        db.commit()
+
+    return {"skipped": True, "question_id": str(question_id), "reason": reason}
+
+
+@router.delete("/questions/{question_id}/explain/cache")
+def clear_explanation_cache(
+    question_id: uuid.UUID,
+    lang: str | None = None,
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    Clear the cached explanation for a question (admin / dev use).
+    If lang is omitted, clears all languages.
+    The next call to /explain will re-generate via LLM.
+    """
+    from backend.app.models.question_explanation import QuestionExplanation
+
+    q_filter = db.query(QuestionExplanation).filter(
+        QuestionExplanation.question_id == question_id
+    )
+    if lang:
+        q_filter = q_filter.filter(QuestionExplanation.lang == lang)
+
+    deleted = q_filter.delete()
+    db.commit()
+    return {"deleted": deleted, "question_id": str(question_id), "lang": lang}

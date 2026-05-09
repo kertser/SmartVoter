@@ -21,15 +21,19 @@ def submit_answer(body: AnswerIn, db: Session = Depends(get_db)) -> AnswerOut:
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    # Apply answer_polarity: if the question is phrased in the opposite direction to
-    # the policy-item axis, flip the stored value so comparisons with party positions
-    # are correct.  E.g. "Should Haredim serve?" (support=+1) on axis
-    # haredi_service:-1=mandatory,+1=exempt needs polarity=-1 so stored value=-1.
+    # Apply answer_polarity and auto-fill policy_item_id from the question record.
+    # Root questions (topic-level) have question.policy_item_id = None; that is
+    # now allowed by the DB column being nullable.
     polarity = 1.0
+    policy_item_id = body.policy_item_id
     if body.question_id:
         q_obj = db.query(Question).filter(Question.id == body.question_id).first()
-        if q_obj and q_obj.answer_polarity is not None:
-            polarity = q_obj.answer_polarity
+        if q_obj:
+            if q_obj.answer_polarity is not None:
+                polarity = q_obj.answer_polarity
+            # If the client didn't send policy_item_id, get it from the question
+            if policy_item_id is None and q_obj.policy_item_id is not None:
+                policy_item_id = q_obj.policy_item_id
 
     corrected_answer_value = round(body.answer_value * polarity, 4)
 
@@ -37,7 +41,7 @@ def submit_answer(body: AnswerIn, db: Session = Depends(get_db)) -> AnswerOut:
         id=uuid.uuid4(),
         session_id=body.session_id,
         question_id=body.question_id,
-        policy_item_id=body.policy_item_id,
+        policy_item_id=policy_item_id,
         answer_value=corrected_answer_value,
         salience=body.salience,
     )

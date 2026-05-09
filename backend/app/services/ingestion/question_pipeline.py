@@ -26,6 +26,7 @@ Usage:
 """
 import logging
 import uuid
+import datetime as _dt
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING
 
@@ -165,6 +166,29 @@ def run_question_pipeline(
 
             neutrality_score = float(result.get("neutrality_score", 0.7))
 
+            # ── Relevance / staleness check ──────────────────────────────────
+            # Check if the generated question is still current as of today.
+            # Marks is_stale=True if the LLM judges it outdated, so it won't
+            # be served to users but is kept in DB for audit.
+            is_stale = False
+            try:
+                rel_input = {
+                    "question_en": question_en,
+                    "question_he": result.get("question_he", ""),
+                    "policy_description": pi_data["description"],
+                    "directional_axis": pi_data["directional_axis"],
+                    "current_date": _dt.date.today().isoformat(),
+                }
+                rel_result = llm_raw.check_question_relevance(rel_input)
+                if rel_result.get("is_stale") and rel_result.get("confidence", 0) >= 0.7:
+                    is_stale = True
+                    logger.info(
+                        "question_pipeline: marking question stale for policy_item %s — %s",
+                        pi_id, rel_result.get("staleness_reason", ""),
+                    )
+            except Exception as rel_exc:
+                logger.debug("Relevance check failed (non-critical): %s", rel_exc)
+
             q = Question(
                 id=uuid.uuid4(),
                 policy_item_id=pi_id,
@@ -177,6 +201,8 @@ def run_question_pipeline(
                 # LLM prompt requires "Strongly Support = positive axis pole"
                 answer_polarity=1.0,
                 human_review_status=ReviewStatus.needs_review,
+                generation_date=_dt.datetime.utcnow(),
+                is_stale=is_stale,
             )
             thread_db.add(q)
             thread_db.commit()

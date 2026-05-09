@@ -78,9 +78,9 @@
     "_comment": "eco_02 — State Welfare Spending. axis: -1=expand welfare, +1=reduce welfare/privatize",
     "policy_slug": "eco_02",
     "answer_polarity": -1,
-    "question_text_en": "Should the state expand child benefits and social assistance programs?",
-    "question_text_he": "האם המדינה צריכה להרחיב גמלאות ילדים ותוכניות סיוע סוציאלי?",
-    "question_text_ru": "Должно ли государство расширить детские пособия и программы социальной помощи?"
+    "question_text_en": "Should the state significantly increase funding for elderly care and nursing home support to ensure dignified aging for all citizens?",
+    "question_text_he": "האם על המדינה להגדיל משמעותית את המימון לטיפול בקשישים ולבתי אבות כדי להבטיח זקנה בכבוד לכל האזרחים?",
+    "question_text_ru": "Должно ли государство значительно увеличить финансирование ухода за пожилыми людьми и домов престарелых, чтобы обеспечить достойное старение для всех граждан?"
   },
   {
     "policy_slug": "eco_02",
@@ -93,16 +93,16 @@
     "_comment": "eco_03 — Housing Market Regulation. axis: -1=strong state regulation, +1=free market",
     "policy_slug": "eco_03",
     "answer_polarity": -1,
-    "question_text_en": "Should the government intervene to cap residential rental prices?",
-    "question_text_he": "האם הממשלה צריכה להתערב לצורך הגבלת שכר דירה למגורים?",
-    "question_text_ru": "Должно ли правительство вмешиваться и ограничивать цены на аренду жилья?"
+    "question_text_en": "Should owners of multiple investment properties pay a progressive surtax to discourage speculative hoarding of residential units?",
+    "question_text_he": "האם בעלי דירות מרובות להשקעה צריכים לשלם מס נוסף פרוגרסיבי כדי להגביל ספסרות בדירות מגורים?",
+    "question_text_ru": "Должны ли владельцы нескольких инвестиционных объектов платить прогрессивный дополнительный налог, чтобы препятствовать спекулятивному скоплению жилых единиц?"
   },
   {
     "policy_slug": "eco_03",
     "answer_polarity": -1,
-    "question_text_en": "Should the state build and rent public housing at subsidized rates?",
-    "question_text_he": "האם המדינה צריכה לבנות ולהשכיר דיור ציבורי במחירים מסובסדים?",
-    "question_text_ru": "Должно ли государство строить и сдавать в аренду муниципальное жильё по субсидированным ценам?"
+    "question_text_en": "Should private developers be legally required to include a minimum quota of affordable or subsidised units in every new residential project?",
+    "question_text_he": "האם יש לחייב יזמים פרטיים בחוק לכלול מכסה מינימלית של יחידות דיור בהישג יד בכל פרויקט מגורים חדש?",
+    "question_text_ru": "Должны ли застройщики быть обязаны по закону включать минимальную долю доступного или субсидируемого жилья в каждый новый жилой проект?"
   },
   {
     "_comment": "eco_04 — Religious Institution Funding. axis: -1=cut funding, +1=increase funding",
@@ -150,19 +150,19 @@
     "question_text_ru": "Должны ли местные городские советы иметь право самостоятельно решать, могут ли предприятия работать в Шаббат?"
   },
   {
-    "_comment": "rel_03 — Haredi Military Service. axis: -1=mandatory service, +1=exempt status",
+    "_comment": "rel_03 — Haredi Military Service (religion-state dimension). axis: -1=mandatory service, +1=religious exemption protected by law",
     "policy_slug": "rel_03",
     "answer_polarity": -1,
-    "question_text_en": "Should ultra-Orthodox (Haredi) men be required to serve in the Israeli military?",
-    "question_text_he": "האם גברים חרדים צריכים להתגייס לצבא הישראלי?",
-    "question_text_ru": "Должны ли ультраортодоксальные (харедим) мужчины проходить военную службу в израильской армии?"
+    "question_text_en": "Should religious institutions such as yeshivas have any legally recognised authority to exempt their students from civic obligations imposed by the state, including military conscription?",
+    "question_text_he": "האם למוסדות דתיים כמו ישיבות צריכה להיות סמכות מוכרת בחוק לפטור את תלמידיהם מחובות אזרחיות שהמדינה מטילה, לרבות גיוס לצבא?",
+    "question_text_ru": "Должны ли религиозные учреждения, такие как иешивы, иметь законодательно признанные полномочия освобождать своих учеников от гражданских обязательств, введённых государством, включая военный призыв?"
   },
   {
     "policy_slug": "rel_03",
     "answer_polarity": 1,
-    "question_text_en": "Should Haredi men who study full-time in yeshivas receive a formal exemption from military service?",
-    "question_text_he": "האם גברים חרדים הלומדים במשרה מלאה בישיבות צריכים לקבל פטור רשמי משירות צבאי?",
-    "question_text_ru": "Должны ли мужчины-харедим, обучающиеся в иешивах на полную ставку, получить официальное освобождение от военной службы?"
+    "question_text_en": "Should Israeli law explicitly guarantee that Torah study in a state-recognised yeshiva constitutes a protected religious right that cannot be overridden by military conscription orders?",
+    "question_text_he": "האם החוק הישראלי צריך לקבוע במפורש כי לימוד תורה בישיבה מוכרת על ידי המדינה הוא זכות דתית מוגנת שאינה יכולה להיבטל על ידי צווי גיוס?",
+    "question_text_ru": "Должен ли израильский закон прямо гарантировать, что изучение Торы в государственно признанной иешиве является защищённым религиозным правом, которое не может быть отменено приказами о призыве на военную службу?"
   },
   {
     "_comment": "rel_04 — Kashrut Law. axis: -1=privatize kashrut, +1=state monopoly enforcement",
@@ -480,19 +480,19 @@
     "question_text_ru": "Должны ли арендодатели иметь право свободно устанавливать и повышать арендную плату без государственных ограничений?"
   },
   {
-    "_comment": "mil_01 — Universal Military Service. axis: -1=truly universal service, +1=maintain exemptions",
+    "_comment": "mil_01 — Universal Military Service (fairness/equality dimension). axis: -1=truly universal service, +1=maintain exemptions",
     "policy_slug": "mil_01",
     "answer_polarity": -1,
-    "question_text_en": "Should military service be truly universal, applying equally to ultra-Orthodox and Arab citizens?",
-    "question_text_he": "האם שירות הצבאי צריך להיות אוניברסלי באמת, ולחול באופן שווה על חרדים וערבים?",
-    "question_text_ru": "Должна ли военная служба быть по-настоящему всеобщей, распространяясь в равной мере на ультраортодоксов и арабских граждан?"
+    "question_text_en": "Should Israel establish a mandatory national service framework that applies equally to all citizens — Jewish, Arab, and Druze — regardless of religion or ethnicity, with civilian service tracks available as an alternative to combat?",
+    "question_text_he": "האם ישראל צריכה להקים מסגרת שירות לאומי חובה החלה באופן שווה על כל האזרחים — יהודים, ערבים ודרוזים — ללא קשר לדת או לאום, כשמסלולים אזרחיים יהיו חלופה לשירות קרבי?",
+    "question_text_ru": "Должен ли Израиль создать систему обязательной национальной службы, которая в равной мере распространяется на всех граждан — евреев, арабов и друзов — вне зависимости от религии или национальности, с гражданскими альтернативными треками вместо боевой службы?"
   },
   {
     "policy_slug": "mil_01",
     "answer_polarity": 1,
-    "question_text_en": "Should ultra-Orthodox students enrolled in full-time Torah study continue to receive military service exemptions?",
-    "question_text_he": "האם סטודנטים חרדים הלומדים לימודי תורה במשרה מלאה צריכים להמשיך לקבל פטור משירות צבאי?",
-    "question_text_ru": "Должны ли ультраортодоксальные студенты, полностью занятые изучением Торы, продолжать получать освобождение от военной службы?"
+    "question_text_en": "Should individuals who have conscientious or religious objections to bearing arms be allowed to fulfil their national obligation through extended civilian community service rather than military service?",
+    "question_text_he": "האם אנשים בעלי התנגדות מצפונית או דתית לשאת נשק צריכים להיות רשאים למלא את חובתם הלאומית באמצעות שירות קהילתי אזרחי ממושך במקום שירות צבאי?",
+    "question_text_ru": "Должны ли лица, имеющие принципиальные или религиозные возражения против ношения оружия, иметь право выполнять свой национальный долг через длительную гражданскую общественную службу вместо военной?"
   },
   {
     "_comment": "mil_02 — Mandatory Service Length. axis: -1=shorten service, +1=maintain or extend current length",

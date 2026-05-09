@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getOrCreateSessionId } from "@/lib/session";
-import { createSession, getNextQuestion, submitAnswer, explainQuestion, QuestionExplanation, Question } from "@/lib/api";
+import { createSession, getNextQuestion, submitAnswer, explainQuestion, skipQuestion, undoLastAnswer, QuestionExplanation, Question } from "@/lib/api";
 import { useT, useLang } from "@/lib/i18n";
 import { Tooltip } from "@/components/Tooltip";
 
@@ -32,6 +32,7 @@ export default function QuestionnairePage() {
   const [salience, setSalience] = useState<number>(1.0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [skipping, setSkipping] = useState(false);
   const [showWhy, setShowWhy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Convergence banner state — only shown after 20+ answers
@@ -40,6 +41,9 @@ export default function QuestionnairePage() {
   const [showExplain, setShowExplain] = useState(false);
   const [explainData, setExplainData] = useState<QuestionExplanation | null>(null);
   const [explainLoading, setExplainLoading] = useState(false);
+  // Question history for go-back (stores last question snapshot)
+  const [prevQuestion, setPrevQuestion] = useState<Question | null>(null);
+  const [prevAnsweredCount, setPrevAnsweredCount] = useState(0);
 
   const loadNextQuestion = useCallback(async (sid: string) => {
     setLoading(true);
@@ -93,6 +97,9 @@ export default function QuestionnairePage() {
         answer_value: selectedAnswer,
         salience,
       });
+      // Save current question for potential go-back
+      setPrevQuestion(question);
+      setPrevAnsweredCount(answeredCount);
       const newCount = answeredCount + 1;
       setAnsweredCount(newCount);
       // Backend enforces HARD_MAX; just load next (null → auto-redirect)
@@ -101,6 +108,47 @@ export default function QuestionnairePage() {
       setError(q.errorSubmit);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSkip = async () => {
+    if (!question || !sessionId) return;
+    setSkipping(true);
+    try {
+      await skipQuestion(question.id, sessionId, "outdated");
+      // Don't increment answeredCount — skip doesn't count as an answer
+      // Clear go-back history since we skipped (no answer to undo)
+      setPrevQuestion(null);
+      await loadNextQuestion(sessionId);
+    } catch {
+      setError(q.errorSubmit);
+    } finally {
+      setSkipping(false);
+    }
+  };
+
+  const handleGoBack = async () => {
+    if (!sessionId || !prevQuestion) return;
+    setLoading(true);
+    try {
+      const result = await undoLastAnswer(sessionId);
+      if (result.deleted) {
+        // Restore the previous question
+        setQuestion(prevQuestion);
+        setAnsweredCount(prevAnsweredCount);
+        setPrevQuestion(null);
+        setSelectedAnswer(null);
+        setSalience(1.0);
+        setShowWhy(false);
+        setShowExplain(false);
+        setExplainData(null);
+        setShowConvergenceBanner(false);
+        setError(null);
+      }
+    } catch {
+      setError(q.errorLoad);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -410,14 +458,46 @@ export default function QuestionnairePage() {
             </div>
           )}
 
-          {/* Submit */}
-          <button
-            onClick={handleSubmit}
-            disabled={selectedAnswer === null || submitting}
-            className="w-full rounded-lg bg-brand-600 py-3 text-white font-medium hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            {submitting ? q.submitting : q.submitNext}
-          </button>
+          {/* ── Action row: Submit + Skip + Go Back ── */}
+          <div className="space-y-2">
+            {/* Primary submit button */}
+            <button
+              onClick={handleSubmit}
+              disabled={selectedAnswer === null || submitting || skipping}
+              className="w-full rounded-lg bg-brand-600 py-3 text-white font-medium hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {submitting ? q.submitting : q.submitNext}
+            </button>
+
+            {/* Secondary row: Skip (outdated) + Go back */}
+            <div className="flex gap-2">
+              {/* Go back — only available if there is a previous question */}
+              {prevQuestion && (
+                <Tooltip content={q.goBackTooltip} position="top" wide>
+                  <button
+                    onClick={handleGoBack}
+                    disabled={submitting || skipping}
+                    className="flex-1 rounded-lg border border-slate-200 py-2 text-xs text-slate-500 hover:border-slate-300 hover:text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  >
+                    {q.goBack}
+                  </button>
+                </Tooltip>
+              )}
+
+              {/* Skip as outdated */}
+              <Tooltip content={q.skipOutdatedTooltip} position="top" wide>
+                <button
+                  onClick={handleSkip}
+                  disabled={submitting || skipping}
+                  className={`rounded-lg border border-slate-200 py-2 text-xs text-slate-400 hover:border-amber-200 hover:text-amber-700 hover:bg-amber-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all ${
+                    prevQuestion ? "flex-1" : "w-full"
+                  }`}
+                >
+                  {skipping ? q.skipping : q.skipOutdated}
+                </button>
+              </Tooltip>
+            </div>
+          </div>
         </div>
       )}
     </div>

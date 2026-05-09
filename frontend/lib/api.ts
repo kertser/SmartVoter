@@ -536,6 +536,24 @@ export async function deleteSession(sessionId: string): Promise<{ deleted: boole
   return apiFetch<{ deleted: boolean }>(`/api/sessions/${sessionId}`, { method: "DELETE" });
 }
 
+export async function undoLastAnswer(
+  sessionId: string
+): Promise<{ deleted: boolean; question_id: string | null }> {
+  return apiFetch<{ deleted: boolean; question_id: string | null }>(
+    `/api/sessions/${sessionId}/answers/last`,
+    { method: "DELETE" }
+  );
+}
+
+export async function skipQuestion(
+  questionId: string,
+  sessionId: string,
+  reason: "outdated" | "not_relevant" | "other" = "outdated"
+): Promise<{ skipped: boolean; question_id: string; reason: string }> {
+  const params = new URLSearchParams({ session_id: sessionId, reason });
+  return apiFetch(`/api/questions/${questionId}/skip?${params}`, { method: "POST" });
+}
+
 // ── Public evidence browser ───────────────────────────────────────────────────
 
 export interface PartyListItem {
@@ -984,6 +1002,8 @@ export interface QuestionBankJobStatus {
   skipped?: number;
   errors?: number;
   stale_marked?: number;
+  explanations_generated?: number;
+  explanations_errors?: number;
   step?: string;
   step_completed?: number;
   step_total?: number;
@@ -998,6 +1018,7 @@ export async function adminGenerateQuestionBank(params: {
   topics?: string[];
   force_regenerate?: boolean;
   root_questions_per_topic?: number;
+  generate_explanations?: boolean;
 }): Promise<{ job_id: string; status: string; max_questions: number; message: string }> {
   return adminApiFetch("/api/admin/llm/generate-question-bank", {
     method: "POST",

@@ -92,6 +92,12 @@ export interface Translations {
     tryAgain: string;
     discoveryBadge: string;
     discoveryTooltip: string;
+    // Skip / go back
+    skipOutdated: string;
+    skipOutdatedTooltip: string;
+    skipping: string;
+    goBack: string;
+    goBackTooltip: string;
     // Convergence / topic coverage
     topicsCoveredLabel: (covered: number, total: number) => string;
     phaseSurveyLabel: string;
@@ -462,6 +468,7 @@ export interface Translations {
     questionBankDepthLabel: string;
     questionBankWorkersLabel: string;
     questionBankForceLabel: string;
+    questionBankGenerateExplanationsLabel: string;
     questionBankGenerateBtn: string;
     questionBankGenerating: string;
     questionBankDone: (created: number, skipped: number, errors: number, stale: number) => string;

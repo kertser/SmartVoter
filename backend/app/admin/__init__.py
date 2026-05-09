@@ -392,6 +392,147 @@ class GenerateQuestionBankBody(BaseModel):
     topics: list[str] | None = None   # if None, all topics
     force_regenerate: bool = False     # regenerate even if questions already exist
     root_questions_per_topic: int = 3  # how many root (depth-0) questions per topic
+    generate_explanations: bool = False  # if True, generate EN/HE/RU explanations for each new question
+
+
+def _generate_explanations_for_new_questions(
+    db, settings, stats: dict, progress_callback, job_id: str
+) -> None:
+    """
+    After run_question_bank_pipeline, generate EN/HE/RU explanations for every
+    question that does NOT yet have a cached explanation in question_explanations.
+
+    Called only when generate_explanations=True in the request body.
+    Errors on individual questions are logged and skipped — never fail the job.
+    """
+    from backend.app.models.question import Question
+    from backend.app.models.question_explanation import QuestionExplanation
+    from backend.app.models.policy_item import PolicyItem, ReviewStatus
+    from backend.app.models.topic import Topic
+    from backend.app.services.llm import get_llm_provider
+    from backend.app.services.llm.audit_service import AuditedLLMService
+
+    _LANG_NAMES = {"en": "English", "he": "Hebrew (עברית)", "ru": "Russian (русский)"}
+
+    # Find all servable questions that lack at least one language explanation
+    questions = (
+        db.query(Question)
+        .filter(Question.human_review_status.in_([ReviewStatus.approved, ReviewStatus.llm_generated]))
+        .all()
+    )
+
+    # Build set of already-cached (question_id, lang) pairs
+    cached_pairs: set[tuple] = {
+        (str(row.question_id), row.lang)
+        for row in db.query(QuestionExplanation).all()
+    }
+
+    langs = ["en", "he", "ru"]
+    todo: list[tuple] = []  # (question, lang) pairs that need generation
+    for q in questions:
+        for lang in langs:
+            if (str(q.id), lang) not in cached_pairs:
+                todo.append((q, lang))
+
+    if not todo:
+        logger.info("generate_explanations: all questions already have cached explanations")
+        return
+
+    logger.info("generate_explanations: generating %d explanation(s) for %d question(s)", len(todo), len(questions))
+    progress_callback("generate_explanations", 0, len(todo))
+
+    try:
+        provider = get_llm_provider(settings)
+        svc = AuditedLLMService(provider, db)
+    except Exception as exc:
+        logger.error("generate_explanations: could not init LLM provider: %s", exc)
+        return
+
+    generated = 0
+    errors = 0
+    for i, (q, lang) in enumerate(todo):
+        try:
+            # re-check cache in case a parallel call already inserted
+            already = db.query(QuestionExplanation).filter(
+                QuestionExplanation.question_id == q.id,
+                QuestionExplanation.lang == lang,
+            ).first()
+            if already:
+                continue
+
+            # Build context (mirrors explain_question endpoint)
+            language_name = _LANG_NAMES[lang]
+            if lang == "he":
+                question_text = q.question_text_he or q.question_text_en
+            elif lang == "ru":
+                question_text = q.question_text_ru or q.question_text_en
+            else:
+                question_text = q.question_text_en
+
+            policy_description = ""
+            directional_axis = ""
+            topic_name_str = ""
+            topic = None
+
+            if q.policy_item_id:
+                pi = db.query(PolicyItem).filter(PolicyItem.id == q.policy_item_id).first()
+                if pi:
+                    policy_description = pi.description or pi.title
+                    directional_axis = pi.directional_axis or ""
+                    if pi.topic_id:
+                        topic = db.query(Topic).filter(Topic.id == pi.topic_id).first()
+
+            if not topic and q.topic_id:
+                topic = db.query(Topic).filter(Topic.id == q.topic_id).first()
+
+            if topic:
+                if lang == "he" and topic.name_he:
+                    topic_name_str = topic.name_he
+                elif lang == "ru" and topic.name_ru:
+                    topic_name_str = topic.name_ru
+                else:
+                    topic_name_str = topic.name_en
+                if not policy_description and topic.description:
+                    policy_description = topic.description
+
+            input_data = {
+                "question_text": question_text,
+                "topic_name": topic_name_str,
+                "policy_description": policy_description,
+                "directional_axis": directional_axis,
+                "language_name": language_name,
+                "lang": lang,
+            }
+            result = svc.explain_question_context(input_data, entity_id=q.id)
+
+            expl = QuestionExplanation(
+                question_id=q.id,
+                lang=lang,
+                background=result.get("background", ""),
+                why_relevant=result.get("why_relevant", ""),
+                support_side=result.get("support_side", ""),
+                oppose_side=result.get("oppose_side", ""),
+                everyday_example=result.get("everyday_example", ""),
+                source="llm",
+            )
+            db.add(expl)
+            db.commit()
+            generated += 1
+        except Exception as exc:
+            db.rollback()
+            errors += 1
+            logger.warning(
+                "generate_explanations: failed for question %s lang=%s: %s", q.id, lang, exc
+            )
+
+        if (i + 1) % 10 == 0 or i + 1 == len(todo):
+            progress_callback("generate_explanations", i + 1, len(todo))
+
+    logger.info(
+        "generate_explanations done: generated=%d errors=%d", generated, errors
+    )
+    stats["explanations_generated"] = generated
+    stats["explanations_errors"] = errors
 
 
 _question_bank_jobs: dict[str, dict] = {}
@@ -458,6 +599,13 @@ def generate_question_bank(
                 root_questions_per_topic=body.root_questions_per_topic,
                 progress_callback=_progress,
             )
+
+            # ── Optional: generate explanations for newly created questions ──
+            if body.generate_explanations and settings.openai_api_key:
+                _generate_explanations_for_new_questions(
+                    bg_db, settings, stats, _progress, job_id
+                )
+
             _question_bank_jobs[job_id].update({
                 "status": "done",
                 **stats,

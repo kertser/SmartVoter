@@ -15,8 +15,8 @@ class UserAnswer(Base):
     question_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("questions.id"), nullable=False, index=True
     )
-    policy_item_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("policy_items.id"), nullable=False, index=True
+    policy_item_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("policy_items.id"), nullable=True, index=True
     )
     answer_value: Mapped[float] = mapped_column(Float, nullable=False)  # -1 to +1
     salience: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)  # 0.5|1.0|2.0

@@ -152,3 +152,33 @@ class LLMProvider(ABC):
     def infer_party_lineage(self, input_data: dict) -> dict:
         """Returns: relation_type, continuity_weight, explanation, confidence"""
 
+    def check_question_relevance(self, input_data: dict) -> dict:
+        """
+        Check whether a question is still relevant/current as of today's date.
+
+        Uses the LLM (optionally with web search) to assess if the question
+        references outdated events, resolved controversies, or expired legislation.
+
+        input_data keys:
+            question_en: str        — question text in English
+            question_he: str        — question text in Hebrew
+            policy_description: str — policy item description
+            directional_axis: str   — policy axis label
+            current_date: str       — ISO date string "YYYY-MM-DD"
+
+        Returns:
+            is_relevant: bool       — True if the question is still current/active
+            is_stale: bool          — True if the question refers to outdated content
+            relevance_score: float  — 0.0 (fully stale) .. 1.0 (highly current)
+            staleness_reason: str   — short explanation if stale
+            confidence: float       — confidence in the relevance assessment
+        """
+        # Default: assume relevant (conservative — avoids false stale marking)
+        return {
+            "is_relevant": True,
+            "is_stale": False,
+            "relevance_score": 0.8,
+            "staleness_reason": "",
+            "confidence": 0.5,
+        }
+

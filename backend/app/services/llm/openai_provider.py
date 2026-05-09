@@ -761,3 +761,44 @@ class OpenAIProvider(LLMProvider):
             "_input_hash": _input_hash(input_data),
         }
 
+    # ── Question relevance check ───────────────────────────────────────────────
+
+    def check_question_relevance(self, input_data: dict) -> dict:
+        """
+        Assess whether a question is still current/relevant as of today.
+        Uses the check_question_relevance prompt from prompts.json.
+        Falls back to base class (assume relevant) if prompt not found.
+        """
+        import datetime as _dt
+        tmpl, pv = _get_template("check_question_relevance")
+        if not tmpl:
+            return super().check_question_relevance(input_data)
+
+        current_date = input_data.get("current_date", _dt.date.today().isoformat())
+        user_msg = tmpl.format_map({
+            "current_date": current_date,
+            "question_en": input_data.get("question_en", ""),
+            "question_he": input_data.get("question_he", ""),
+            "policy_description": input_data.get("policy_description", ""),
+            "directional_axis": input_data.get("directional_axis", ""),
+        })
+        messages = [
+            {"role": "system", "content": SYSTEM_NEUTRAL},
+            {"role": "user", "content": user_msg},
+        ]
+        try:
+            result = _call(self.client, self.model, messages, temperature=0.1)
+            return {
+                "is_relevant": bool(result.get("is_relevant", True)),
+                "is_stale": bool(result.get("is_stale", False)),
+                "relevance_score": float(result.get("relevance_score", 0.8)),
+                "staleness_reason": result.get("staleness_reason", ""),
+                "confidence": float(result.get("confidence", 0.7)),
+                "_prompt_version": pv,
+                "_input_hash": _input_hash(input_data),
+            }
+        except Exception as exc:
+            logger.warning("check_question_relevance LLM call failed: %s", exc)
+            return super().check_question_relevance(input_data)
+
+
