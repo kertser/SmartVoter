@@ -314,10 +314,8 @@ function DiscoveryMatchesSection({
             lang === "he" ? (dm.topic_he ?? dm.topic) :
             lang === "ru" ? (dm.topic_ru ?? dm.topic) :
             dm.topic;
-          const partyLabel =
-            lang === "he" ? (dm.party_he ?? dm.party) :
-            lang === "ru" ? (dm.party_ru ?? dm.party) :
-            dm.party;
+          // Party names are proper nouns — always display in Hebrew.
+          const partyLabel = dm.party_he ?? dm.party;
 
           // How much better this non-top party is vs the top-3 best for this topic
           const diff = dm.similarity - dm.top3_best_similarity;
@@ -334,7 +332,7 @@ function DiscoveryMatchesSection({
                   <p className="text-xs font-medium text-amber-700 uppercase tracking-wide">
                     {topicLabel}
                   </p>
-                  <p className="font-semibold text-slate-900 mt-0.5" dir={lang === "he" ? "rtl" : "ltr"}>
+                  <p className="font-semibold text-slate-900 mt-0.5" dir="rtl">
                     {partyLabel}
                   </p>
                 </div>

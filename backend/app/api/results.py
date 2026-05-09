@@ -28,14 +28,19 @@ from backend.app.services.scoring import (
     compute_answer_stability,
     compute_agenda_breadth,
     compute_high_salience_topic_coverage,
+    effective_evidence_strength,
+    normalise_evidence_type,
     SECTORAL_THRESHOLD,
 )
 from backend.app.services.volatility import get_party_volatility
 
 router = APIRouter(tags=["results"])
 
-# Threshold below which we consider a party a "new" party (limited evidence)
-NEW_PARTY_EVIDENCE_THRESHOLD = 0.45
+# Threshold below which we consider a party a "new" party (limited evidence).
+# Aligned with the AGENTS.MD §8.2 "party_platform" prior (0.35) — any party
+# whose average effective evidence strength is below this is essentially
+# resting on declared positions / statements rather than observed behaviour.
+NEW_PARTY_EVIDENCE_THRESHOLD = 0.35
 
 # Minimum match score to include a party in results
 # Parties with 0 policy-item overlap (different data sources) are filtered out
@@ -211,7 +216,12 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
             high_salience_topic_coverage=high_salience_coverage,
         )
 
-        avg_evidence_strength = sum(p.evidence_strength for p in positions) / len(positions)
+        avg_evidence_strength = (
+            sum(effective_evidence_strength(p) for p in positions) / len(positions)
+        )
+        # §9.1 — a party is treated as "new" when its effective evidence is
+        # below the §8.2 platform prior (0.35). This catches platform/statement
+        # only parties as well as parties with very thin substantive votes.
         is_new_party = avg_evidence_strength < NEW_PARTY_EVIDENCE_THRESHOLD
 
         # Confidence breakdown for UI display
@@ -250,11 +260,21 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
         topic_avg = {t: sum(v) / len(v) for t, v in topic_scores.items()}
         sorted_topics = sorted(topic_avg.items(), key=lambda x: -x[1])
 
-        # Evidence-by-type breakdown
+        # Evidence-by-type breakdown (uses canonical AGENTS.MD §8.2 keys).
+        # Each row contributes its EFFECTIVE strength (i.e. capped by §8.2
+        # prior) so the bar reflects what actually drove the score.
         evidence_counts: dict[str, float] = {}
         for p in positions_rows:
-            etype = p.evidence_type or "party_platform"
-            evidence_counts[etype] = evidence_counts.get(etype, 0) + p.evidence_strength
+            etype = normalise_evidence_type(p.evidence_type)
+            cap = {
+                "vote": 1.0, "sponsored_bill": 0.8, "committee_behavior": 0.7,
+                "candidate_past_vote": 0.55, "party_lineage": 0.5,
+                "coalition_agreement": 0.45, "party_platform": 0.35,
+                "public_statement": 0.25, "media_interview": 0.2,
+                "new_party_synth": 0.55,
+            }.get(etype, 0.35)
+            effective = min(p.evidence_strength or 0.0, cap)
+            evidence_counts[etype] = evidence_counts.get(etype, 0) + effective
         total_evidence = sum(evidence_counts.values()) or 1.0
         evidence_by_type = {k: round(v / total_evidence, 3) for k, v in sorted(evidence_counts.items(), key=lambda x: -x[1])}
 
