@@ -458,40 +458,38 @@ export default function QuestionnairePage() {
             </div>
           )}
 
-          {/* ── Action row: Submit + Skip + Go Back ── */}
-          <div className="space-y-2">
-            {/* Primary submit button */}
+          {/* ── Action row: Submit + secondary actions ── */}
+          <div className="space-y-3 pt-1">
+            {/* Primary: Submit */}
             <button
               onClick={handleSubmit}
               disabled={selectedAnswer === null || submitting || skipping}
-              className="w-full rounded-lg bg-brand-600 py-3 text-white font-medium hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="w-full rounded-xl bg-brand-600 py-3.5 text-sm text-white font-semibold tracking-wide hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
             >
               {submitting ? q.submitting : q.submitNext}
             </button>
 
-            {/* Secondary row: Skip (outdated) + Go back */}
-            <div className="flex gap-2">
-              {/* Go back — only available if there is a previous question */}
-              {prevQuestion && (
-                <Tooltip content={q.goBackTooltip} position="top" wide>
-                  <button
-                    onClick={handleGoBack}
-                    disabled={submitting || skipping}
-                    className="flex-1 rounded-lg border border-slate-200 py-2 text-xs text-slate-500 hover:border-slate-300 hover:text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                  >
-                    {q.goBack}
-                  </button>
-                </Tooltip>
-              )}
+            {/* Secondary: Go back + Skip — always occupy fixed 2-column grid */}
+            <div className="grid grid-cols-2 gap-2">
+              <Tooltip content={q.goBackTooltip} position="top" wide>
+                <button
+                  onClick={handleGoBack}
+                  disabled={!prevQuestion || submitting || skipping}
+                  className="w-full rounded-lg border border-slate-200 py-2.5 text-xs font-medium text-slate-400
+                    enabled:hover:border-slate-300 enabled:hover:text-slate-600 enabled:hover:bg-slate-50
+                    disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                >
+                  {q.goBack}
+                </button>
+              </Tooltip>
 
-              {/* Skip as outdated */}
               <Tooltip content={q.skipOutdatedTooltip} position="top" wide>
                 <button
                   onClick={handleSkip}
                   disabled={submitting || skipping}
-                  className={`rounded-lg border border-slate-200 py-2 text-xs text-slate-400 hover:border-amber-200 hover:text-amber-700 hover:bg-amber-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all ${
-                    prevQuestion ? "flex-1" : "w-full"
-                  }`}
+                  className="w-full rounded-lg border border-slate-200 py-2.5 text-xs font-medium text-slate-400
+                    hover:border-amber-200 hover:text-amber-700 hover:bg-amber-50
+                    disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
                   {skipping ? q.skipping : q.skipOutdated}
                 </button>
