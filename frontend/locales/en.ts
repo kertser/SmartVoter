@@ -173,6 +173,9 @@ const en: Translations = {
     summaryRepGap: "Representation gap",
     summaryRepGapYes: "Detected",
     summaryRepGapNo: "None detected",
+    summaryPartiesAnalysed: "parties analysed",
+    tooltipPartiesAnalysed: "Number of distinct political parties for which sufficient position data exists in the database. Parties without any policy positions are excluded.",
+    tooltipRepGap: "A representation gap means no single party strongly covers all of your high-priority positions (top match < 65%). 'None detected' means your top party aligns well (≥ 65%) with your answers.",
     // Sections
     topicComparisonHeading: "Topic comparison",
     evidenceQualityHeading: "Evidence quality",
@@ -249,7 +252,7 @@ const en: Translations = {
       "This tool does not tell you whom to vote for.",
       "Party positions may change over time; data has a cutoff date.",
       "Absence from a vote is treated as low-information, not opposition.",
-      "Phase 1 uses mock data. Real Knesset data ingestion is planned for Phase 6.",
+      "Data has a cutoff date; the system uses real Knesset data from the official OData API.",
       "LLM-generated content is reviewed by humans before it appears publicly.",
     ],
   },
@@ -397,7 +400,7 @@ const en: Translations = {
     ingestKnesset25Warning: "⚠️ Knesset 25+ vote data is not yet available in the official Votes.svc OData API. Bills from ParliamentInfo.svc are available for all Knessets. Use the probe endpoint to check availability before importing votes.",
     // Full Pipeline Wizard
     pipelineWizardHeading: "Full Data Pipeline — One-Click Initialisation",
-    pipelineWizardSubtext: "Runs migrations, seeds mock data, and imports real Knesset data for the last N Knessets in a single background job. Ideal to run once before launch, or after each election.",
+    pipelineWizardSubtext: "Imports real Knesset data for the last N Knessets in a single background job. Ideal to run once before launch, or after each election.",
     pipelineWizardLastNLabel: "Last N Knessets",
     pipelineWizardNoLlmLabel: "Skip LLM enrichment (recommended for first run)",
     pipelineWizardNoLlmNote: "LLM enrichment requires OPENAI_API_KEY. Enable it later via Admin → Generate.",

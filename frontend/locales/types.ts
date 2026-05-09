@@ -195,6 +195,9 @@ export interface Translations {
     summaryRepGap: string;
     summaryRepGapYes: string;
     summaryRepGapNo: string;
+    summaryPartiesAnalysed: string;
+    tooltipPartiesAnalysed: string;
+    tooltipRepGap: string;
   };
 
   methodology: {

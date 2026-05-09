@@ -447,17 +447,30 @@ def get_results(session_id: uuid.UUID, db: Session = Depends(get_db)) -> Results
     has_gap = max_match < 0.65
 
     top_party = party_results[0] if party_results else None
-    top_party_name_he = top_party.name_he or top_party.name if top_party else "N/A"
-    gap_explanation = (
-        "No party strongly represents all of your high-priority positions."
-        if has_gap
-        else f"Your closest party ({top_party.name if top_party else 'N/A'}) "
-        f"aligns well with your preferences."
-    )
+    top_party_name = top_party.name if top_party else "N/A"
+    top_party_name_he = top_party.name_he or top_party_name if top_party else "N/A"
+    top_party_name_ru = top_party.name_ru or top_party_name_he if top_party else "N/A"
+
+    if has_gap:
+        gap_explanation = "No party strongly represents all of your high-priority positions."
+        gap_explanation_he = "אף מפלגה אינה מייצגת באופן חזק את כל עמדותיך בנושאים בעדיפות גבוהה."
+        gap_explanation_ru = "Ни одна партия не представляет в полной мере все ваши приоритетные позиции."
+    else:
+        gap_explanation = (
+            f"Your closest party ({top_party_name}) aligns well with your preferences."
+        )
+        gap_explanation_he = (
+            f"המפלגה הקרובה ביותר אליך ({top_party_name_he}) מתאימה היטב להעדפותיך."
+        )
+        gap_explanation_ru = (
+            f"Ближайшая к вам партия ({top_party_name_ru}) хорошо соответствует вашим предпочтениям."
+        )
 
     representation_gap = RepresentationGap(
         has_gap=has_gap,
         explanation=gap_explanation,
+        explanation_he=gap_explanation_he,
+        explanation_ru=gap_explanation_ru,
         best_party_by_topic=best_by_topic,
     )
 

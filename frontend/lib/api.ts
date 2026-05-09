@@ -125,6 +125,8 @@ export interface BestPartyByTopic {
 export interface RepresentationGap {
   has_gap: boolean;
   explanation: string;
+  explanation_he?: string;
+  explanation_ru?: string;
   best_party_by_topic: BestPartyByTopic[];
 }
 

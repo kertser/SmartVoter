@@ -123,15 +123,19 @@ function ResultsContent() {
         </div>
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 text-center">
           <p className="text-2xl font-bold text-slate-700">{results.parties.length}</p>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {lang === "he" ? "מפלגות מנותחות" : lang === "ru" ? "партий изучено" : "parties analysed"}
-          </p>
+          <Tooltip content={r.tooltipPartiesAnalysed} position="bottom">
+            <p className="text-xs text-slate-500 mt-0.5 cursor-help underline decoration-dotted">
+              {r.summaryPartiesAnalysed}
+            </p>
+          </Tooltip>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 text-center">
           <p className={`text-2xl font-bold ${results.representation_gap.has_gap ? "text-amber-600" : "text-teal-600"}`}>
             {results.representation_gap.has_gap ? r.summaryRepGapYes : r.summaryRepGapNo}
           </p>
-          <p className="text-xs text-slate-500 mt-0.5">{r.summaryRepGap}</p>
+          <Tooltip content={r.tooltipRepGap} position="bottom">
+            <p className="text-xs text-slate-500 mt-0.5 cursor-help underline decoration-dotted">{r.summaryRepGap}</p>
+          </Tooltip>
         </div>
       </div>
 
@@ -221,7 +225,13 @@ function ResultsContent() {
       {/* ── Section 4: Representation gap ── */}
       <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-6 space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">{r.representationHeading}</h2>
-        <p className="text-sm text-slate-600">{results.representation_gap.explanation}</p>
+        <p className="text-sm text-slate-600">
+          {lang === "he"
+            ? (results.representation_gap.explanation_he ?? results.representation_gap.explanation)
+            : lang === "ru"
+            ? (results.representation_gap.explanation_ru ?? results.representation_gap.explanation)
+            : results.representation_gap.explanation}
+        </p>
         {results.representation_gap.best_party_by_topic.length > 0 && (
           <div>
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">{r.bestPartyByTopic}</p>

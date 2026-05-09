@@ -63,6 +63,8 @@ class DiscoveryMatch(BaseModel):
 class RepresentationGap(BaseModel):
     has_gap: bool
     explanation: str
+    explanation_he: str | None = None
+    explanation_ru: str | None = None
     best_party_by_topic: list[BestPartyByTopic]
 
 
