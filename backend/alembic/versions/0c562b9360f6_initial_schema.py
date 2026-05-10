@@ -21,41 +21,61 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # ── Enum types ────────────────────────────────────────────────────────────
+    # Use DO/EXCEPTION blocks so these are idempotent if the DB already has
+    # the types from a previous partial run.
     op.execute(
+        "DO $$ BEGIN "
         "CREATE TYPE party_status AS ENUM "
-        "('active', 'dissolved', 'merged', 'split', 'renamed')"
+        "('active', 'dissolved', 'merged', 'split', 'renamed'); "
+        "EXCEPTION WHEN duplicate_object THEN null; END $$"
     )
     op.execute(
+        "DO $$ BEGIN "
         "CREATE TYPE lineage_relation_type AS ENUM "
-        "('rename', 'split', 'merger', 'successor', 'alliance', 'rebrand')"
+        "('rename', 'split', 'merger', 'successor', 'alliance', 'rebrand'); "
+        "EXCEPTION WHEN duplicate_object THEN null; END $$"
     )
     op.execute(
+        "DO $$ BEGIN "
         "CREATE TYPE lineage_review_status AS ENUM "
-        "('draft', 'needs_review', 'approved', 'rejected')"
+        "('draft', 'needs_review', 'approved', 'rejected'); "
+        "EXCEPTION WHEN duplicate_object THEN null; END $$"
     )
     op.execute(
+        "DO $$ BEGIN "
         "CREATE TYPE membership_role AS ENUM "
-        "('mk', 'candidate', 'minister', 'leader', 'founder')"
+        "('mk', 'candidate', 'minister', 'leader', 'founder'); "
+        "EXCEPTION WHEN duplicate_object THEN null; END $$"
     )
     op.execute(
+        "DO $$ BEGIN "
         "CREATE TYPE vote_value AS ENUM "
-        "('for', 'against', 'abstain', 'absent', 'unknown')"
+        "('for', 'against', 'abstain', 'absent', 'unknown'); "
+        "EXCEPTION WHEN duplicate_object THEN null; END $$"
     )
     op.execute(
+        "DO $$ BEGIN "
         "CREATE TYPE policy_source_type AS ENUM "
-        "('vote', 'bill', 'platform', 'statement', 'candidate_history')"
+        "('vote', 'bill', 'platform', 'statement', 'candidate_history'); "
+        "EXCEPTION WHEN duplicate_object THEN null; END $$"
     )
     op.execute(
+        "DO $$ BEGIN "
         "CREATE TYPE policy_review_status AS ENUM "
-        "('draft', 'llm_generated', 'needs_review', 'approved', 'rejected', 'deprecated')"
+        "('draft', 'llm_generated', 'needs_review', 'approved', 'rejected', 'deprecated'); "
+        "EXCEPTION WHEN duplicate_object THEN null; END $$"
     )
     op.execute(
+        "DO $$ BEGIN "
         "CREATE TYPE answer_scale_type AS ENUM "
-        "('likert_5', 'binary', 'tradeoff')"
+        "('likert_5', 'binary', 'tradeoff'); "
+        "EXCEPTION WHEN duplicate_object THEN null; END $$"
     )
     op.execute(
+        "DO $$ BEGIN "
         "CREATE TYPE question_review_status AS ENUM "
-        "('draft', 'llm_generated', 'needs_review', 'approved', 'rejected', 'deprecated')"
+        "('draft', 'llm_generated', 'needs_review', 'approved', 'rejected', 'deprecated'); "
+        "EXCEPTION WHEN duplicate_object THEN null; END $$"
     )
 
     # ── Core reference tables ─────────────────────────────────────────────────
