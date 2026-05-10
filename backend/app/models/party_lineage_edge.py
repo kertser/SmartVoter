@@ -32,12 +32,12 @@ class PartyLineageEdge(Base):
         ForeignKey("party_instances.id"), nullable=False, index=True
     )
     relation_type: Mapped[LineageRelationType] = mapped_column(
-        SAEnum(LineageRelationType, name="lineage_relation_type")
+        SAEnum(LineageRelationType, name="lineage_relation_type", create_type=False)
     )
     continuity_weight: Mapped[float] = mapped_column(Float, nullable=False, default=0.5)
     llm_explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
     human_review_status: Mapped[LineageReviewStatus] = mapped_column(
-        SAEnum(LineageReviewStatus, name="lineage_review_status"),
+        SAEnum(LineageReviewStatus, name="lineage_review_status", create_type=False),
         default=LineageReviewStatus.draft,
     )
     source_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)

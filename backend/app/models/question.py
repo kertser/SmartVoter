@@ -31,7 +31,7 @@ class Question(Base):
     question_text_en: Mapped[str] = mapped_column(Text, nullable=False)
     question_text_ru: Mapped[str | None] = mapped_column(Text, nullable=True)
     answer_scale_type: Mapped[AnswerScaleType] = mapped_column(
-        SAEnum(AnswerScaleType, name="answer_scale_type"),
+        SAEnum(AnswerScaleType, name="answer_scale_type", create_type=False),
         default=AnswerScaleType.likert_5,
     )
     neutrality_score: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -43,7 +43,7 @@ class Question(Base):
     # The answers API multiplies answer_value by answer_polarity before storage.
     answer_polarity: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
     human_review_status: Mapped[ReviewStatus] = mapped_column(
-        SAEnum(ReviewStatus, name="question_review_status"),
+        SAEnum(ReviewStatus, name="question_review_status", create_type=False),
         default=ReviewStatus.draft,
     )
 
