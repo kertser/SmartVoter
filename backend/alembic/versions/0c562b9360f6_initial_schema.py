@@ -11,6 +11,7 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 
 # revision identifiers, used by Alembic.
 revision: str = '0c562b9360f6'
@@ -126,7 +127,7 @@ def upgrade() -> None:
         sa.Column('end_date', sa.Date(), nullable=True),
         sa.Column(
             'status',
-            sa.Enum(
+            PgEnum(
                 'active', 'dissolved', 'merged', 'split', 'renamed',
                 name='party_status',
                 create_type=False,
@@ -151,7 +152,7 @@ def upgrade() -> None:
         sa.Column('to_party_instance_id', sa.UUID(), nullable=False),
         sa.Column(
             'relation_type',
-            sa.Enum(
+            PgEnum(
                 'rename', 'split', 'merger', 'successor', 'alliance', 'rebrand',
                 name='lineage_relation_type',
                 create_type=False,
@@ -162,7 +163,7 @@ def upgrade() -> None:
         sa.Column('llm_explanation', sa.Text(), nullable=True),
         sa.Column(
             'human_review_status',
-            sa.Enum(
+            PgEnum(
                 'draft', 'needs_review', 'approved', 'rejected',
                 name='lineage_review_status',
                 create_type=False,
@@ -209,7 +210,7 @@ def upgrade() -> None:
         sa.Column('party_instance_id', sa.UUID(), nullable=False),
         sa.Column(
             'role',
-            sa.Enum(
+            PgEnum(
                 'mk', 'candidate', 'minister', 'leader', 'founder',
                 name='membership_role',
                 create_type=False,
@@ -282,7 +283,7 @@ def upgrade() -> None:
         sa.Column('party_instance_id_at_time', sa.UUID(), nullable=True),
         sa.Column(
             'vote_value',
-            sa.Enum(
+            PgEnum(
                 'for', 'against', 'abstain', 'absent', 'unknown',
                 name='vote_value',
                 create_type=False,
@@ -313,7 +314,7 @@ def upgrade() -> None:
         sa.Column('directional_axis', sa.String(500), nullable=True),
         sa.Column(
             'source_type',
-            sa.Enum(
+            PgEnum(
                 'vote', 'bill', 'platform', 'statement', 'candidate_history',
                 name='policy_source_type',
                 create_type=False,
@@ -324,7 +325,7 @@ def upgrade() -> None:
         sa.Column('llm_confidence', sa.Float(), nullable=True),
         sa.Column(
             'human_review_status',
-            sa.Enum(
+            PgEnum(
                 'draft', 'llm_generated', 'needs_review', 'approved', 'rejected', 'deprecated',
                 name='policy_review_status',
                 create_type=False,
@@ -376,7 +377,7 @@ def upgrade() -> None:
         sa.Column('question_text_ru', sa.Text(), nullable=True),
         sa.Column(
             'answer_scale_type',
-            sa.Enum(
+            PgEnum(
                 'likert_5', 'binary', 'tradeoff',
                 name='answer_scale_type',
                 create_type=False,
@@ -389,7 +390,7 @@ def upgrade() -> None:
         sa.Column('llm_prompt_version', sa.String(50), nullable=True),
         sa.Column(
             'human_review_status',
-            sa.Enum(
+            PgEnum(
                 'draft', 'llm_generated', 'needs_review', 'approved', 'rejected', 'deprecated',
                 name='question_review_status',
                 create_type=False,
