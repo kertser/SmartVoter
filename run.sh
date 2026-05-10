@@ -51,9 +51,13 @@ echo "[2/5] Starting PostgreSQL and Redis via Docker Compose..."
 docker compose up -d postgres redis
 
 # ── Wait for postgres to be ready ────────────────────────────────────────
+# pg_isready only checks if the postmaster is listening; it returns success
+# even while the database system is still in startup/recovery.  We run an
+# actual query (SELECT 1) to confirm the DB is fully available before
+# attempting migrations.
 echo "[3/5] Waiting for PostgreSQL to be ready..."
 attempts=0
-until docker compose exec -T postgres pg_isready -U smartvoter -d smartvoter &>/dev/null; do
+until docker compose exec -T postgres psql -U smartvoter -d smartvoter -c "SELECT 1" &>/dev/null; do
     attempts=$((attempts + 1))
     if [ "$attempts" -gt 30 ]; then
         echo "[ERROR] PostgreSQL did not become ready after 30 seconds."
