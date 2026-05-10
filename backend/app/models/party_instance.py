@@ -27,7 +27,7 @@ class PartyInstance(Base):
     start_date: Mapped[datetime.date | None] = mapped_column(Date, nullable=True)
     end_date: Mapped[datetime.date | None] = mapped_column(Date, nullable=True)
     status: Mapped[PartyStatus] = mapped_column(
-        SAEnum(PartyStatus, name="party_status"), default=PartyStatus.active
+        SAEnum(PartyStatus, name="party_status", create_type=False), default=PartyStatus.active
     )
     source_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     # Persisted volatility score (0..1). NULL = not yet computed.

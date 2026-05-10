@@ -33,12 +33,12 @@ class PolicyItem(Base):
     )
     directional_axis: Mapped[str | None] = mapped_column(String(500), nullable=True)
     source_type: Mapped[PolicySourceType] = mapped_column(
-        SAEnum(PolicySourceType, name="policy_source_type")
+        SAEnum(PolicySourceType, name="policy_source_type", create_type=False)
     )
     source_refs_json: Mapped[list | None] = mapped_column(JSON, nullable=True)
     llm_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
     human_review_status: Mapped[ReviewStatus] = mapped_column(
-        SAEnum(ReviewStatus, name="policy_review_status"),
+        SAEnum(ReviewStatus, name="policy_review_status", create_type=False),
         default=ReviewStatus.draft,
     )
 

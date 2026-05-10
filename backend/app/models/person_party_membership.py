@@ -25,7 +25,7 @@ class PersonPartyMembership(Base):
         ForeignKey("party_instances.id"), nullable=False, index=True
     )
     role: Mapped[MembershipRole] = mapped_column(
-        SAEnum(MembershipRole, name="membership_role")
+        SAEnum(MembershipRole, name="membership_role", create_type=False)
     )
     start_date: Mapped[datetime.date | None] = mapped_column(Date, nullable=True)
     end_date: Mapped[datetime.date | None] = mapped_column(Date, nullable=True)
