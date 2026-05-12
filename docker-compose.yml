@@ -30,8 +30,9 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     command: uv run uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
+    # Backend is NOT exposed to the host — frontend proxies /api/* internally.
+    expose:
+      - "8000"
     env_file:
       - .env
     environment:
@@ -62,17 +63,16 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      # Used server-side by Next.js rewrites to reach the backend container.
+      BACKEND_URL: http://backend:8000
     depends_on:
       backend:
         condition: service_healthy
 
-  # ── Data initialisation service ───────────────────────────────────────────
+  # ── Data initialisation service ─────────────────────────────────────────────
   # Opt-in via Docker profile "init".
   #
   # Run ONCE before going live, or after elections:
