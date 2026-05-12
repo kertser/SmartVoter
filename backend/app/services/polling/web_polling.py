@@ -15,6 +15,7 @@ Per AGENTS.MD Section 14B.2 (polling data sources) and 14B.5 (poll aggregation).
 import json
 import logging
 import re
+import string
 import uuid
 from datetime import date, datetime
 from typing import Optional
@@ -43,26 +44,51 @@ PARTY_ALIASES: list[tuple[list[str], str]] = [
       "mansour", "מנסור עבאס"],                              "Raam"),
     (["חד\"ש", "חדש", "תע\"ל", "תעל", "hadash", "taal",
       "hadash-taal", "joint list"],                          "Hadash-Taal"),
+    # ── New 2026 parties ───────────────────────────────────────────────────────
+    (["ביחד", "yachad", "bennett", "בנט ולפיד",
+      "lapid bennett", "bennett lapid"],                     "Yachad 2026"),
+    (["ישר", "yashar", "eisenkot", "איזנקוט"],              "Yashar"),
 ]
+
+# Aggregate / meta labels returned by some polls — not real parties, skip silently.
+POLL_AGGREGATE_LABELS: set[str] = {
+    "האופוזיציה", "הקואליציה", "מפלגות ערביות",
+    "opposition", "coalition", "arab parties", "others", "אחרים",
+}
 
 
 def _normalize_party_name(name_he: Optional[str], name_en: Optional[str]) -> Optional[str]:
     """Return the canonical official_name for a party, or None if unrecognised."""
+    # Strip surrounding punctuation/whitespace (e.g. 'ישר!' → 'ישר')
+    _strip = str.maketrans("", "", string.punctuation)
+
+    def _clean(s: str) -> str:
+        return s.strip().translate(_strip).strip().lower()
+
     candidates = []
     if name_he:
-        candidates.append(name_he.strip().lower())
+        candidates.append(_clean(name_he))
     if name_en:
-        candidates.append(name_en.strip().lower())
+        candidates.append(_clean(name_en))
 
     for aliases, official in PARTY_ALIASES:
         for alias in aliases:
+            clean_alias = _clean(alias)
             for cand in candidates:
-                if alias in cand or cand in alias:
+                if clean_alias in cand or cand in clean_alias:
                     return official
     return None
 
 
-# ── OpenAI web search ──────────────────────────────────────────────────────────
+def _is_aggregate_label(name_he: Optional[str], name_en: Optional[str]) -> bool:
+    """Return True if the name is a known aggregate/meta label, not a real party."""
+    for name in (name_he, name_en):
+        if name and name.strip() in POLL_AGGREGATE_LABELS:
+            return True
+    return False
+
+
+# ── OpenAI web search ─────────────────────────────────────────────────────────
 
 
 def _extract_first_json_object(text: str) -> Optional[dict]:
@@ -121,6 +147,8 @@ def _call_openai_web_search(api_key: str, model: str) -> Optional[dict]:
             "Include ALL parties mentioned (even small ones near the threshold).\n"
             "הדמוקרטים (Democrats/Golan) is one party — do NOT split into Labor/Meretz.\n"
             "עוצמה יהודית (Ben Gvir) and הציונות הדתית (Smotrich) are SEPARATE parties.\n"
+            "ביחד (Bennett+Lapid) and ישר (Eisenkot) are SEPARATE new parties for 2026.\n"
+            "Do NOT include aggregate labels like 'האופוזיציה', 'הקואליציה', 'מפלגות ערביות' — list individual parties only.\n"
         )
 
         logger.info("web_search step 1: fetching poll data via web search")
@@ -184,6 +212,7 @@ def _call_openai_web_search(api_key: str, model: str) -> Optional[dict]:
             "- Include parties mentioned even without exact data (estimate from context).\n"
             "- Use Hebrew party names for name_he.\n"
             "- Use null for unknown numeric values.\n"
+            "- Do NOT include aggregate entries like האופוזיציה, הקואליציה, מפלגות ערביות.\n"
             "- If you cannot find any polls, return {\"polls\": [], \"data_as_of\": null, "
             "\"notes\": \"No polls found\"}.\n"
         )
@@ -226,7 +255,7 @@ def _call_openai_web_search(api_key: str, model: str) -> Optional[dict]:
         return None
 
 
-# ── DB ingestion ───────────────────────────────────────────────────────────────
+# ── DB ingestion ──────────────────────────────────────────────────────────────
 
 def _ingest_web_polls(web_data: dict, db) -> tuple[int, int, list[str]]:
     """
@@ -302,6 +331,10 @@ def _ingest_web_polls(web_data: dict, db) -> tuple[int, int, list[str]]:
             if vote_share < 0.030:   # below threshold — skip
                 continue
 
+            # Silently skip known aggregate/meta labels
+            if _is_aggregate_label(name_he, name_en):
+                continue
+
             official_name = _normalize_party_name(name_he, name_en)
             if not official_name:
                 label = name_he or name_en or "unknown"
@@ -324,7 +357,7 @@ def _ingest_web_polls(web_data: dict, db) -> tuple[int, int, list[str]]:
     return polls_stored, parties_stored, warnings
 
 
-# ── Public entry point ─────────────────────────────────────────────────────────
+# ── Public entry point ────────────────────────────────────────────────────────
 
 def fetch_and_store_live_polls(
     db,
@@ -389,4 +422,3 @@ def fetch_and_store_live_polls(
         "refreshed_at": datetime.utcnow().isoformat() + "Z",
         "model_used": model if (web_data and api_key) else None,
     }
-
