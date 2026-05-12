@@ -1534,12 +1534,30 @@ function DedupTab() {
           onClick={async () => {
             setLoading(true); setError(""); setGroups([]); setDone([]);
             try {
-              const data = await adminApiFetch<{ source: string; merged_count: number; groups: DuplicateGroup[] }>(
+              // Start background job — returns immediately
+              const job = await adminApiFetch<{ job_id: string; status: string }>(
                 "/api/admin/parties/deduplicate", { method: "POST" }
               );
-              setSource(data.source ?? "");
-              setGroups((data.groups ?? []).map((g: DuplicateGroup) => g));
-              setDone((data.groups ?? []).map((g: DuplicateGroup) => g.canonical_id));
+              // Poll until done
+              let attempts = 0;
+              while (attempts < 120) {
+                await new Promise(r => setTimeout(r, 2000));
+                const status = await adminApiFetch<{ status: string; merged_count?: number; groups?: DuplicateGroup[]; error?: string }>(
+                  `/api/admin/ingest/status/${job.job_id}`
+                );
+                if (status.status === "done") {
+                  setSource("auto");
+                  const g = (status.groups ?? []) as DuplicateGroup[];
+                  setGroups(g);
+                  setDone(g.map((x: DuplicateGroup) => x.canonical_id));
+                  break;
+                }
+                if (status.status === "error") {
+                  setError(status.error ?? "Unknown error");
+                  break;
+                }
+                attempts++;
+              }
             } catch (e) { setError(String(e)); }
             finally { setLoading(false); }
           }}

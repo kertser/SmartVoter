@@ -239,20 +239,38 @@ def find_duplicate_parties(
 
 @admin_router.post("/parties/deduplicate")
 def run_auto_deduplication(
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> dict:
     """
-    Run full automatic deduplication: detect + merge in one step.
-    Same logic that runs automatically after every faction import.
+    Run full automatic deduplication as a background task.
+    Returns immediately with a job_id. Poll /api/admin/ingest/status/{job_id}.
     """
-    from backend.app.services.ingestion.party_dedup_service import auto_deduplicate_parties
-    result = auto_deduplicate_parties(
-        db,
-        api_key=settings.openai_api_key if settings.has_openai else None,
-        model=settings.openai_model,
-    )
-    return result
+    import uuid as _uuid
+    job_id = str(_uuid.uuid4())[:8]
+    _ingestion_jobs[job_id] = {"job_id": job_id, "status": "queued", "type": "dedup"}
+
+    def _run_dedup(job_id: str) -> None:
+        from backend.app.db.session import SessionLocal
+        from backend.app.services.ingestion.party_dedup_service import auto_deduplicate_parties
+        _ingestion_jobs[job_id]["status"] = "running"
+        db2 = SessionLocal()
+        try:
+            result = auto_deduplicate_parties(
+                db2,
+                api_key=settings.openai_api_key if settings.has_openai else None,
+                model=settings.openai_model,
+            )
+            _ingestion_jobs[job_id].update({"status": "done", **result})
+        except Exception as exc:
+            logger.error("dedup background task failed: %s", exc)
+            _ingestion_jobs[job_id].update({"status": "error", "error": str(exc)})
+        finally:
+            db2.close()
+
+    background_tasks.add_task(_run_dedup, job_id)
+    return {"job_id": job_id, "status": "queued", "message": "Deduplication started in background."}
 
 
 @admin_router.post("/parties/merge")
