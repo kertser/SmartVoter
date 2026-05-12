@@ -133,8 +133,7 @@
     "start_date": "2022-11-01",
     "end_date": null,
     "status": "active",
-    "left_right_score": -0.30,
-    "_note": "UUID collision fixed: old UUID was wrongly used for Kadima in DB. Party instance inserted at runtime with new UUID."
+    "left_right_score": -0.30
   },
   {
     "id": "20000000-0000-0000-0000-000000000011",
@@ -171,6 +170,30 @@
     "left_right_score": -0.60
   },
   {
+    "_comment": "ביחד — new centrist party for 26th Knesset formed by Bennett and Lapid",
+    "id": "20000000-0000-0000-0000-000000000016",
+    "brand_canonical_name": "Yachad 2026",
+    "official_name": "Yachad 2026",
+    "election_cycle": "2026",
+    "knesset_number": 26,
+    "start_date": "2025-01-01",
+    "end_date": null,
+    "status": "active",
+    "left_right_score": -0.05
+  },
+  {
+    "_comment": "ישר — new centrist party for 26th Knesset led by Eisenkot",
+    "id": "20000000-0000-0000-0000-000000000017",
+    "brand_canonical_name": "Yashar",
+    "official_name": "Yashar",
+    "election_cycle": "2026",
+    "knesset_number": 26,
+    "start_date": "2025-01-01",
+    "end_date": null,
+    "status": "active",
+    "left_right_score": -0.10
+  },
+  {
     "_comment": "Dissolved predecessor for lineage demo — see lineage_edges.json",
     "id": "20000000-0000-0000-0000-000000000099",
     "brand_canonical_name": "Likud",
@@ -183,4 +206,3 @@
     "left_right_score": 0.35
   }
 ]
-

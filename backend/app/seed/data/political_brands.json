@@ -52,14 +52,14 @@
     "id": "10000000-0000-0000-0000-000000000008",
     "canonical_name": "Religious Zionism",
     "names_json": { "he": "הציונות הדתית", "en": "Religious Zionism", "ru": "Религиозный сионизм (Смотрич)" },
-    "description": "Religious Zionist nationalist party led by Bezalel Smotrich (Finance Minister). In 2022 ran as joint list with Otzma Yehudit and Noam (14 seats combined). Expected to run separately in 26th Knesset elections.",
+    "description": "Religious Zionist nationalist party led by Bezalel Smotrich. In 2022 ran as joint list with Otzma Yehudit and Noam (14 seats combined). Running separately in 26th Knesset.",
     "color_hex": "#B91C1C"
   },
   {
     "id": "10000000-0000-0000-0000-000000000014",
     "canonical_name": "Otzma Yehudit",
     "names_json": { "he": "עוצמה יהודית", "en": "Otzma Yehudit", "ru": "Еврейская сила (Бен-Гвир)" },
-    "description": "Far-right nationalist party led by Itamar Ben-Gvir (National Security Minister). In 2022 ran as joint list with Religious Zionism and Noam. Expected to run separately in 26th Knesset elections.",
+    "description": "Far-right nationalist party led by Itamar Ben-Gvir. In 2022 ran as joint list with Religious Zionism and Noam. Running separately in 26th Knesset.",
     "color_hex": "#7F1D1D"
   },
   {
@@ -94,8 +94,21 @@
     "id": "10000000-0000-0000-0000-000000000013",
     "canonical_name": "The Democrats",
     "names_json": { "he": "הדמוקרטים", "en": "The Democrats", "ru": "Демократы" },
-    "description": "Left-Zionist party formed by merger of Labor (HaAvoda) and Meretz ahead of the 26th Knesset election. Led by Yair Golan (former IDF Deputy Chief of Staff). Combines social-democratic platform with Zionist security credentials.",
+    "description": "Left-Zionist party formed by merger of Labor (HaAvoda) and Meretz ahead of the 26th Knesset election. Led by Yair Golan (former IDF Deputy Chief of Staff).",
     "color_hex": "#0891B2"
+  },
+  {
+    "id": "10000000-0000-0000-0000-000000000015",
+    "canonical_name": "Yachad 2026",
+    "names_json": { "he": "ביחד", "en": "Yachad (Bennett-Lapid)", "ru": "Яхад (Беннет-Лапид)" },
+    "description": "New centrist party for the 26th Knesset, formed by former PM Naftali Bennett and Yair Lapid.",
+    "color_hex": "#6366F1"
+  },
+  {
+    "id": "10000000-0000-0000-0000-000000000016",
+    "canonical_name": "Yashar",
+    "names_json": { "he": "ישר", "en": "Yashar (Eisenkot)", "ru": "Яшар (Айзенкот)" },
+    "description": "New centrist party for the 26th Knesset, led by former IDF Chief of Staff Gadi Eisenkot.",
+    "color_hex": "#10B981"
   }
 ]
-
