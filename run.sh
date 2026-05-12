@@ -41,6 +41,27 @@ if [ ! -f ".env" ]; then
     fi
 fi
 
+# ── Load key variables from .env ─────────────────────────────────────────
+# Read individual variables (no shell-substitution in .env values).
+# Falls back to sensible defaults if not set.
+_get_env() {
+    local key="$1" default="$2"
+    local val
+    val=$(grep -E "^${key}=" .env 2>/dev/null | head -1 | cut -d= -f2- | tr -d '[:space:]') || true
+    echo "${val:-$default}"
+}
+
+_PG_PORT=$(_get_env POSTGRES_PORT 5432)
+_FRONTEND_PORT=$(_get_env FRONTEND_PORT 3000)
+_PG_USER=$(_get_env POSTGRES_USER smartvoter)
+_PG_PASSWORD=$(_get_env POSTGRES_PASSWORD smartvoter)
+_PG_DB=$(_get_env POSTGRES_DB smartvoter)
+
+# Build a local DATABASE_URL that always points at the Docker-exposed postgres.
+# This overrides whatever DATABASE_URL the host .env may contain (which may use
+# shell-substitution syntax that dotenv parsers do not expand).
+_LOCAL_DB_URL="postgresql+psycopg://${_PG_USER}:${_PG_PASSWORD}@127.0.0.1:${_PG_PORT}/${_PG_DB}"
+
 # ── Python dependencies (for running migrations locally) ──────────────────
 echo "[1/5] Syncing Python dependencies..."
 uv sync --quiet
@@ -51,13 +72,9 @@ echo "[2/5] Starting PostgreSQL and Redis via Docker Compose..."
 docker compose up -d postgres redis
 
 # ── Wait for postgres to be ready ────────────────────────────────────────
-# pg_isready only checks if the postmaster is listening; it returns success
-# even while the database system is still in startup/recovery.  We run an
-# actual query (SELECT 1) to confirm the DB is fully available before
-# attempting migrations.
 echo "[3/5] Waiting for PostgreSQL to be ready..."
 attempts=0
-until docker compose exec -T postgres psql -U smartvoter -d smartvoter -c "SELECT 1" &>/dev/null; do
+until docker compose exec -T postgres psql -U "$_PG_USER" -d "$_PG_DB" -c "SELECT 1" &>/dev/null; do
     attempts=$((attempts + 1))
     if [ "$attempts" -gt 30 ]; then
         echo "[ERROR] PostgreSQL did not become ready after 30 seconds."
@@ -68,17 +85,13 @@ done
 echo "      PostgreSQL is ready."
 
 # ── Run Alembic migrations ────────────────────────────────────────────────
-# Always use the Docker-exposed postgres (127.0.0.1) with the known credentials,
-# regardless of what DATABASE_URL the host .env may contain.
 echo "[4/5] Running database migrations..."
-DATABASE_URL="postgresql+psycopg://smartvoter:smartvoter@127.0.0.1:5432/smartvoter" \
-    uv run alembic upgrade head
+DATABASE_URL="$_LOCAL_DB_URL" uv run alembic upgrade head
 echo "      Migrations applied."
 
 # ── Seed mock data (idempotent) ──────────────────────────────────────────
 echo "      Seeding mock data (skipped if already seeded)..."
-DATABASE_URL="postgresql+psycopg://smartvoter:smartvoter@127.0.0.1:5432/smartvoter" \
-    uv run python -m backend.app.seed.run_seed || true
+DATABASE_URL="$_LOCAL_DB_URL" uv run python -m backend.app.seed.run_seed || true
 echo "      Done."
 
 # ── Build and start backend + frontend containers ─────────────────────────
@@ -96,7 +109,7 @@ while true; do
         echo " [WARN] Frontend did not respond within 90 seconds -- continuing anyway."
         break
     fi
-    http_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null || true)
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${_FRONTEND_PORT}" 2>/dev/null || true)
     if [ "$http_code" = "200" ]; then
         break
     fi
@@ -108,7 +121,7 @@ echo " Frontend is ready."
 echo
 echo " [OK] All services are running in Docker:"
 echo
-echo "       Frontend  -->  http://localhost:3000"
+echo "       Frontend  -->  http://localhost:${_FRONTEND_PORT}"
 echo "       Backend   -->  http://localhost:8000"
 echo "       API docs  -->  http://localhost:8000/docs"
 echo
