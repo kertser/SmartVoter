@@ -226,7 +226,7 @@ def execute_merge(canonical_id: str, duplicate_ids: list[str], db: Session) -> d
     from backend.app.models.vote_result import VoteResult
     from backend.app.models.person_party_membership import PersonPartyMembership
     from backend.app.models.party_lineage_edge import PartyLineageEdge
-    from backend.app.models.simulation import PollPartyResult, SimulationPartyResult
+    from backend.app.models.simulation import PollPartyResult, SimulationPartyResult, CoalitionConstraint, CoalitionScenarioMember
     from backend.app.models.party_poll_alias import PartyPollAlias
     from sqlalchemy import func as sqlfunc
 
@@ -300,6 +300,8 @@ def execute_merge(canonical_id: str, duplicate_ids: list[str], db: Session) -> d
             (PollPartyResult, "party_instance_id"),
             (SimulationPartyResult, "party_instance_id"),
             (PartyPollAlias, "party_instance_id"),
+            (CoalitionConstraint, "source_party_instance_id"),
+            (CoalitionConstraint, "target_party_instance_id"),
         ]:
             db.query(model_cls).filter(
                 getattr(model_cls, col) == dup_uuid
