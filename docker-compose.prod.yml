@@ -74,12 +74,17 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL must be set}
+        # Empty string → relative /api/* URLs → Next.js proxy → backend internally.
+        # Do NOT set this to the backend port — it must not be exposed to browsers.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
     restart: always
     ports:
       - "3000:3000"
     environment:
       NODE_ENV: production
+      # Internal URL used by the Next.js server-side proxy (app/api/[...path]/route.ts).
+      # Never exposed to the browser.
+      BACKEND_URL: http://backend:8000
     depends_on:
       backend:
         condition: service_healthy
