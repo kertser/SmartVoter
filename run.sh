@@ -68,13 +68,17 @@ done
 echo "      PostgreSQL is ready."
 
 # ── Run Alembic migrations ────────────────────────────────────────────────
+# Always use the Docker-exposed postgres (127.0.0.1) with the known credentials,
+# regardless of what DATABASE_URL the host .env may contain.
 echo "[4/5] Running database migrations..."
-uv run alembic upgrade head
+DATABASE_URL="postgresql+psycopg://smartvoter:smartvoter@127.0.0.1:5432/smartvoter" \
+    uv run alembic upgrade head
 echo "      Migrations applied."
 
 # ── Seed mock data (idempotent) ──────────────────────────────────────────
 echo "      Seeding mock data (skipped if already seeded)..."
-uv run python -m backend.app.seed.run_seed || true
+DATABASE_URL="postgresql+psycopg://smartvoter:smartvoter@127.0.0.1:5432/smartvoter" \
+    uv run python -m backend.app.seed.run_seed || true
 echo "      Done."
 
 # ── Build and start backend + frontend containers ─────────────────────────
