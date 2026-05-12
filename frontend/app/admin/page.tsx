@@ -68,9 +68,10 @@ function PasswordGate({ onAuth }: { onAuth: () => void }) {
       storeAdminPassword(pw);
       await adminPing(); // lightweight auth check — just verifies the password
       onAuth();
-    } catch {
+    } catch (err) {
       clearAdminPassword();
       setError(true);
+      console.error("[admin login]", err);
     } finally {
       setLoading(false);
     }

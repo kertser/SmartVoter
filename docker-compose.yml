@@ -62,11 +62,17 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # Baked into the JS bundle at build time — must be reachable from the user's browser.
+        # If accessed via nginx on port 80, set this to the public backend URL (e.g. http://domain:8001).
+        # If accessed directly on port 3000, leave empty and the Next.js proxy handles it.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     environment:
-      # Used server-side by Next.js rewrites to reach the backend container.
+      # Used server-side by Next.js API proxy route to reach the backend container.
       BACKEND_URL: http://backend:8000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
     depends_on:
       backend:
         condition: service_healthy
