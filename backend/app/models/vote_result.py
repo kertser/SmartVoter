@@ -5,7 +5,15 @@ from backend.app.db.base import Base
 import enum
 
 
-class VoteValue(str, enum.Enum):
+class VoteValue(enum.StrEnum):
+    """StrEnum ensures psycopg3 serialises members by value ("for", not "for_").
+
+    psycopg3's executemany() uses its own type-adaptation and calls str() on
+    each parameter.  With plain ``str, enum.Enum`` in Python ≥ 3.12, str()
+    returns "VoteValue.for_" and psycopg3 falls back to its enum dumper which
+    uses ``.name`` ("for_").  StrEnum guarantees str(member) == member.value,
+    so psycopg3's string dumper sends the correct "for" to PostgreSQL.
+    """
     for_ = "for"
     against = "against"
     abstain = "abstain"
