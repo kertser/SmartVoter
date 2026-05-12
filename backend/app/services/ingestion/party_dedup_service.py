@@ -229,8 +229,21 @@ def execute_merge(canonical_id: str, duplicate_ids: list[str], db: Session) -> d
     from backend.app.models.simulation import PollPartyResult, SimulationPartyResult
     from backend.app.models.party_poll_alias import PartyPollAlias
 
-    canonical_uuid = uuid.UUID(canonical_id)
-    dup_uuids = [uuid.UUID(d) for d in duplicate_ids]
+    # Validate UUIDs before doing anything — LLM may return truncated/invalid IDs
+    try:
+        canonical_uuid = uuid.UUID(str(canonical_id).strip())
+    except (ValueError, AttributeError):
+        return {"ok": False, "error": f"Invalid canonical UUID: {canonical_id!r}"}
+
+    valid_dup_uuids: list[uuid.UUID] = []
+    for d in duplicate_ids:
+        try:
+            valid_dup_uuids.append(uuid.UUID(str(d).strip()))
+        except (ValueError, AttributeError):
+            logger.warning("execute_merge: skipping invalid duplicate UUID %r", d)
+
+    if not valid_dup_uuids:
+        return {"ok": False, "error": "No valid duplicate UUIDs to merge"}
 
     canonical = db.query(PartyInstance).filter(PartyInstance.id == canonical_uuid).first()
     if not canonical:
@@ -239,9 +252,10 @@ def execute_merge(canonical_id: str, duplicate_ids: list[str], db: Session) -> d
     merged_names: list[str] = []
     brands_to_check: list[uuid.UUID] = []
 
-    for dup_uuid in dup_uuids:
+    for dup_uuid in valid_dup_uuids:
         dup = db.query(PartyInstance).filter(PartyInstance.id == dup_uuid).first()
         if not dup:
+            logger.warning("execute_merge: duplicate %s not found (already merged?), skipping", dup_uuid)
             continue
         merged_names.append(dup.official_name)
         brands_to_check.append(dup.political_brand_id)
@@ -287,7 +301,7 @@ def execute_merge(canonical_id: str, duplicate_ids: list[str], db: Session) -> d
 
     return {
         "ok": True,
-        "canonical_id": canonical_id,
+        "canonical_id": str(canonical_uuid),
         "canonical_name": canonical.official_name,
         "merged": merged_names,
     }
@@ -353,17 +367,25 @@ def auto_deduplicate_parties(
         logger.info("party_dedup: no duplicates found (%s)", source)
         return {"merged_count": 0, "groups": [], "source": source}
 
-    # Execute merges
+    # Execute merges — use a savepoint per group so one bad group doesn't
+    # roll back the successful ones.
     merged_count = 0
     results = []
     for g in groups:
-        result = execute_merge(g["canonical_id"], g["duplicate_ids"], db)
-        if result["ok"]:
-            merged_count += len(g["duplicate_ids"])
-            logger.info(
-                "party_dedup: merged %s → %s",
-                g["duplicate_names"], g["canonical_name"],
-            )
+        try:
+            with db.begin_nested():  # savepoint
+                result = execute_merge(g["canonical_id"], g["duplicate_ids"], db)
+            if result["ok"]:
+                merged_count += len(g["duplicate_ids"])
+                logger.info(
+                    "party_dedup: merged %s → %s",
+                    g["duplicate_names"], g["canonical_name"],
+                )
+            else:
+                logger.warning("party_dedup: skipped group %r — %s", g["canonical_name"], result.get("error"))
+        except Exception as exc:
+            logger.warning("party_dedup: group %r failed (%s), continuing", g.get("canonical_name"), exc)
+            result = {"ok": False, "error": str(exc)}
         results.append({**g, "merge_result": result})
 
     db.commit()
