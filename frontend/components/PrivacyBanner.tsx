@@ -5,7 +5,9 @@ import { useT, useLang } from "@/lib/i18n";
 import { getOrCreateSessionId } from "@/lib/session";
 
 const CONSENT_KEY = "sv_privacy_accepted";
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Empty string = relative URL → routed through Next.js proxy (/api/* rewrite).
+// Only set NEXT_PUBLIC_API_URL when running outside Docker (e.g. local dev without containers).
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 export default function PrivacyBanner() {
   const t = useT();
