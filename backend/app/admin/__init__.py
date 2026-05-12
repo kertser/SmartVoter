@@ -147,6 +147,128 @@ def delete_poll_alias(alias_id: str, db: Session = Depends(get_db)) -> dict:
     return {"deleted": alias_id}
 
 
+# ── Party deduplication ───────────────────────────────────────────────────────
+
+class MergePartiesIn(BaseModel):
+    canonical_id: str   # party_instance to keep
+    duplicate_ids: list[str]  # party_instances to merge into canonical and delete
+
+
+@admin_router.get("/parties/all")
+def list_all_parties(db: Session = Depends(get_db)) -> list[dict]:
+    """List all party instances with related-data counts for dedup review."""
+    from backend.app.models.party_instance import PartyInstance
+    from backend.app.models.political_brand import PoliticalBrand
+    from backend.app.models.party_position import PartyPosition
+    from backend.app.models.vote_result import VoteResult
+    from backend.app.models.simulation import PollPartyResult
+    from sqlalchemy import func as sqlfunc
+
+    rows = db.query(PartyInstance).all()
+    brand_map = {b.id: b.canonical_name for b in db.query(PoliticalBrand).all()}
+
+    result = []
+    for pi in rows:
+        positions = db.query(sqlfunc.count(PartyPosition.id)).filter(
+            PartyPosition.party_instance_id == pi.id).scalar()
+        vote_results = db.query(sqlfunc.count(VoteResult.id)).filter(
+            VoteResult.party_instance_id_at_time == pi.id).scalar()
+        poll_results = db.query(sqlfunc.count(PollPartyResult.id)).filter(
+            PollPartyResult.party_instance_id == pi.id).scalar()
+        result.append({
+            "id": str(pi.id),
+            "official_name": pi.official_name,
+            "brand": brand_map.get(pi.political_brand_id, ""),
+            "knesset_number": pi.knesset_number,
+            "status": pi.status.value if pi.status else None,
+            "positions": positions,
+            "vote_results": vote_results,
+            "poll_results": poll_results,
+        })
+    return sorted(result, key=lambda x: x["official_name"])
+
+
+@admin_router.post("/parties/find-duplicates")
+def find_duplicate_parties(
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    """
+    Use LLM (or rule-based fallback) to identify likely duplicate party instances.
+    Returns groups for admin review. Use POST /parties/merge to confirm.
+    """
+    from backend.app.services.ingestion.party_dedup_service import (
+        llm_based_groups, rule_based_groups,
+    )
+    from backend.app.models.party_instance import PartyInstance
+    from backend.app.models.party_position import PartyPosition
+    from backend.app.models.vote_result import VoteResult
+    from backend.app.models.simulation import PollPartyResult
+    from sqlalchemy import func as sqlfunc
+
+    rows = db.query(PartyInstance).all()
+    parties = []
+    for pi in rows:
+        positions = db.query(sqlfunc.count(PartyPosition.id)).filter(
+            PartyPosition.party_instance_id == pi.id).scalar() or 0
+        vote_results = db.query(sqlfunc.count(VoteResult.id)).filter(
+            VoteResult.party_instance_id_at_time == pi.id).scalar() or 0
+        poll_results = db.query(sqlfunc.count(PollPartyResult.id)).filter(
+            PollPartyResult.party_instance_id == pi.id).scalar() or 0
+        parties.append({
+            "id": str(pi.id),
+            "name": pi.official_name,
+            "knesset": pi.knesset_number,
+            "positions": positions,
+            "vote_results": vote_results,
+            "poll_results": poll_results,
+        })
+
+    if settings.has_openai:
+        groups = llm_based_groups(parties, settings.openai_api_key, settings.openai_model)
+        source = "llm"
+        if not groups:
+            groups = rule_based_groups(parties)
+            source = "rule_based_fallback"
+    else:
+        groups = rule_based_groups(parties)
+        source = "rule_based"
+
+    return {"source": source, "duplicate_groups": groups}
+
+
+@admin_router.post("/parties/deduplicate")
+def run_auto_deduplication(
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    """
+    Run full automatic deduplication: detect + merge in one step.
+    Same logic that runs automatically after every faction import.
+    """
+    from backend.app.services.ingestion.party_dedup_service import auto_deduplicate_parties
+    result = auto_deduplicate_parties(
+        db,
+        api_key=settings.openai_api_key if settings.has_openai else None,
+        model=settings.openai_model,
+    )
+    return result
+
+
+@admin_router.post("/parties/merge")
+def merge_parties(body: MergePartiesIn, db: Session = Depends(get_db)) -> dict:
+    """
+    Merge duplicate party instances into one canonical entry.
+    Re-points ALL foreign key references, deletes duplicates and orphaned brands.
+    """
+    from backend.app.services.ingestion.party_dedup_service import execute_merge
+    result = execute_merge(body.canonical_id, body.duplicate_ids, db)
+    if not result["ok"]:
+        raise HTTPException(status_code=404, detail=result.get("error", "Merge failed"))
+    db.commit()
+    return result
+
+
 # ── Review endpoints ──────────────────────────────────────────────────────────
 
 @admin_router.get("/review/items")

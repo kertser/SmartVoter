@@ -293,6 +293,22 @@ def import_factions(
         "import_factions knesset=%d → inserted=%d updated=%d skipped=%d",
         knesset_number, inserted, updated, skipped,
     )
+
+    # Auto-deduplicate: merge any Hebrew Knesset-imported names that duplicate
+    # existing seed/English entries for the same party.
+    if inserted > 0 or updated > 0:
+        from backend.app.services.ingestion.party_dedup_service import auto_deduplicate_parties
+        dedup = auto_deduplicate_parties(
+            db,
+            api_key=settings.openai_api_key if settings.has_openai else None,
+            model=getattr(settings, "openai_model", "gpt-4o-mini"),
+        )
+        if dedup["merged_count"] > 0:
+            logger.info(
+                "import_factions: auto-dedup merged %d duplicate party instances (%s)",
+                dedup["merged_count"], dedup["source"],
+            )
+
     return {"inserted": inserted, "updated": updated, "skipped": skipped}
 
 

@@ -48,7 +48,7 @@ import {
 } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 
-type Tab = "ingestion" | "generate" | "review" | "audit" | "backup";
+type Tab = "ingestion" | "generate" | "review" | "audit" | "backup" | "dedup";
 
 // ── Password Gate ─────────────────────────────────────────────────────────────
 
@@ -152,8 +152,8 @@ export default function AdminPage() {
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 border-b border-slate-200">
-        {(["ingestion", "generate", "review", "audit", "backup"] as Tab[]).map((tabKey) => (
+      <div className="flex gap-1 border-b border-slate-200 flex-wrap">
+        {(["ingestion", "generate", "review", "audit", "backup", "dedup"] as Tab[]).map((tabKey) => (
           <button
             key={tabKey}
             onClick={() => setTab(tabKey)}
@@ -167,6 +167,7 @@ export default function AdminPage() {
               : tabKey === "generate" ? a.tabGenerate
               : tabKey === "review" ? a.tabReview
               : tabKey === "audit" ? a.tabAudit
+              : tabKey === "dedup" ? "Deduplication"
               : a.tabBackup}
           </button>
         ))}
@@ -177,6 +178,7 @@ export default function AdminPage() {
       {tab === "review" && <ReviewTab />}
       {tab === "audit" && <AuditTab />}
       {tab === "backup" && <BackupTab />}
+      {tab === "dedup" && <DedupTab />}
     </div>
   );
 }
@@ -1465,3 +1467,168 @@ function AuditTab() {
   );
 }
 
+// ── Deduplication Tab ─────────────────────────────────────────────────────────
+
+interface DuplicateGroup {
+  canonical_id: string;
+  canonical_name: string;
+  duplicate_ids: string[];
+  duplicate_names: string[];
+  reason: string;
+}
+
+function DedupTab() {
+  const [groups, setGroups] = useState<DuplicateGroup[]>([]);
+  const [source, setSource] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [merging, setMerging] = useState<string | null>(null);
+  const [done, setDone] = useState<string[]>([]);
+  const [error, setError] = useState("");
+
+  const findDuplicates = async () => {
+    setLoading(true);
+    setError("");
+    setGroups([]);
+    setDone([]);
+    try {
+      const data = await adminApiFetch<{ source: string; duplicate_groups: DuplicateGroup[] }>(
+        "/api/admin/parties/find-duplicates",
+        { method: "POST" }
+      );
+      setGroups(data.duplicate_groups ?? []);
+      setSource(data.source ?? "");
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const merge = async (g: DuplicateGroup) => {
+    setMerging(g.canonical_id);
+    try {
+      await adminApiFetch("/api/admin/parties/merge", {
+        method: "POST",
+        body: JSON.stringify({ canonical_id: g.canonical_id, duplicate_ids: g.duplicate_ids }),
+      });
+      setDone((d) => [...d, g.canonical_id]);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setMerging(null);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <h2 className="text-lg font-semibold text-slate-900">Party Deduplication</h2>
+        <p className="text-sm text-slate-500">
+          Deduplication runs <strong>automatically</strong> after every faction import.
+          Use the buttons below to run it manually or review what would be merged.
+        </p>
+      </div>
+
+      <div className="flex gap-3 flex-wrap">
+        <button
+          onClick={async () => {
+            setLoading(true); setError(""); setGroups([]); setDone([]);
+            try {
+              const data = await adminApiFetch<{ source: string; merged_count: number; groups: DuplicateGroup[] }>(
+                "/api/admin/parties/deduplicate", { method: "POST" }
+              );
+              setSource(data.source ?? "");
+              setGroups((data.groups ?? []).map((g: DuplicateGroup) => g));
+              setDone((data.groups ?? []).map((g: DuplicateGroup) => g.canonical_id));
+            } catch (e) { setError(String(e)); }
+            finally { setLoading(false); }
+          }}
+          disabled={loading}
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-40"
+        >
+          {loading ? "Running…" : "▶ Run auto-deduplication now"}
+        </button>
+        <button
+          onClick={findDuplicates}
+          disabled={loading}
+          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+        >
+          {loading ? "Scanning…" : "🔍 Preview duplicates (review before merge)"}
+        </button>
+      </div>
+
+      {source && (
+        <p className="text-xs text-slate-400">Source: {source}</p>
+      )}
+
+      {error && (
+        <p className="text-sm text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>
+      )}
+
+      {!loading && groups.length === 0 && source && (
+        <p className="text-sm text-green-700 bg-green-50 rounded px-3 py-2">
+          ✓ No duplicate groups found.
+        </p>
+      )}
+
+      <div className="space-y-4">
+        {groups.map((g) => {
+          const isDone = done.includes(g.canonical_id);
+          return (
+            <div
+              key={g.canonical_id}
+              className={`rounded-xl border p-4 space-y-3 ${
+                isDone ? "border-green-200 bg-green-50 opacity-60" : "border-slate-200 bg-white"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium uppercase text-slate-400">Keep</span>
+                    <span className="font-semibold text-slate-900">{g.canonical_name}</span>
+                    <span className="text-xs text-slate-400 font-mono">{g.canonical_id.slice(0, 8)}…</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs font-medium uppercase text-slate-400 mt-0.5">Merge</span>
+                    <div className="flex flex-wrap gap-1">
+                      {g.duplicate_names.map((n, i) => (
+                        <span key={i} className="rounded-full bg-orange-100 text-orange-800 px-2 py-0.5 text-xs">
+                          {n}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 italic">{g.reason}</p>
+                </div>
+                {isDone ? (
+                  <span className="text-green-600 text-sm font-medium">✓ Merged</span>
+                ) : (
+                  <button
+                    onClick={() => merge(g)}
+                    disabled={merging === g.canonical_id}
+                    className="shrink-0 rounded-lg bg-orange-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-40"
+                  >
+                    {merging === g.canonical_id ? "Merging…" : "Merge"}
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function adminApiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const pw = getStoredAdminPassword();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options?.headers as Record<string, string>),
+  };
+  if (pw) headers["X-Admin-Password"] = pw;
+  return fetch(path, { ...options, headers }).then(async (r) => {
+    if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
+    return r.json();
+  });
+}
