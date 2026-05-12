@@ -2279,6 +2279,7 @@ def backup_database(db: Session = Depends(get_db)) -> Response:
     from backend.app.models.vote_result import VoteResult
     from backend.app.models.policy_item import PolicyItem
     from backend.app.models.question import Question
+    from backend.app.models.question_explanation import QuestionExplanation
     from backend.app.models.user_session import UserSession
     from backend.app.models.user_answer import UserAnswer
     from backend.app.models.recommendation_run import RecommendationRun
@@ -2327,6 +2328,7 @@ def backup_database(db: Session = Depends(get_db)) -> Response:
             "policy_items":            _dump_table(PolicyItem),
             "party_positions":         _dump_table(PartyPosition),
             "questions":               _dump_table(Question),
+            "question_explanations":   _dump_table(QuestionExplanation),
         },
         "stats": {},
     }
@@ -2377,6 +2379,7 @@ async def restore_database(
     from backend.app.models.vote_result import VoteResult
     from backend.app.models.policy_item import PolicyItem
     from backend.app.models.question import Question
+    from backend.app.models.question_explanation import QuestionExplanation
 
     raw = await file.read()
     try:
@@ -2401,6 +2404,7 @@ async def restore_database(
         ("policy_items",             PolicyItem),
         ("party_positions",          PartyPosition),
         ("questions",                Question),
+        ("question_explanations",    QuestionExplanation),
     ]
 
     tables_data = snapshot.get("tables", {})
