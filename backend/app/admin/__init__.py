@@ -1302,6 +1302,11 @@ def _run_full_pipeline(job_id: str, body: FullPipelineBody, settings: Settings) 
                 _ingestion_jobs[job_id][label] = err
             logger.error("Full pipeline job %s [%s/%s] failed: %s",
                          job_id, key, label, exc, exc_info=True)
+            # Recover the session so subsequent steps can continue
+            try:
+                db.rollback()
+            except Exception:
+                pass
             return err
 
     try:

@@ -27,7 +27,12 @@ class VoteResult(Base):
         ForeignKey("party_instances.id"), nullable=True, index=True
     )
     vote_value: Mapped[VoteValue] = mapped_column(
-        SAEnum(VoteValue, name="vote_value", create_type=False)
+        SAEnum(
+            VoteValue,
+            name="vote_value",
+            create_type=False,
+            values_callable=lambda obj: [e.value for e in obj],
+        )
     )
     source_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
 
