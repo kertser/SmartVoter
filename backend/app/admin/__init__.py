@@ -398,6 +398,268 @@ def edit_question(item_id: str, body: EditQuestionBody, db: Session = Depends(ge
     return {"status": "edited", "id": item_id}
 
 
+@admin_router.delete("/review/{item_id}")
+def delete_question(item_id: str, db: Session = Depends(get_db)) -> dict:
+    """Permanently delete a question and its child records (answers, explanations)."""
+    try:
+        qid = uuid.UUID(item_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid question ID")
+    q = db.query(Question).filter(Question.id == qid).first()
+    if not q:
+        raise HTTPException(status_code=404, detail="Question not found")
+    from backend.app.models.user_answer import UserAnswer
+    db.query(UserAnswer).filter(UserAnswer.question_id == qid).delete(synchronize_session=False)
+    try:
+        from backend.app.models.question_explanation import QuestionExplanation as _QExpl
+        db.query(_QExpl).filter(_QExpl.question_id == qid).delete(synchronize_session=False)
+    except Exception:
+        pass
+    db.delete(q)
+    db.commit()
+    return {"deleted": True, "id": item_id}
+
+
+class BulkDeleteBody(BaseModel):
+    ids: list[str]
+
+
+@admin_router.post("/review/bulk-delete")
+def bulk_delete_questions(body: BulkDeleteBody, db: Session = Depends(get_db)) -> dict:
+    """Permanently delete multiple questions in one call."""
+    try:
+        uuids = [uuid.UUID(i) for i in body.ids]
+    except ValueError:
+        raise HTTPException(status_code=400, detail="One or more invalid UUIDs")
+    from backend.app.models.user_answer import UserAnswer
+    db.query(UserAnswer).filter(UserAnswer.question_id.in_(uuids)).delete(synchronize_session=False)
+    try:
+        from backend.app.models.question_explanation import QuestionExplanation as _QExpl
+        db.query(_QExpl).filter(_QExpl.question_id.in_(uuids)).delete(synchronize_session=False)
+    except Exception:
+        pass
+    deleted = db.query(Question).filter(Question.id.in_(uuids)).delete(synchronize_session=False)
+    db.commit()
+    return {"deleted": deleted}
+
+
+# ── Question browser ──────────────────────────────────────────────────────────
+
+@admin_router.get("/questions")
+def list_all_questions(
+    status: str | None = None,
+    topic_slug: str | None = None,
+    search: str | None = None,
+    is_root: bool | None = None,
+    limit: int = 100,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    List all questions with optional filtering.
+    Unlike /review/items, returns ALL statuses including approved.
+    Includes topic info for each question.
+    """
+    q = db.query(Question)
+    if status:
+        q = q.filter(Question.human_review_status == status)
+    if is_root is not None:
+        q = q.filter(Question.is_root_question == is_root)
+    if search:
+        like = f"%{search}%"
+        q = q.filter(
+            Question.question_text_en.ilike(like) |
+            Question.question_text_he.ilike(like)
+        )
+    total = q.count()
+    questions = q.order_by(Question.human_review_status).offset(offset).limit(limit).all()
+
+    # Resolve topic slugs in bulk
+    from backend.app.models.policy_item import PolicyItem
+    rows = []
+    for question in questions:
+        topic_slug_val = None
+        topic_name_en = None
+        if question.topic_id:
+            t = db.query(Topic).filter(Topic.id == question.topic_id).first()
+            if t:
+                topic_slug_val = t.slug
+                topic_name_en = t.name_en
+        elif question.policy_item_id:
+            pi = db.query(PolicyItem).filter(PolicyItem.id == question.policy_item_id).first()
+            if pi and pi.topic_id:
+                t = db.query(Topic).filter(Topic.id == pi.topic_id).first()
+                if t:
+                    topic_slug_val = t.slug
+                    topic_name_en = t.name_en
+        if topic_slug and topic_slug_val != topic_slug:
+            continue
+        rows.append({
+            "id": str(question.id),
+            "policy_item_id": str(question.policy_item_id) if question.policy_item_id else None,
+            "topic_slug": topic_slug_val,
+            "topic_name_en": topic_name_en,
+            "question_text_en": question.question_text_en,
+            "question_text_he": question.question_text_he,
+            "question_text_ru": question.question_text_ru,
+            "status": question.human_review_status.value,
+            "is_root_question": question.is_root_question,
+            "is_stale": question.is_stale,
+            "answer_scale_type": question.answer_scale_type.value,
+            "neutrality_score": question.neutrality_score,
+            "llm_prompt_version": question.llm_prompt_version,
+        })
+    return {"total": total, "items": rows}
+
+
+# ── Batch explanation generation ─────────────────────────────────────────────
+
+_explain_jobs: dict[str, dict] = {}
+
+
+class GenerateExplanationsBody(BaseModel):
+    question_ids: list[str]
+    langs: list[str] = ["en", "he", "ru"]
+    max_workers: int = 4
+
+
+def _run_explain_batch(
+    job_id: str,
+    question_ids: list[str],
+    langs: list[str],
+    max_workers: int,
+    settings: Settings,
+) -> None:
+    """Background worker: generate and cache explanations for a batch of questions."""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from backend.app.db.session import SessionLocal
+    from backend.app.models.question_explanation import QuestionExplanation as _QExpl
+    from backend.app.models.policy_item import PolicyItem
+    from backend.app.services.llm import get_llm_provider
+    from backend.app.services.llm.audit_service import AuditedLLMService
+
+    _LANG_NAMES = {"he": "Hebrew (עברית)", "ru": "Russian (русский)", "en": "English"}
+    _explain_jobs[job_id]["status"] = "running"
+    tasks = [(qid, lang) for qid in question_ids for lang in langs]
+    _explain_jobs[job_id]["total"] = len(tasks)
+
+    def _process_one(args):
+        qid_str, lang = args
+        db = SessionLocal()
+        try:
+            qid = uuid.UUID(qid_str)
+            q_obj = db.query(Question).filter(Question.id == qid).first()
+            if not q_obj:
+                return {"error": "not found"}
+            cached = db.query(_QExpl).filter(_QExpl.question_id == qid, _QExpl.lang == lang).first()
+            if cached:
+                return {"cached": True}
+            language_name = _LANG_NAMES.get(lang, "English")
+            question_text = (
+                q_obj.question_text_he if lang == "he"
+                else q_obj.question_text_ru if lang == "ru"
+                else q_obj.question_text_en
+            ) or q_obj.question_text_en
+            policy_description = ""
+            directional_axis = ""
+            topic = None
+            if q_obj.policy_item_id:
+                pi = db.query(PolicyItem).filter(PolicyItem.id == q_obj.policy_item_id).first()
+                if pi:
+                    policy_description = pi.description or pi.title
+                    directional_axis = pi.directional_axis or ""
+                    if pi.topic_id:
+                        topic = db.query(Topic).filter(Topic.id == pi.topic_id).first()
+            if not topic and q_obj.topic_id:
+                topic = db.query(Topic).filter(Topic.id == q_obj.topic_id).first()
+            topic_name_str = ""
+            if topic:
+                topic_name_str = (
+                    topic.name_he if lang == "he" and topic.name_he
+                    else topic.name_ru if lang == "ru" and topic.name_ru
+                    else topic.name_en
+                ) or ""
+                if not policy_description and topic.description:
+                    policy_description = topic.description
+            provider = get_llm_provider(settings)
+            svc = AuditedLLMService(provider, db)
+            result = svc.explain_question_context({
+                "question_text": question_text,
+                "topic_name": topic_name_str,
+                "policy_description": policy_description,
+                "directional_axis": directional_axis,
+                "language_name": language_name,
+                "lang": lang,
+            }, entity_id=qid)
+            expl = _QExpl(
+                question_id=qid,
+                lang=lang,
+                background=result.get("background", ""),
+                why_relevant=result.get("why_relevant", ""),
+                support_side=result.get("support_side", ""),
+                oppose_side=result.get("oppose_side", ""),
+                everyday_example=result.get("everyday_example", ""),
+                source="llm",
+            )
+            db.add(expl)
+            db.commit()
+            return {"ok": True}
+        except Exception as exc:
+            logger.warning("explain_batch: q=%s lang=%s err=%s", qid_str, lang, exc)
+            return {"error": str(exc)}
+        finally:
+            db.close()
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(_process_one, t): t for t in tasks}
+        for fut in as_completed(futures):
+            result = fut.result()
+            if result.get("error"):
+                _explain_jobs[job_id]["errors"] += 1
+            else:
+                _explain_jobs[job_id]["completed"] += 1
+    _explain_jobs[job_id]["status"] = "done"
+
+
+@admin_router.post("/questions/generate-explanations")
+def generate_explanations_batch(
+    body: GenerateExplanationsBody,
+    background_tasks: BackgroundTasks,
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    """
+    Generate LLM explanations for a list of question IDs in background.
+    Generates for each specified lang (default: en, he, ru).
+    Skips questions that already have a cached explanation for that lang.
+    Poll /api/admin/questions/explain-status/{job_id} for progress.
+    """
+    if not settings.openai_api_key:
+        raise HTTPException(
+            status_code=400,
+            detail="OPENAI_API_KEY not configured. LLM explanations require OpenAI.",
+        )
+    job_id = str(uuid.uuid4())[:8]
+    _explain_jobs[job_id] = {
+        "job_id": job_id,
+        "status": "queued",
+        "total": len(body.question_ids) * len(body.langs),
+        "completed": 0,
+        "errors": 0,
+    }
+    background_tasks.add_task(
+        _run_explain_batch, job_id, body.question_ids, body.langs, body.max_workers, settings
+    )
+    return {"job_id": job_id, "status": "queued", "total": _explain_jobs[job_id]["total"]}
+
+
+@admin_router.get("/questions/explain-status/{job_id}")
+def get_explain_job_status(job_id: str) -> dict:
+    """Poll explanation generation job status."""
+    if job_id not in _explain_jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return _explain_jobs[job_id]
+
+
 # ── LLM generation endpoints ──────────────────────────────────────────────────
 
 class GenerateQuestionsBody(BaseModel):

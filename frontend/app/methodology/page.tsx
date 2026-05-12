@@ -105,6 +105,18 @@ export default function MethodologyPage() {
         </div>
       </section>
 
+      {/* Adaptive questionnaire */}
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold text-slate-800">{m.adaptiveQuestionnaireHeading}</h2>
+        <p className="text-sm text-slate-600">{m.adaptiveQuestionnaireBody}</p>
+      </section>
+
+      {/* Data sources */}
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold text-slate-800">{m.dataSourcesHeading}</h2>
+        <p className="text-sm text-slate-600">{m.dataSourcesBody}</p>
+      </section>
+
       {/* Limitations */}
       <section className="space-y-3">
         <h2 className="text-xl font-semibold text-slate-800">{m.limitationsHeading}</h2>

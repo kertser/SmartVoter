@@ -228,6 +228,10 @@ export interface Translations {
     newPartyHeading: string;
     newPartyWarningTitle: string;
     newPartyWarningBody: string;
+    adaptiveQuestionnaireHeading: string;
+    adaptiveQuestionnaireBody: string;
+    dataSourcesHeading: string;
+    dataSourcesBody: string;
     limitationsHeading: string;
     limitations: [string, string, string, string, string];
   };
@@ -480,6 +484,32 @@ export interface Translations {
     markStaleBtn: string;
     markStaleDone: (count: number) => string;
     markStaleError: string;
+    // Question browser (Generate tab)
+    questionBrowserHeading: string;
+    questionBrowserSubtext: string;
+    questionBrowserFilter: string;
+    questionBrowserFilterAll: string;
+    questionBrowserFilterApproved: string;
+    questionBrowserFilterLlmGenerated: string;
+    questionBrowserFilterNeedsReview: string;
+    questionBrowserFilterRejected: string;
+    questionBrowserFilterDraft: string;
+    questionBrowserSearch: string;
+    questionBrowserCount: (n: number) => string;
+    questionBrowserDelete: string;
+    questionBrowserDeleteConfirm: string;
+    questionBrowserDeleteSelected: (n: number) => string;
+    questionBrowserDeleteSelectedConfirm: (n: number) => string;
+    questionBrowserSelectAll: string;
+    questionBrowserClearSelection: string;
+    questionBrowserGenerateExplainBtn: (n: number) => string;
+    questionBrowserExplainRunning: (done: number, total: number) => string;
+    questionBrowserExplainDone: (done: number, errors: number) => string;
+    questionBrowserExplainError: string;
+    questionBrowserNoItems: string;
+    questionBrowserRootBadge: string;
+    questionBrowserStaleBadge: string;
+    questionBrowserLoadMore: string;
   };
 
   privacy: {

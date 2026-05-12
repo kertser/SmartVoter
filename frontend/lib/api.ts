@@ -1050,3 +1050,73 @@ export async function adminMarkStaleQuestions(): Promise<{
   return adminApiFetch("/api/admin/llm/mark-stale-questions", { method: "POST" });
 }
 
+// ── Question browser ──────────────────────────────────────────────────────────
+
+export interface AdminQuestionBrowserItem {
+  id: string;
+  policy_item_id: string | null;
+  topic_slug: string | null;
+  topic_name_en: string | null;
+  question_text_en: string;
+  question_text_he: string;
+  question_text_ru?: string;
+  status: string;
+  is_root_question: boolean;
+  is_stale: boolean;
+  neutrality_score?: number;
+  llm_prompt_version?: string;
+}
+
+export async function adminListAllQuestions(params?: {
+  status?: string;
+  topic_slug?: string;
+  search?: string;
+  is_root?: boolean;
+  limit?: number;
+  offset?: number;
+}): Promise<{ total: number; items: AdminQuestionBrowserItem[] }> {
+  const qs = new URLSearchParams();
+  if (params?.status) qs.set("status", params.status);
+  if (params?.topic_slug) qs.set("topic_slug", params.topic_slug);
+  if (params?.search) qs.set("search", params.search);
+  if (params?.is_root !== undefined) qs.set("is_root", String(params.is_root));
+  if (params?.limit !== undefined) qs.set("limit", String(params.limit));
+  if (params?.offset !== undefined) qs.set("offset", String(params.offset));
+  const q = qs.toString() ? `?${qs}` : "";
+  return adminApiFetch<{ total: number; items: AdminQuestionBrowserItem[] }>(`/api/admin/questions${q}`);
+}
+
+export async function adminDeleteQuestion(id: string): Promise<{ deleted: boolean; id: string }> {
+  return adminApiFetch(`/api/admin/review/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+export async function adminBulkDeleteQuestions(ids: string[]): Promise<{ deleted: number }> {
+  return adminApiFetch("/api/admin/review/bulk-delete", {
+    method: "POST",
+    body: JSON.stringify({ ids }),
+  });
+}
+
+export interface BatchExplainJob {
+  job_id: string;
+  status: "queued" | "running" | "done" | "error";
+  total: number;
+  completed: number;
+  errors: number;
+}
+
+export async function adminBatchGenerateExplanations(params: {
+  question_ids: string[];
+  langs?: string[];
+  max_workers?: number;
+}): Promise<BatchExplainJob> {
+  return adminApiFetch("/api/admin/questions/generate-explanations", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+export async function adminGetBatchExplainStatus(jobId: string): Promise<BatchExplainJob> {
+  return adminApiFetch<BatchExplainJob>(`/api/admin/questions/explain-status/${jobId}`);
+}
+

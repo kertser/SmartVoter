@@ -34,7 +34,14 @@ import {
   adminGenerateQuestionBank,
   adminGetQuestionBankStatus,
   adminMarkStaleQuestions,
+  adminListAllQuestions,
+  adminDeleteQuestion,
+  adminBulkDeleteQuestions,
+  adminBatchGenerateExplanations,
+  adminGetBatchExplainStatus,
   AdminQuestion,
+  AdminQuestionBrowserItem,
+  BatchExplainJob,
   LlmOutputRecord,
   IngestionJobStatus,
   FullPipelineJobStatus,
@@ -526,6 +533,329 @@ function GenerateTab() {
       {/* Manual entry */}
       {!loading && (
         <ManualQuestionForm topics={topics} onSaved={() => {}} />
+      )}
+
+      {/* Question browser — browse/edit/delete/explain all questions */}
+      <QuestionBrowserSection />
+    </div>
+  );
+}
+
+// ── Question Browser Section ───────────────────────────────────────────────────
+
+const PAGE_SIZE = 50;
+
+const STATUS_COLORS: Record<string, string> = {
+  approved: "bg-green-50 text-green-700 border-green-200",
+  llm_generated: "bg-blue-50 text-blue-700 border-blue-200",
+  needs_review: "bg-yellow-50 text-yellow-700 border-yellow-200",
+  rejected: "bg-red-50 text-red-600 border-red-200",
+  draft: "bg-slate-100 text-slate-600 border-slate-200",
+};
+
+function QuestionBrowserSection() {
+  const a = useT().admin;
+  const [open, setOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [items, setItems] = useState<AdminQuestionBrowserItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editEn, setEditEn] = useState("");
+  const [editHe, setEditHe] = useState("");
+  const [editRu, setEditRu] = useState("");
+  const [explainJob, setExplainJob] = useState<BatchExplainJob | null>(null);
+  const [explainMsg, setExplainMsg] = useState<string | null>(null);
+  const explainPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Debounce search
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const load = useCallback(async (off = 0, reset = true) => {
+    setLoading(true);
+    try {
+      const res = await adminListAllQuestions({
+        status: statusFilter || undefined,
+        search: debouncedSearch || undefined,
+        limit: PAGE_SIZE,
+        offset: off,
+      });
+      setTotal(res.total);
+      if (reset) {
+        setItems(res.items);
+        setOffset(PAGE_SIZE);
+      } else {
+        setItems(prev => [...prev, ...res.items]);
+        setOffset(off + PAGE_SIZE);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter, debouncedSearch]);
+
+  useEffect(() => {
+    if (open) { load(0, true); setSelected(new Set()); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, statusFilter, debouncedSearch]);
+
+  const stopExplainPoll = () => {
+    if (explainPollRef.current) { clearInterval(explainPollRef.current); explainPollRef.current = null; }
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => () => stopExplainPoll(), []);
+
+  /** Toggle one item selection */
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  /** Select / deselect all visible */
+  const toggleAll = () => {
+    if (selected.size === items.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(items.map(i => i.id)));
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm(a.questionBrowserDeleteConfirm)) return;
+    await adminDeleteQuestion(id);
+    setItems(prev => prev.filter(i => i.id !== id));
+    setTotal(prev => prev - 1);
+    setSelected(prev => { const n = new Set(prev); n.delete(id); return n; });
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selected);
+    if (!window.confirm(a.questionBrowserDeleteSelectedConfirm(ids.length))) return;
+    await adminBulkDeleteQuestions(ids);
+    setItems(prev => prev.filter(i => !selected.has(i.id)));
+    setTotal(prev => prev - ids.length);
+    setSelected(new Set());
+  };
+
+  const handleEditSave = async (id: string) => {
+    await adminEditQuestion(id, { question_text_en: editEn, question_text_he: editHe, question_text_ru: editRu });
+    setEditingId(null);
+    load(0, true);
+  };
+
+  const handleGenerateExplanations = async () => {
+    const ids = selected.size > 0 ? Array.from(selected) : items.map(i => i.id);
+    if (ids.length === 0) return;
+    setExplainMsg(null);
+    stopExplainPoll();
+    try {
+      const job = await adminBatchGenerateExplanations({ question_ids: ids });
+      setExplainJob(job);
+      explainPollRef.current = setInterval(async () => {
+        try {
+          const status = await adminGetBatchExplainStatus(job.job_id);
+          setExplainJob(status);
+          if (status.status === "done" || status.status === "error") {
+            stopExplainPoll();
+            if (status.status === "done") {
+              setExplainMsg(a.questionBrowserExplainDone(status.completed, status.errors));
+            }
+          }
+        } catch { stopExplainPoll(); }
+      }, 2000);
+    } catch {
+      setExplainMsg(a.questionBrowserExplainError);
+    }
+  };
+
+  const isExplainRunning = explainJob?.status === "queued" || explainJob?.status === "running";
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+      >
+        <span>{a.questionBrowserHeading}</span>
+        <span className="text-slate-400 text-xs">{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open && (
+        <div className="border-t border-slate-100 p-4 space-y-4">
+          <p className="text-xs text-slate-500">{a.questionBrowserSubtext}</p>
+
+          {/* Filters */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700"
+            >
+              <option value="">{a.questionBrowserFilterAll}</option>
+              <option value="approved">{a.questionBrowserFilterApproved}</option>
+              <option value="llm_generated">{a.questionBrowserFilterLlmGenerated}</option>
+              <option value="needs_review">{a.questionBrowserFilterNeedsReview}</option>
+              <option value="rejected">{a.questionBrowserFilterRejected}</option>
+              <option value="draft">{a.questionBrowserFilterDraft}</option>
+            </select>
+            <input
+              type="search"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={a.questionBrowserSearch}
+              className="flex-1 min-w-[200px] rounded-lg border border-slate-200 px-3 py-1.5 text-sm"
+            />
+            <span className="text-xs text-slate-400">{a.questionBrowserCount(total)}</span>
+          </div>
+
+          {/* Bulk actions */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <button
+              onClick={toggleAll}
+              className="text-xs text-brand-600 hover:underline"
+            >
+              {selected.size === items.length && items.length > 0 ? a.questionBrowserClearSelection : a.questionBrowserSelectAll}
+            </button>
+            {selected.size > 0 && (
+              <button
+                onClick={handleBulkDelete}
+                className="rounded-lg border border-red-200 px-2.5 py-1 text-xs text-red-600 hover:bg-red-50"
+              >
+                {a.questionBrowserDeleteSelected(selected.size)}
+              </button>
+            )}
+            <button
+              onClick={handleGenerateExplanations}
+              disabled={isExplainRunning}
+              className="rounded-lg bg-blue-600 px-3 py-1 text-xs text-white font-medium hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed ms-auto"
+            >
+              {isExplainRunning
+                ? a.questionBrowserExplainRunning(explainJob?.completed ?? 0, explainJob?.total ?? 1)
+                : a.questionBrowserGenerateExplainBtn(selected.size)}
+            </button>
+          </div>
+
+          {explainMsg && (
+            <p className="text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700">{explainMsg}</p>
+          )}
+
+          {/* Question list */}
+          {loading && items.length === 0 ? (
+            <p className="text-slate-400 text-sm text-center py-8">Loading…</p>
+          ) : items.length === 0 ? (
+            <p className="text-slate-400 text-sm text-center py-8">{a.questionBrowserNoItems}</p>
+          ) : (
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+              {items.map(item => (
+                <div
+                  key={item.id}
+                  className={`rounded-lg border p-3 space-y-2 transition-colors ${
+                    selected.has(item.id) ? "border-brand-300 bg-brand-50/40" : "border-slate-100 bg-white"
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(item.id)}
+                      onChange={() => toggleSelect(item.id)}
+                      className="mt-1 rounded shrink-0"
+                    />
+                    <div className="flex-1 min-w-0 space-y-1">
+                      {/* Status + badges */}
+                      <div className="flex flex-wrap gap-1.5 items-center">
+                        <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[item.status] ?? "bg-slate-100 text-slate-600"}`}>
+                          {item.status.replace("_", " ")}
+                        </span>
+                        {item.is_root_question && (
+                          <span className="rounded-full bg-purple-50 border border-purple-200 px-2 py-0.5 text-xs text-purple-700">
+                            {a.questionBrowserRootBadge}
+                          </span>
+                        )}
+                        {item.is_stale && (
+                          <span className="rounded-full bg-orange-50 border border-orange-200 px-2 py-0.5 text-xs text-orange-700">
+                            {a.questionBrowserStaleBadge}
+                          </span>
+                        )}
+                        {item.topic_name_en && (
+                          <span className="text-xs text-slate-400">{item.topic_name_en}</span>
+                        )}
+                      </div>
+
+                      {editingId === item.id ? (
+                        <div className="space-y-2 mt-2">
+                          <label className="block text-xs font-medium text-slate-500">English</label>
+                          <textarea rows={2} value={editEn} onChange={e => setEditEn(e.target.value)}
+                            className="w-full rounded border border-slate-200 px-2 py-1.5 text-sm resize-none" />
+                          <label className="block text-xs font-medium text-slate-500">Hebrew</label>
+                          <textarea rows={2} dir="rtl" value={editHe} onChange={e => setEditHe(e.target.value)}
+                            className="w-full rounded border border-slate-200 px-2 py-1.5 text-sm resize-none" />
+                          <label className="block text-xs font-medium text-slate-500">Russian</label>
+                          <textarea rows={2} value={editRu} onChange={e => setEditRu(e.target.value)}
+                            className="w-full rounded border border-slate-200 px-2 py-1.5 text-sm resize-none" />
+                          <div className="flex gap-2">
+                            <button onClick={() => handleEditSave(item.id)}
+                              className="rounded bg-brand-600 px-3 py-1 text-xs text-white hover:bg-brand-700">
+                              Save
+                            </button>
+                            <button onClick={() => setEditingId(null)}
+                              className="rounded border border-slate-200 px-3 py-1 text-xs text-slate-600">
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-0.5">
+                          <p className="text-sm text-slate-800 leading-snug">{item.question_text_en}</p>
+                          {item.question_text_he && (
+                            <p dir="rtl" className="text-xs text-slate-500 leading-snug">{item.question_text_he}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action buttons */}
+                    {editingId !== item.id && (
+                      <div className="flex gap-1 shrink-0">
+                        <button
+                          onClick={() => { setEditingId(item.id); setEditEn(item.question_text_en); setEditHe(item.question_text_he ?? ""); setEditRu(item.question_text_ru ?? ""); }}
+                          className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50"
+                          title="Edit"
+                        >✎</button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="rounded border border-red-200 px-2 py-1 text-xs text-red-500 hover:bg-red-50"
+                          title={a.questionBrowserDelete}
+                        >✕</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Load more */}
+          {items.length < total && (
+            <div className="text-center">
+              <button
+                onClick={() => load(offset, false)}
+                disabled={loading}
+                className="text-xs text-brand-600 hover:underline disabled:opacity-40"
+              >
+                {loading ? "Loading…" : a.questionBrowserLoadMore}
+              </button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
