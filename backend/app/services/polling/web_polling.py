@@ -115,23 +115,36 @@ def _clean_alias(s: str) -> str:
 def ensure_aliases_seeded(db) -> None:
     """
     Populate party_poll_aliases from DEFAULT_ALIASES if the table is empty.
-    Safe to call on every startup — no-op if already seeded.
+    Uses INSERT ... ON CONFLICT (alias_text) DO NOTHING so it is fully
+    idempotent regardless of prior transaction state.
+    Never commits — caller is responsible for the transaction.
     """
     from backend.app.models.party_poll_alias import PartyPollAlias
-    if db.query(PartyPollAlias).count() > 0:
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+    rows = [
+        {
+            "id": uuid.uuid5(uuid.NAMESPACE_DNS, f"alias:{_clean_alias(alias_text)}"),
+            "alias_text": _clean_alias(alias_text),
+            "official_name": official_name,
+            "language": language,
+            "auto_created": False,
+            "notes": None,
+            "party_instance_id": None,
+        }
+        for alias_text, official_name, language in DEFAULT_ALIASES
+        if _clean_alias(alias_text)
+    ]
+
+    if not rows:
         return
-    for alias_text, official_name, language in DEFAULT_ALIASES:
-        cleaned = _clean_alias(alias_text)
-        if cleaned:
-            db.merge(PartyPollAlias(
-                id=uuid.uuid5(uuid.NAMESPACE_DNS, f"alias:{cleaned}"),
-                alias_text=cleaned,
-                official_name=official_name,
-                language=language,
-                auto_created=False,
-            ))
-    db.commit()
-    logger.info("party_poll_aliases: seeded %d default aliases", len(DEFAULT_ALIASES))
+
+    stmt = pg_insert(PartyPollAlias).values(rows).on_conflict_do_nothing(index_elements=["alias_text"])
+    result = db.execute(stmt)
+    inserted = result.rowcount if result.rowcount >= 0 else "?"
+    if inserted:
+        logger.info("party_poll_aliases: seeded %s new aliases (on_conflict_do_nothing)", inserted)
+    # Do NOT commit here — caller owns the transaction
 
 
 def load_alias_map(db) -> dict[str, str]:
