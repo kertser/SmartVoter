@@ -690,15 +690,25 @@ function QuestionBankPanel() {
             </>
           )}
           {job.status === "done" && (
-            <p className="text-xs text-green-700 font-medium">
-              ✅ {a.questionBankDone(job.created ?? 0, job.skipped ?? 0, job.errors ?? 0, job.stale_marked ?? 0)}
-              {job.explanations_generated !== undefined && (
-                <span className="ms-2 text-slate-600">
-                  · {job.explanations_generated} объяснений сгенерировано
-                  {job.explanations_errors ? `, ${job.explanations_errors} ошибок` : ""}
-                </span>
+            <div className="space-y-1">
+              <p className="text-xs text-green-700 font-medium">
+                ✅ {a.questionBankDone(job.created ?? 0, job.skipped ?? 0, job.errors ?? 0, job.stale_marked ?? 0)}
+                {job.explanations_generated !== undefined && (
+                  <span className="ms-2 text-slate-600">
+                    · {job.explanations_generated} объяснений сгенерировано
+                    {job.explanations_errors ? `, ${job.explanations_errors} ошибок` : ""}
+                  </span>
+                )}
+              </p>
+              {job.message && (
+                <p className="text-xs text-slate-500 italic">{job.message}</p>
               )}
-            </p>
+              {(job.created ?? 0) === 0 && (job.errors ?? 0) === 0 && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                  💡 0 questions created. Either all eligible policy items already have questions (try <strong>Force regenerate</strong>), or no policy items are in <em>approved / needs_review / llm_generated</em> status. Run the LLM policy-item pipeline first if you have a fresh data import.
+                </p>
+              )}
+            </div>
           )}
           {job.status === "error" && (
             <p className="text-xs text-red-600">❌ {a.questionBankError} {job.error}</p>

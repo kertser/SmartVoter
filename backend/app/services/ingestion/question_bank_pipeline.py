@@ -652,7 +652,15 @@ def run_question_bank_pipeline(
                     ReviewStatus.approved,
                     ReviewStatus.needs_review,
                     ReviewStatus.llm_generated,
+                    # Also include 'draft' items that have been axis-classified
+                    # (have a directional_axis set) — common after a Knesset data
+                    # import where the policy-item pipeline ran without LLM.
+                    ReviewStatus.draft,
                 ]),
+                # Skip raw/empty items — require at least a directional_axis OR a
+                # non-trivial title so the LLM has enough context to write a question.
+                PolicyItem.directional_axis.isnot(None),
+                PolicyItem.directional_axis != "",
             )
             .all()
         )
@@ -681,10 +689,23 @@ def run_question_bank_pipeline(
         total_pi += len(snapshots)
 
     if total_pi == 0:
+        # Count raw draft items without axis data to give a helpful hint
+        raw_draft_count = db.query(PolicyItem).filter(
+            PolicyItem.human_review_status == ReviewStatus.draft,
+            (PolicyItem.directional_axis.is_(None) | (PolicyItem.directional_axis == "")),
+        ).count()
+        hint = (
+            f" ({raw_draft_count} draft policy items exist but have no directional_axis — "
+            "run the LLM policy-item pipeline first to classify them.)"
+            if raw_draft_count else ""
+        )
         return {
             "created": 0, "skipped": 0, "errors": 0,
             "stale_marked": stale_marked, "total_budget": max_questions,
-            "message": "No new policy items to process (all already have questions).",
+            "message": (
+                "No new policy items to process. All eligible items already have "
+                f"depth-1 questions. Use force_regenerate=True to add more.{hint}"
+            ),
         }
 
     # ── Step 4: Budget allocation across topics ──────────────────────────────
