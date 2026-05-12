@@ -41,7 +41,6 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
       method: req.method,
       headers,
       body: hasBody ? req.body : undefined,
-      // @ts-expect-error - duplex required for streaming POST bodies in Node 18+
       ...(hasBody ? { duplex: "half" } : {}),
     });
 
