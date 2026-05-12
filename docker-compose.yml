@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: smartvoter
       POSTGRES_DB: smartvoter
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -18,7 +18,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -31,7 +31,7 @@ services:
       dockerfile: backend/Dockerfile
     command: uv run uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     env_file:
       - .env
     environment:
@@ -64,7 +64,7 @@ services:
       dockerfile: Dockerfile
     command: npm run dev
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
     depends_on:
@@ -128,5 +128,3 @@ services:
 
 volumes:
   postgres_data:
-
-
