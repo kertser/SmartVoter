@@ -21,9 +21,44 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute("ALTER TYPE vote_value RENAME VALUE 'for_' TO 'for'")
+    # Only rename if 'for_' actually exists in the enum (some DBs were created
+    # with the correct 'for' label already; renaming a non-existent label errors).
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM pg_enum e
+                JOIN pg_type t ON t.oid = e.enumtypid
+                WHERE t.typname = 'vote_value' AND e.enumlabel = 'for_'
+            ) THEN
+                ALTER TYPE vote_value RENAME VALUE 'for_' TO 'for';
+            END IF;
+        END
+        $$;
+        """
+    )
 
 
 def downgrade() -> None:
-    op.execute("ALTER TYPE vote_value RENAME VALUE 'for' TO 'for_'")
+    # Only rename back if 'for' exists (i.e. the upgrade ran successfully).
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM pg_enum e
+                JOIN pg_type t ON t.oid = e.enumtypid
+                WHERE t.typname = 'vote_value' AND e.enumlabel = 'for'
+            ) AND NOT EXISTS (
+                SELECT 1 FROM pg_enum e
+                JOIN pg_type t ON t.oid = e.enumtypid
+                WHERE t.typname = 'vote_value' AND e.enumlabel = 'for_'
+            ) THEN
+                ALTER TYPE vote_value RENAME VALUE 'for' TO 'for_';
+            END IF;
+        END
+        $$;
+        """
+    )
 
