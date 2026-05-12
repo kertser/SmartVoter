@@ -228,6 +228,7 @@ def execute_merge(canonical_id: str, duplicate_ids: list[str], db: Session) -> d
     from backend.app.models.party_lineage_edge import PartyLineageEdge
     from backend.app.models.simulation import PollPartyResult, SimulationPartyResult
     from backend.app.models.party_poll_alias import PartyPollAlias
+    from sqlalchemy import func as sqlfunc
 
     # Validate UUIDs before doing anything — LLM may return truncated/invalid IDs
     try:
@@ -249,6 +250,38 @@ def execute_merge(canonical_id: str, duplicate_ids: list[str], db: Session) -> d
     if not canonical:
         return {"ok": False, "error": f"Canonical {canonical_id} not found"}
 
+    # ── Safety check: ensure the canonical is truly the better entry ──────────
+    # If any "duplicate" has more attached data (positions, lineage, memberships)
+    # than the supposed canonical, swap them so the richer entry is always kept.
+    def _data_score(pi_id: uuid.UUID) -> int:
+        positions = db.query(sqlfunc.count(PartyPosition.id)).filter(
+            PartyPosition.party_instance_id == pi_id).scalar() or 0
+        lineage = db.query(sqlfunc.count(PartyLineageEdge.id)).filter(
+            (PartyLineageEdge.from_party_instance_id == pi_id) |
+            (PartyLineageEdge.to_party_instance_id == pi_id)).scalar() or 0
+        memberships = db.query(sqlfunc.count(PersonPartyMembership.id)).filter(
+            PersonPartyMembership.party_instance_id == pi_id).scalar() or 0
+        latin_bonus = 10 if _is_latin(
+            (db.query(PartyInstance).filter(PartyInstance.id == pi_id).first() or canonical).official_name
+        ) else 0
+        return positions * 3 + lineage * 2 + memberships + latin_bonus
+
+    canonical_score = _data_score(canonical_uuid)
+    for dup_uuid in valid_dup_uuids:
+        dup_score = _data_score(dup_uuid)
+        if dup_score > canonical_score:
+            # Swap: the "duplicate" is actually richer — it becomes the canonical
+            logger.info(
+                "execute_merge: swapping canonical %s (score=%d) ↔ duplicate %s (score=%d)",
+                canonical_uuid, canonical_score, dup_uuid, dup_score,
+            )
+            valid_dup_uuids = [canonical_uuid] + [u for u in valid_dup_uuids if u != dup_uuid]
+            canonical_uuid = dup_uuid
+            canonical = db.query(PartyInstance).filter(PartyInstance.id == canonical_uuid).first()
+            canonical_score = dup_score
+            break
+
+    # ── Re-point all FK references, flushing after each duplicate ────────────
     merged_names: list[str] = []
     brands_to_check: list[uuid.UUID] = []
 
@@ -260,6 +293,7 @@ def execute_merge(canonical_id: str, duplicate_ids: list[str], db: Session) -> d
         merged_names.append(dup.official_name)
         brands_to_check.append(dup.political_brand_id)
 
+        # Re-point all FKs
         for model_cls, col in [
             (PartyPosition, "party_instance_id"),
             (PersonPartyMembership, "party_instance_id"),
@@ -283,9 +317,10 @@ def execute_merge(canonical_id: str, duplicate_ids: list[str], db: Session) -> d
             PartyLineageEdge.to_party_instance_id == dup_uuid
         ).update({"to_party_instance_id": canonical_uuid}, synchronize_session=False)
 
+        # Flush UPDATEs before DELETE — required to avoid FK violation
+        db.flush()
         db.delete(dup)
-
-    db.flush()
+        db.flush()
 
     # Remove orphaned political brands
     for brand_id in set(brands_to_check):
@@ -298,6 +333,7 @@ def execute_merge(canonical_id: str, duplicate_ids: list[str], db: Session) -> d
             brand = db.query(PoliticalBrand).filter(PoliticalBrand.id == brand_id).first()
             if brand:
                 db.delete(brand)
+    db.flush()
 
     return {
         "ok": True,
