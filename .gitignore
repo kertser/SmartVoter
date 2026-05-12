@@ -86,4 +86,5 @@ docker-compose.override.yml
 tmp/
 temp/
 .tmp/
-/backup/smartvoter_backup.json
+backup/
+
