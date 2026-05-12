@@ -278,6 +278,10 @@ export interface LlmOutputRecord {
   created_at?: string;
 }
 
+export async function adminPing(): Promise<{ ok: boolean; password_length: number }> {
+  return adminApiFetch("/api/admin/ping");
+}
+
 export async function adminGetReviewItems(status?: string): Promise<AdminQuestion[]> {
   const qs = status ? `?status=${status}` : "";
   return adminApiFetch<AdminQuestion[]>(`/api/admin/review/items${qs}`);

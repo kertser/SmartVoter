@@ -14,6 +14,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import {
+  adminPing,
   adminGetReviewItems,
   adminApprove,
   adminReject,
@@ -65,7 +66,7 @@ function PasswordGate({ onAuth }: { onAuth: () => void }) {
     // Probe the backend with a lightweight request
     try {
       storeAdminPassword(pw);
-      await adminGetReviewItems("approved"); // uses the stored password
+      await adminPing(); // lightweight auth check — just verifies the password
       onAuth();
     } catch {
       clearAdminPassword();

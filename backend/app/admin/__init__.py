@@ -49,6 +49,14 @@ admin_router = APIRouter(
 )
 
 
+# ── Ping / auth check ─────────────────────────────────────────────────────────
+
+@admin_router.get("/ping")
+def admin_ping(settings: Settings = Depends(get_settings)) -> dict:
+    """Lightweight auth check — returns 200 if the password header is correct."""
+    return {"ok": True, "password_length": len(settings.admin_password)}
+
+
 # ── Review endpoints ──────────────────────────────────────────────────────────
 
 @admin_router.get("/review/items")
