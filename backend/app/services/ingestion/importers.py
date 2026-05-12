@@ -219,17 +219,65 @@ def import_factions(
     - PoliticalBrand (one per unique faction name, if not existing)
     - PartyInstance  (one per faction-knesset combination)
 
-    Deduplication key: official_name + knesset_number.
+    Before creating a new PartyInstance for a Hebrew name, checks the
+    party_poll_aliases table. If the Hebrew name already maps to a canonical
+    English party, the existing party is reused — no duplicate is created.
 
-    Returns {"inserted": N, "updated": N, "skipped": N}.
+    Returns {"inserted": N, "updated": N, "skipped": N, "alias_matched": N}.
     """
+    from backend.app.services.polling.web_polling import _clean_alias, ensure_aliases_seeded
+    from backend.app.models.party_poll_alias import PartyPollAlias
+
+    # Ensure alias table is seeded (idempotent, no commit)
+    ensure_aliases_seeded(db)
+    db.flush()
+
+    # Build alias_text → official_name map
+    alias_map: dict[str, str] = {
+        row.alias_text: row.official_name
+        for row in db.query(PartyPollAlias).all()
+    }
+
     raw = fetch_factions(settings.knesset_api_base_url, knesset_number)
-    inserted = updated = skipped = 0
+    inserted = updated = skipped = alias_matched = 0
 
     for row in raw:
         name_he = row["name_he"]
         faction_id = row["faction_id"]
         source_url = row["source_url"]
+
+        # ── Alias lookup: does this Hebrew name map to a known canonical party? ──
+        cleaned = _clean_alias(name_he)
+        canonical_name = alias_map.get(cleaned)
+        if not canonical_name:
+            # Try substring match
+            for alias_text, off_name in alias_map.items():
+                if alias_text in cleaned or cleaned in alias_text:
+                    canonical_name = off_name
+                    break
+
+        if canonical_name:
+            # Find the canonical PartyInstance (any knesset)
+            canonical_pi = (
+                db.query(PartyInstance)
+                .filter(PartyInstance.official_name == canonical_name)
+                .first()
+            )
+            if canonical_pi:
+                # Update alias to link to this party instance if not already linked
+                alias_row = db.query(PartyPollAlias).filter(
+                    PartyPollAlias.alias_text == cleaned
+                ).first()
+                if alias_row and alias_row.party_instance_id is None:
+                    alias_row.party_instance_id = canonical_pi.id
+                alias_matched += 1
+                logger.debug(
+                    "import_factions: %r → existing canonical %r (alias match)",
+                    name_he, canonical_name,
+                )
+                continue  # do NOT create a duplicate
+
+        # ── No alias match — normal upsert path ──────────────────────────────────
 
         # Find or create PoliticalBrand by canonical_name
         brand = (
@@ -257,7 +305,6 @@ def import_factions(
             .first()
         )
         if existing:
-            # Update status and dates if changed
             new_status = PartyStatus.active if row["is_current"] else PartyStatus.dissolved
             changed = False
             if existing.status != new_status:
@@ -290,26 +337,21 @@ def import_factions(
 
     db.commit()
     logger.info(
-        "import_factions knesset=%d → inserted=%d updated=%d skipped=%d",
-        knesset_number, inserted, updated, skipped,
+        "import_factions knesset=%d → inserted=%d updated=%d skipped=%d alias_matched=%d",
+        knesset_number, inserted, updated, skipped, alias_matched,
     )
 
-    # Auto-deduplicate: merge any Hebrew Knesset-imported names that duplicate
-    # existing seed/English entries for the same party.
-    if inserted > 0 or updated > 0:
+    # LLM dedup only runs for truly new unrecognised parties (alias_matched < total)
+    if inserted > 0:
         from backend.app.services.ingestion.party_dedup_service import auto_deduplicate_parties
-        dedup = auto_deduplicate_parties(
-            db,
-            api_key=settings.openai_api_key if settings.has_openai else None,
-            model=getattr(settings, "openai_model", "gpt-4o-mini"),
-        )
+        dedup = auto_deduplicate_parties(db, api_key=None)  # rule-based only, fast
         if dedup["merged_count"] > 0:
             logger.info(
-                "import_factions: auto-dedup merged %d duplicate party instances (%s)",
-                dedup["merged_count"], dedup["source"],
+                "import_factions: rule-based dedup merged %d remaining duplicates",
+                dedup["merged_count"],
             )
 
-    return {"inserted": inserted, "updated": updated, "skipped": skipped}
+    return {"inserted": inserted, "updated": updated, "skipped": skipped, "alias_matched": alias_matched}
 
 
 # ── Persons ────────────────────────────────────────────────────────────────────
