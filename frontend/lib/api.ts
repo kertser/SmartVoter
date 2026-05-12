@@ -3,8 +3,11 @@
  * Base URL comes from NEXT_PUBLIC_API_URL environment variable.
  */
 
+// Use an explicit API URL only when provided (e.g. for local dev outside Docker).
+// In production the Next.js rewrite proxies /api/* → backend internally, so an
+// empty base URL (relative paths) is correct and avoids hitting the unexposed port.
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_URL || "";
 
 // ── Admin password (stored in sessionStorage, never sent to analytics) ────────
 
