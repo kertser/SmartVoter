@@ -525,6 +525,7 @@ const he: Translations = {
     questionBrowserSelectAll: "בחר הכל",
     questionBrowserClearSelection: "בטל בחירה",
     questionBrowserGenerateExplainBtn: (n: number) => n > 0 ? `💬 צור הסברים (${n} נבחרו)` : "💬 צור הסברים",
+    questionBrowserGenerateAllExplainBtn: "💬 צור הסברים לכל השאלות",
     questionBrowserExplainRunning: (done: number, total: number) => `מייצר הסברים… ${done} / ${total}`,
     questionBrowserExplainDone: (done: number, errors: number) => `הושלם. ${done} הסברים נוצרו${errors > 0 ? `, ${errors} שגיאות` : ""}.`,
     questionBrowserExplainError: "יצירת ההסברים נכשלה.",

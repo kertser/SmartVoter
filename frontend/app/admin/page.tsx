@@ -677,6 +677,29 @@ function QuestionBrowserSection() {
     }
   };
 
+  const handleGenerateAllExplanations = async () => {
+    setExplainMsg(null);
+    stopExplainPoll();
+    try {
+      const job = await adminBatchGenerateExplanations({ all_questions: true });
+      setExplainJob(job);
+      explainPollRef.current = setInterval(async () => {
+        try {
+          const status = await adminGetBatchExplainStatus(job.job_id);
+          setExplainJob(status);
+          if (status.status === "done" || status.status === "error") {
+            stopExplainPoll();
+            if (status.status === "done") {
+              setExplainMsg(a.questionBrowserExplainDone(status.completed, status.errors));
+            }
+          }
+        } catch { stopExplainPoll(); }
+      }, 2000);
+    } catch {
+      setExplainMsg(a.questionBrowserExplainError);
+    }
+  };
+
   const isExplainRunning = explainJob?.status === "queued" || explainJob?.status === "running";
 
   return (
@@ -741,6 +764,16 @@ function QuestionBrowserSection() {
               {isExplainRunning
                 ? a.questionBrowserExplainRunning(explainJob?.completed ?? 0, explainJob?.total ?? 1)
                 : a.questionBrowserGenerateExplainBtn(selected.size)}
+            </button>
+            <button
+              onClick={handleGenerateAllExplanations}
+              disabled={isExplainRunning}
+              title="Generate explanations for every question in the database (not just visible ones)"
+              className="rounded-lg bg-indigo-600 px-3 py-1 text-xs text-white font-medium hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {isExplainRunning
+                ? a.questionBrowserExplainRunning(explainJob?.completed ?? 0, explainJob?.total ?? 1)
+                : a.questionBrowserGenerateAllExplainBtn}
             </button>
           </div>
 

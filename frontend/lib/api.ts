@@ -1106,7 +1106,8 @@ export interface BatchExplainJob {
 }
 
 export async function adminBatchGenerateExplanations(params: {
-  question_ids: string[];
+  question_ids?: string[];
+  all_questions?: boolean;
   langs?: string[];
   max_workers?: number;
 }): Promise<BatchExplainJob> {

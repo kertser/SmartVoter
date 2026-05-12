@@ -503,6 +503,7 @@ export interface Translations {
     questionBrowserSelectAll: string;
     questionBrowserClearSelection: string;
     questionBrowserGenerateExplainBtn: (n: number) => string;
+    questionBrowserGenerateAllExplainBtn: string;
     questionBrowserExplainRunning: (done: number, total: number) => string;
     questionBrowserExplainDone: (done: number, errors: number) => string;
     questionBrowserExplainError: string;

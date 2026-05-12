@@ -518,7 +518,8 @@ _explain_jobs: dict[str, dict] = {}
 
 
 class GenerateExplanationsBody(BaseModel):
-    question_ids: list[str]
+    question_ids: list[str] = []
+    all_questions: bool = False  # when True, ignores question_ids and generates for ALL servable questions
     langs: list[str] = ["en", "he", "ru"]
     max_workers: int = 4
 
@@ -638,16 +639,37 @@ def generate_explanations_batch(
             status_code=400,
             detail="OPENAI_API_KEY not configured. LLM explanations require OpenAI.",
         )
+
+    # Resolve question IDs
+    if body.all_questions:
+        from backend.app.db.session import SessionLocal as _SL
+        from backend.app.models.policy_item import ReviewStatus as _RS
+        _tmp_db = _SL()
+        try:
+            _qs = (
+                _tmp_db.query(Question)
+                .filter(Question.human_review_status.in_([_RS.approved, _RS.llm_generated]))
+                .all()
+            )
+            question_ids = [str(q.id) for q in _qs]
+        finally:
+            _tmp_db.close()
+    else:
+        question_ids = body.question_ids
+
+    if not question_ids:
+        raise HTTPException(status_code=400, detail="No question IDs provided.")
+
     job_id = str(uuid.uuid4())[:8]
     _explain_jobs[job_id] = {
         "job_id": job_id,
         "status": "queued",
-        "total": len(body.question_ids) * len(body.langs),
+        "total": len(question_ids) * len(body.langs),
         "completed": 0,
         "errors": 0,
     }
     background_tasks.add_task(
-        _run_explain_batch, job_id, body.question_ids, body.langs, body.max_workers, settings
+        _run_explain_batch, job_id, question_ids, body.langs, body.max_workers, settings
     )
     return {"job_id": job_id, "status": "queued", "total": _explain_jobs[job_id]["total"]}
 

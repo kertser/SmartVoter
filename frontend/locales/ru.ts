@@ -526,6 +526,7 @@ const ru: Translations = {
     questionBrowserSelectAll: "Выбрать все",
     questionBrowserClearSelection: "Сбросить выбор",
     questionBrowserGenerateExplainBtn: (n: number) => n > 0 ? `💬 Сгенерировать объяснения (${n} выбрано)` : "💬 Сгенерировать объяснения",
+    questionBrowserGenerateAllExplainBtn: "💬 Сгенерировать для ВСЕХ вопросов",
     questionBrowserExplainRunning: (done: number, total: number) => `Генерация объяснений… ${done} / ${total}`,
     questionBrowserExplainDone: (done: number, errors: number) => `Готово. ${done} объяснений сгенерировано${errors > 0 ? `, ${errors} ошибок` : ""}.`,
     questionBrowserExplainError: "Не удалось запустить генерацию объяснений.",

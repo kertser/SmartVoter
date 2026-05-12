@@ -528,6 +528,7 @@ const en: Translations = {
     questionBrowserSelectAll: "Select all",
     questionBrowserClearSelection: "Clear selection",
     questionBrowserGenerateExplainBtn: (n) => n > 0 ? `💬 Generate explanations (${n} selected)` : "💬 Generate explanations",
+    questionBrowserGenerateAllExplainBtn: "💬 Generate for ALL questions",
     questionBrowserExplainRunning: (done, total) => `Generating explanations… ${done} / ${total}`,
     questionBrowserExplainDone: (done, errors) => `Done. ${done} explanations generated${errors > 0 ? `, ${errors} errors` : ""}.`,
     questionBrowserExplainError: "Failed to start explanation generation.",
