@@ -22,32 +22,79 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# ── Party name normaliser ──────────────────────────────────────────────────────
-# Maps any variant found in polls (He / En / transliteration) → official_name
-# in our party_instances table.  Add new rows as parties form/merge/rebrand.
+# ── Default alias seed data ────────────────────────────────────────────────────
+# This is only used to populate the party_poll_aliases table on first run.
+# After that, all aliases are managed via the database and the admin API.
+# Format: (alias_text, official_name, language)
 
-PARTY_ALIASES: list[tuple[list[str], str]] = [
-    (["הליכוד", "ליכוד", "likud"],                          "Likud"),
-    (["יש עתיד", "yesh atid"],                              "Yesh Atid"),
-    (["מחנה ממלכתי", "mamlakhtit", "national unity",
-      "מחנה לאומי"],                                         "Mamlakhtit"),
-    (["ש\"ס", "שס", "shas"],                                "Shas"),
-    (["יהדות התורה", "yahadut hatorah", "united torah"],    "Yahadut HaTorah"),
-    (["ישראל ביתנו", "yisrael beiteinu", "lieberman"],      "Yisrael Beiteinu"),
-    (["הדמוקרטים", "דמוקרטים", "the democrats", "democrats",
-      "גולן", "yair golan"],                                 "HaDemokratim"),
-    (["עוצמה יהודית", "otzma yehudit", "jewish power",
-      "ben gvir", "בן גביר"],                               "OtzmaYehudit"),
-    (["הציונות הדתית", "religious zionism", "smotrich",
-      "סמוטריץ"],                                            "Hatzionut HaDatit 26"),
-    (["רע\"מ", "רעם", "raam", "united arab list",
-      "mansour", "מנסור עבאס"],                              "Raam"),
-    (["חד\"ש", "חדש", "תע\"ל", "תעל", "hadash", "taal",
-      "hadash-taal", "joint list"],                          "Hadash-Taal"),
-    # ── New 2026 parties ───────────────────────────────────────────────────────
-    (["ביחד", "yachad", "bennett", "בנט ולפיד",
-      "lapid bennett", "bennett lapid"],                     "Yachad 2026"),
-    (["ישר", "yashar", "eisenkot", "איזנקוט"],              "Yashar"),
+DEFAULT_ALIASES: list[tuple[str, str, str]] = [
+    # Likud
+    ("הליכוד", "Likud", "he"), ("ליכוד", "Likud", "he"), ("likud", "Likud", "en"),
+    # Yesh Atid
+    ("יש עתיד", "Yesh Atid", "he"), ("yesh atid", "Yesh Atid", "translit"),
+    # Mamlakhtit / National Unity
+    ("מחנה ממלכתי", "Mamlakhtit", "he"), ("mamlakhtit", "Mamlakhtit", "translit"),
+    ("national unity", "Mamlakhtit", "en"), ("מחנה לאומי", "Mamlakhtit", "he"),
+    # Shas
+    ('ש"ס', "Shas", "he"), ("שס", "Shas", "he"), ("shas", "Shas", "translit"),
+    # Yahadut HaTorah
+    ("יהדות התורה", "Yahadut HaTorah", "he"),
+    ("yahadut hatorah", "Yahadut HaTorah", "translit"),
+    ("united torah", "Yahadut HaTorah", "en"),
+    # Yisrael Beiteinu
+    ("ישראל ביתנו", "Yisrael Beiteinu", "he"),
+    ("yisrael beiteinu", "Yisrael Beiteinu", "translit"),
+    ("lieberman", "Yisrael Beiteinu", "en"),
+    # HaDemokratim (Democrats / Golan)
+    ("הדמוקרטים", "HaDemokratim", "he"), ("דמוקרטים", "HaDemokratim", "he"),
+    ("the democrats", "HaDemokratim", "en"), ("democrats", "HaDemokratim", "en"),
+    ("גולן", "HaDemokratim", "he"), ("yair golan", "HaDemokratim", "en"),
+    # Otzma Yehudit
+    ("עוצמה יהודית", "OtzmaYehudit", "he"),
+    ("otzma yehudit", "OtzmaYehudit", "translit"),
+    ("jewish power", "OtzmaYehudit", "en"),
+    ("ben gvir", "OtzmaYehudit", "en"), ("בן גביר", "OtzmaYehudit", "he"),
+    # Hatzionut HaDatit
+    ("הציונות הדתית", "Hatzionut HaDatit 26", "he"),
+    ("religious zionism", "Hatzionut HaDatit 26", "en"),
+    ("smotrich", "Hatzionut HaDatit 26", "en"),
+    ("סמוטריץ", "Hatzionut HaDatit 26", "he"),
+    # Raam
+    ('רע"מ', "Raam", "he"), ("רעם", "Raam", "he"), ("raam", "Raam", "translit"),
+    ("united arab list", "Raam", "en"),
+    ("mansour", "Raam", "en"), ("מנסור עבאס", "Raam", "he"),
+    # Hadash-Taal
+    ('חד"ש', "Hadash-Taal", "he"), ("חדש", "Hadash-Taal", "he"),
+    ('תע"ל', "Hadash-Taal", "he"), ("תעל", "Hadash-Taal", "he"),
+    ("hadash", "Hadash-Taal", "translit"), ("taal", "Hadash-Taal", "translit"),
+    ("hadash-taal", "Hadash-Taal", "translit"), ("joint list", "Hadash-Taal", "en"),
+    # Yachad 2026
+    ("ביחד", "Yachad 2026", "he"), ("yachad", "Yachad 2026", "translit"),
+    ("bennett", "Yachad 2026", "en"), ("בנט ולפיד", "Yachad 2026", "he"),
+    ("lapid bennett", "Yachad 2026", "en"), ("bennett lapid", "Yachad 2026", "en"),
+    # Yashar
+    ("ישר", "Yashar", "he"), ("yashar", "Yashar", "translit"),
+    ("eisenkot", "Yashar", "en"), ("איזנקוט", "Yashar", "he"),
+    # Kahol Lavan
+    ("כחול לבן", "Kahol Lavan", "he"), ("blue and white", "Kahol Lavan", "en"),
+    ("blue & white", "Kahol Lavan", "en"), ("kahol lavan", "Kahol Lavan", "translit"),
+    ("gantz", "Kahol Lavan", "en"), ("גנץ", "Kahol Lavan", "he"),
+    # HaMiluimnikiim (The Reservists)
+    ("המילואימניקים", "HaMiluimnikiim", "he"),
+    ("מילואימניקים", "HaMiluimnikiim", "he"),
+    ("reservists", "HaMiluimnikiim", "en"),
+    ("the reservists", "HaMiluimnikiim", "en"),
+    # Avoda
+    ("העבודה", "Avoda", "he"), ("labor", "Avoda", "en"),
+    ("labour", "Avoda", "en"), ("avoda", "Avoda", "translit"),
+    # Meretz
+    ("מרצ", "Meretz", "he"), ("meretz", "Meretz", "translit"),
+    # New Hope
+    ("תקווה חדשה", "New Hope", "he"), ("tikvah hadasha", "New Hope", "translit"),
+    ("new hope", "New Hope", "en"), ("סער", "New Hope", "he"), ("saar", "New Hope", "translit"),
+    # Balad
+    ("בלד", "Balad", "he"), ("balad", "Balad", "translit"),
+    ("national democratic", "Balad", "en"),
 ]
 
 # Aggregate / meta labels returned by some polls — not real parties, skip silently.
@@ -57,27 +104,91 @@ POLL_AGGREGATE_LABELS: set[str] = {
 }
 
 
-def _normalize_party_name(name_he: Optional[str], name_en: Optional[str]) -> Optional[str]:
-    """Return the canonical official_name for a party, or None if unrecognised."""
-    # Strip surrounding punctuation/whitespace (e.g. 'ישר!' → 'ישר')
+# ── DB alias helpers ───────────────────────────────────────────────────────────
+
+def _clean_alias(s: str) -> str:
+    """Lowercase and strip punctuation for consistent matching."""
     _strip = str.maketrans("", "", string.punctuation)
+    return s.strip().translate(_strip).strip().lower()
 
-    def _clean(s: str) -> str:
-        return s.strip().translate(_strip).strip().lower()
 
+def ensure_aliases_seeded(db) -> None:
+    """
+    Populate party_poll_aliases from DEFAULT_ALIASES if the table is empty.
+    Safe to call on every startup — no-op if already seeded.
+    """
+    from backend.app.models.party_poll_alias import PartyPollAlias
+    if db.query(PartyPollAlias).count() > 0:
+        return
+    for alias_text, official_name, language in DEFAULT_ALIASES:
+        cleaned = _clean_alias(alias_text)
+        if cleaned:
+            db.merge(PartyPollAlias(
+                id=uuid.uuid5(uuid.NAMESPACE_DNS, f"alias:{cleaned}"),
+                alias_text=cleaned,
+                official_name=official_name,
+                language=language,
+                auto_created=False,
+            ))
+    db.commit()
+    logger.info("party_poll_aliases: seeded %d default aliases", len(DEFAULT_ALIASES))
+
+
+def load_alias_map(db) -> dict[str, str]:
+    """
+    Load all aliases from DB into a dict: cleaned_alias_text → official_name.
+    Called once per poll ingestion run.
+    """
+    from backend.app.models.party_poll_alias import PartyPollAlias
+    ensure_aliases_seeded(db)
+    return {row.alias_text: row.official_name for row in db.query(PartyPollAlias).all()}
+
+
+def _normalize_party_name(
+    name_he: Optional[str],
+    name_en: Optional[str],
+    alias_map: dict[str, str],
+) -> Optional[str]:
+    """Return the canonical official_name for a party, or None if unrecognised."""
     candidates = []
     if name_he:
-        candidates.append(_clean(name_he))
+        candidates.append(_clean_alias(name_he))
     if name_en:
-        candidates.append(_clean(name_en))
+        candidates.append(_clean_alias(name_en))
 
-    for aliases, official in PARTY_ALIASES:
-        for alias in aliases:
-            clean_alias = _clean(alias)
-            for cand in candidates:
-                if clean_alias in cand or cand in clean_alias:
-                    return official
+    for cand in candidates:
+        # Exact match first
+        if cand in alias_map:
+            return alias_map[cand]
+        # Substring match
+        for alias, official in alias_map.items():
+            if alias in cand or cand in alias:
+                return official
     return None
+
+
+def _auto_create_alias(name_he: Optional[str], name_en: Optional[str], db) -> str:
+    """
+    Insert an unrecognised party as a new alias row (auto_created=True)
+    so an admin can later link it to a party instance.
+    Returns the official_name used (raw name).
+    """
+    from backend.app.models.party_poll_alias import PartyPollAlias
+    raw_name = name_he or name_en or "unknown"
+    cleaned = _clean_alias(raw_name)
+    language = "he" if name_he else "en"
+    existing = db.query(PartyPollAlias).filter(PartyPollAlias.alias_text == cleaned).first()
+    if not existing:
+        db.add(PartyPollAlias(
+            alias_text=cleaned,
+            official_name=raw_name,
+            language=language,
+            auto_created=True,
+            notes="Auto-created from unrecognised poll entry. Link to a party instance via admin.",
+        ))
+        db.flush()
+        logger.info("party_poll_aliases: auto-created alias %r → %r", cleaned, raw_name)
+    return raw_name
 
 
 def _is_aggregate_label(name_he: Optional[str], name_en: Optional[str]) -> bool:
@@ -262,10 +373,14 @@ def _ingest_web_polls(web_data: dict, db) -> tuple[int, int, list[str]]:
     Persist web-fetched polls to the database.
 
     Returns (polls_stored, parties_stored, warnings).
-    Any party name that could not be normalised is returned in warnings.
+    Unrecognised party names are auto-inserted into party_poll_aliases
+    (auto_created=True) and stored in poll_party_results without a party link.
     """
     from backend.app.models.simulation import Poll, PollPartyResult, Pollster, SimulationRun, SimulationPartyResult, CoalitionScenario, CoalitionScenarioMember
     from backend.app.models.party_instance import PartyInstance
+
+    # Load alias map from DB (seeds defaults if table is empty)
+    alias_map = load_alias_map(db)
 
     # Build official_name → party_instance_id map
     party_id_map: dict[str, uuid.UUID] = {
@@ -289,7 +404,6 @@ def _ingest_web_polls(web_data: dict, db) -> tuple[int, int, list[str]]:
     for poll_raw in web_data.get("polls", []):
         pollster_name = poll_raw.get("pollster", "Unknown")
 
-        # Get or create Pollster row
         pollster = db.query(Pollster).filter(Pollster.name == pollster_name).first()
         if not pollster:
             pollster = Pollster(name=pollster_name, country="IL", reliability_score=0.70)
@@ -320,7 +434,6 @@ def _ingest_web_polls(web_data: dict, db) -> tuple[int, int, list[str]]:
             share_pct = p.get("vote_share_percent", 0.0)
             seats = p.get("seats", 0)
 
-            # Convert to vote_share fraction
             if share_pct:
                 vote_share = share_pct / 100.0
             elif seats:
@@ -331,15 +444,19 @@ def _ingest_web_polls(web_data: dict, db) -> tuple[int, int, list[str]]:
             if vote_share < 0.030:   # below threshold — skip
                 continue
 
-            # Silently skip known aggregate/meta labels
             if _is_aggregate_label(name_he, name_en):
                 continue
 
-            official_name = _normalize_party_name(name_he, name_en)
+            official_name = _normalize_party_name(name_he, name_en, alias_map)
             if not official_name:
-                label = name_he or name_en or "unknown"
-                warnings.append(f"Unrecognised party in poll: {label!r}")
-                continue
+                # Auto-create alias in DB for admin review, store poll result without party link
+                official_name = _auto_create_alias(name_he, name_en, db)
+                # Reload alias map so subsequent polls in this batch can find it
+                alias_map[_clean_alias(official_name)] = official_name
+                warnings.append(
+                    f"Auto-created alias for unrecognised party {official_name!r} "
+                    f"(needs admin review at /admin → Poll Aliases)"
+                )
 
             pi_id = party_id_map.get(official_name)
             db.add(PollPartyResult(

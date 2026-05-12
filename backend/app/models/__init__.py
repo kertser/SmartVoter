@@ -20,6 +20,7 @@ from backend.app.models.user_session import UserSession
 from backend.app.models.user_answer import UserAnswer
 from backend.app.models.recommendation_run import RecommendationRun
 from backend.app.models.llm_audit import LlmPromptVersion, LlmRun, LlmOutput
+from backend.app.models.party_poll_alias import PartyPollAlias
 from backend.app.models.simulation import (
     Pollster, Poll, PollPartyResult,
     HistoricalElectionResult, HistoricalPartyResult,
@@ -41,5 +42,6 @@ __all__ = [
     "HistoricalElectionResult", "HistoricalPartyResult",
     "SimulationRun", "SimulationPartyResult",
     "CoalitionConstraint", "CoalitionScenario", "CoalitionScenarioMember",
+    "PartyPollAlias",
 ]
 

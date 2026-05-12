@@ -57,6 +57,96 @@ def admin_ping(settings: Settings = Depends(get_settings)) -> dict:
     return {"ok": True, "password_length": len(settings.admin_password)}
 
 
+# ── Party poll aliases ────────────────────────────────────────────────────────
+
+class AliasIn(BaseModel):
+    alias_text: str
+    official_name: str
+    language: str = "any"
+    notes: str | None = None
+
+class AliasUpdate(BaseModel):
+    official_name: str | None = None
+    language: str | None = None
+    notes: str | None = None
+    party_instance_id: str | None = None  # UUID string or null to unlink
+
+
+@admin_router.get("/poll-aliases")
+def list_poll_aliases(db: Session = Depends(get_db)) -> list[dict]:
+    """List all party poll aliases."""
+    from backend.app.models.party_poll_alias import PartyPollAlias
+    rows = db.query(PartyPollAlias).order_by(PartyPollAlias.official_name, PartyPollAlias.alias_text).all()
+    return [
+        {
+            "id": str(r.id),
+            "alias_text": r.alias_text,
+            "official_name": r.official_name,
+            "party_instance_id": str(r.party_instance_id) if r.party_instance_id else None,
+            "language": r.language,
+            "auto_created": r.auto_created,
+            "notes": r.notes,
+            "created_at": r.created_at.isoformat(),
+        }
+        for r in rows
+    ]
+
+
+@admin_router.post("/poll-aliases")
+def create_poll_alias(body: AliasIn, db: Session = Depends(get_db)) -> dict:
+    """Create a new party poll alias."""
+    from backend.app.models.party_poll_alias import PartyPollAlias
+    from backend.app.services.polling.web_polling import _clean_alias
+    cleaned = _clean_alias(body.alias_text)
+    if db.query(PartyPollAlias).filter(PartyPollAlias.alias_text == cleaned).first():
+        raise HTTPException(status_code=400, detail=f"Alias {cleaned!r} already exists.")
+    row = PartyPollAlias(
+        alias_text=cleaned,
+        official_name=body.official_name,
+        language=body.language,
+        notes=body.notes,
+        auto_created=False,
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return {"id": str(row.id), "alias_text": row.alias_text, "official_name": row.official_name}
+
+
+@admin_router.patch("/poll-aliases/{alias_id}")
+def update_poll_alias(alias_id: str, body: AliasUpdate, db: Session = Depends(get_db)) -> dict:
+    """Update an alias (link to party instance, rename, etc.)."""
+    from backend.app.models.party_poll_alias import PartyPollAlias
+    import uuid as _uuid
+    row = db.query(PartyPollAlias).filter(PartyPollAlias.id == _uuid.UUID(alias_id)).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Alias not found.")
+    if body.official_name is not None:
+        row.official_name = body.official_name
+    if body.language is not None:
+        row.language = body.language
+    if body.notes is not None:
+        row.notes = body.notes
+    if body.party_instance_id is not None:
+        row.party_instance_id = _uuid.UUID(body.party_instance_id) if body.party_instance_id else None
+    row.auto_created = False  # mark as reviewed
+    db.commit()
+    return {"id": str(row.id), "alias_text": row.alias_text, "official_name": row.official_name}
+
+
+@admin_router.delete("/poll-aliases/{alias_id}")
+def delete_poll_alias(alias_id: str, db: Session = Depends(get_db)) -> dict:
+    """Delete a party poll alias."""
+    from backend.app.models.party_poll_alias import PartyPollAlias
+    import uuid as _uuid
+    row = db.query(PartyPollAlias).filter(PartyPollAlias.id == _uuid.UUID(alias_id)).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Alias not found.")
+    db.delete(row)
+    db.commit()
+    return {"deleted": alias_id}
+
+
 # ── Review endpoints ──────────────────────────────────────────────────────────
 
 @admin_router.get("/review/items")
