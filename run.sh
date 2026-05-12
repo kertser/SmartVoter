@@ -53,6 +53,7 @@ _get_env() {
 
 _PG_PORT=$(_get_env POSTGRES_PORT 5432)
 _FRONTEND_PORT=$(_get_env FRONTEND_PORT 3000)
+_BACKEND_PORT=$(_get_env BACKEND_PORT 8001)
 _PG_USER=$(_get_env POSTGRES_USER smartvoter)
 _PG_PASSWORD=$(_get_env POSTGRES_PASSWORD smartvoter)
 _PG_DB=$(_get_env POSTGRES_DB smartvoter)
@@ -122,8 +123,8 @@ echo
 echo " [OK] All services are running in Docker:"
 echo
 echo "       Frontend  -->  http://localhost:${_FRONTEND_PORT}"
-echo "       Backend   -->  http://localhost:8000"
-echo "       API docs  -->  http://localhost:8000/docs"
+echo "       Backend   -->  http://localhost:${_BACKEND_PORT}"
+echo "       API docs  -->  http://localhost:${_BACKEND_PORT}/docs"
 echo
 echo " To view live logs:"
 echo "       docker compose logs -f frontend"
