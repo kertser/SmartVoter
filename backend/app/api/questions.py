@@ -806,8 +806,8 @@ def explain_question(
         .first()
     )
     if cached:
-        logger.debug(
-            "explanation cache hit: question_id=%s lang=%s", question_id, lang
+        logger.info(
+            "explanation cache hit (served from DB, no LLM): question_id=%s lang=%s", question_id, lang
         )
         topic_name_str = ""
         if q.topic_id:
@@ -919,7 +919,7 @@ def explain_question(
                 db.add(expl)
                 db.commit()
                 logger.info(
-                    "explanation cached: question_id=%s lang=%s", question_id, lang
+                    "explanation generated+cached (first time): question_id=%s lang=%s", question_id, lang
                 )
             except Exception as cache_exc:
                 db.rollback()
