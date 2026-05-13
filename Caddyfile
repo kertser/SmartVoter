@@ -1,0 +1,33 @@
+smartvoter.alpha-numerical.com {
+    # Automatic HTTPS via Let's Encrypt (Caddy handles cert issuance & renewal)
+
+    # Frontend (Next.js)
+    reverse_proxy frontend:3000
+
+    # Backend API — proxy /api/* and /health to the FastAPI container
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+    handle /health {
+        reverse_proxy backend:8000
+    }
+    handle /docs {
+        reverse_proxy backend:8000
+    }
+    handle /openapi.json {
+        reverse_proxy backend:8000
+    }
+
+    # Compression
+    encode gzip
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+}
+

@@ -13,6 +13,21 @@
 #   CORS_ORIGINS           — comma-separated allowed origins (e.g. https://yourdomain.com)
 
 services:
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
   postgres:
     image: postgres:16
     restart: always
@@ -48,8 +63,7 @@ services:
     restart: always
     # Production: no --reload, multiple workers
     command: uv run uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --workers 2 --no-access-log
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
+    # No host port exposure — traffic comes only through Caddy
     env_file:
       - .env
     environment:
@@ -78,8 +92,7 @@ services:
         # Do NOT set this to the backend port — it must not be exposed to browsers.
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
     restart: always
-    ports:
-      - "3000:3000"
+    # No host port exposure — traffic comes only through Caddy
     environment:
       NODE_ENV: production
       # Internal URL used by the Next.js server-side proxy (app/api/[...path]/route.ts).
@@ -125,4 +138,6 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  caddy_data:
+  caddy_config:
 

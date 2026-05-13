@@ -82,6 +82,30 @@ export default function HomePage() {
         </p>
       </div>
 
+      {/* CTAs — placed prominently right below the hero headline */}
+      <div className="flex flex-wrap gap-4 justify-center">
+        <button
+          onClick={handleStartFresh}
+          className="rounded-xl bg-brand-600 px-10 py-4 text-white text-base font-semibold hover:bg-brand-700 active:scale-[0.98] transition-all shadow-lg shadow-brand-200 ring-2 ring-brand-600 ring-offset-2"
+        >
+          {h.ctaStart}
+        </button>
+        <Link
+          href="/methodology"
+          className="rounded-xl border-2 border-slate-300 bg-white px-10 py-4 text-slate-700 text-base font-semibold hover:bg-slate-50 hover:border-slate-400 active:scale-[0.98] transition-all shadow-sm"
+        >
+          {h.ctaMethodology}
+        </Link>
+        {prevSessionId && (
+          <Link
+            href={`/results?session_id=${prevSessionId}`}
+            className="rounded-xl border-2 border-brand-200 bg-brand-50 px-10 py-4 text-brand-700 text-base font-semibold hover:bg-brand-100 transition-all"
+          >
+            {h.ctaViewPrevResults}
+          </Link>
+        )}
+      </div>
+
       {/* Disclaimer (AGENTS.MD Section 14.2 required text) */}
       <div className="max-w-xl rounded-xl border border-slate-200 bg-white p-6 text-left shadow-sm space-y-2">
         <p className="text-sm font-semibold text-slate-700">
@@ -92,30 +116,6 @@ export default function HomePage() {
             <li key={i}>{item}</li>
           ))}
         </ul>
-      </div>
-
-      {/* CTAs */}
-      <div className="flex flex-wrap gap-4 justify-center">
-        <button
-          onClick={handleStartFresh}
-          className="rounded-lg bg-brand-600 px-8 py-3 text-white font-medium hover:bg-brand-700 transition-colors shadow-sm"
-        >
-          {h.ctaStart}
-        </button>
-        <Link
-          href="/methodology"
-          className="rounded-lg border border-slate-300 bg-white px-8 py-3 text-slate-700 font-medium hover:bg-slate-50 transition-colors"
-        >
-          {h.ctaMethodology}
-        </Link>
-        {prevSessionId && (
-          <Link
-            href={`/results?session_id=${prevSessionId}`}
-            className="rounded-lg border border-brand-200 bg-brand-50 px-8 py-3 text-brand-700 font-medium hover:bg-brand-100 transition-colors"
-          >
-            {h.ctaViewPrevResults}
-          </Link>
-        )}
       </div>
 
       {/* Trust indicators */}
