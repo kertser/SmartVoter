@@ -126,6 +126,8 @@ echo "       Frontend  -->  http://localhost:${_FRONTEND_PORT}"
 echo "       Backend   -->  http://localhost:${_BACKEND_PORT}"
 echo "       API docs  -->  http://localhost:${_BACKEND_PORT}/docs"
 echo
+echo " Tip: for production with HTTPS, use:  ./run-prod.sh"
+echo
 echo " To view live logs:"
 echo "       docker compose logs -f frontend"
 echo "       docker compose logs -f backend"
