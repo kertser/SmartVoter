@@ -102,14 +102,6 @@ echo "[5/5] Building and starting backend and frontend containers..."
 docker compose up -d --build backend frontend
 echo "      Containers started."
 
-# ── Start Caddy if production or domain is configured ─────────────────────
-_USE_CADDY=false
-if [ "$_APP_ENV" = "production" ] || [ -n "$_DOMAIN" ]; then
-    _USE_CADDY=true
-    echo "      Starting Caddy (HTTPS reverse proxy for ${_DOMAIN})..."
-    docker compose up -d caddy
-    echo "      Caddy started."
-fi
 
 # ── Wait for frontend to be ready ────────────────────────────────────────
 echo
@@ -133,14 +125,9 @@ echo " Frontend is ready."
 echo
 echo " [OK] All services are running in Docker:"
 echo
-if [ "$_USE_CADDY" = "true" ]; then
-    echo "       Site      -->  https://${_DOMAIN}"
-    echo "       API docs  -->  https://${_DOMAIN}/docs"
-else
-    echo "       Frontend  -->  http://localhost:${_FRONTEND_PORT}"
-    echo "       Backend   -->  http://localhost:${_BACKEND_PORT}"
-    echo "       API docs  -->  http://localhost:${_BACKEND_PORT}/docs"
-fi
+echo "       Frontend  -->  http://localhost:${_FRONTEND_PORT}"
+echo "       Backend   -->  http://localhost:${_BACKEND_PORT}"
+echo "       API docs  -->  http://localhost:${_BACKEND_PORT}/docs"
 echo
 echo " Tip: for production with HTTPS, use:  ./run-prod.sh"
 echo
