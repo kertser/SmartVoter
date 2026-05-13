@@ -57,6 +57,8 @@ _BACKEND_PORT=$(_get_env BACKEND_PORT 8001)
 _PG_USER=$(_get_env POSTGRES_USER smartvoter)
 _PG_PASSWORD=$(_get_env POSTGRES_PASSWORD smartvoter)
 _PG_DB=$(_get_env POSTGRES_DB smartvoter)
+_APP_ENV=$(_get_env APP_ENV development)
+_DOMAIN=$(_get_env DOMAIN "")
 
 # Build a local DATABASE_URL that always points at the Docker-exposed postgres.
 # This overrides whatever DATABASE_URL the host .env may contain (which may use
@@ -100,6 +102,15 @@ echo "[5/5] Building and starting backend and frontend containers..."
 docker compose up -d --build backend frontend
 echo "      Containers started."
 
+# ── Start Caddy if production or domain is configured ─────────────────────
+_USE_CADDY=false
+if [ "$_APP_ENV" = "production" ] || [ -n "$_DOMAIN" ]; then
+    _USE_CADDY=true
+    echo "      Starting Caddy (HTTPS reverse proxy for ${_DOMAIN})..."
+    docker compose up -d caddy
+    echo "      Caddy started."
+fi
+
 # ── Wait for frontend to be ready ────────────────────────────────────────
 echo
 echo " Waiting for frontend to compile (first startup can take ~60 seconds)..."
@@ -122,9 +133,14 @@ echo " Frontend is ready."
 echo
 echo " [OK] All services are running in Docker:"
 echo
-echo "       Frontend  -->  http://localhost:${_FRONTEND_PORT}"
-echo "       Backend   -->  http://localhost:${_BACKEND_PORT}"
-echo "       API docs  -->  http://localhost:${_BACKEND_PORT}/docs"
+if [ "$_USE_CADDY" = "true" ]; then
+    echo "       Site      -->  https://${_DOMAIN}"
+    echo "       API docs  -->  https://${_DOMAIN}/docs"
+else
+    echo "       Frontend  -->  http://localhost:${_FRONTEND_PORT}"
+    echo "       Backend   -->  http://localhost:${_BACKEND_PORT}"
+    echo "       API docs  -->  http://localhost:${_BACKEND_PORT}/docs"
+fi
 echo
 echo " Tip: for production with HTTPS, use:  ./run-prod.sh"
 echo
