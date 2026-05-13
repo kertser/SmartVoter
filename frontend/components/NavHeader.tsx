@@ -67,6 +67,12 @@ export function NavFooter() {
   return (
     <footer className="border-t border-slate-200 mt-20 py-8 text-center text-xs text-slate-400">
       <p>{t.layout.footerDisclaimer}</p>
+      <p className="mt-3 text-slate-300 tracking-wide">
+        &copy; {new Date().getFullYear()}&ensp;
+        <span className="font-medium text-slate-400">Alpha-Numerical</span>
+        <span className="mx-1 text-slate-300">&middot;</span>
+        <span className="font-medium text-slate-400">Mike Kertser</span>
+      </p>
     </footer>
   );
 }
