@@ -88,6 +88,11 @@ services:
     # No host port exposure — traffic comes only through the external proxy
     environment:
       NODE_ENV: production
+      # Bind Next.js standalone server to all interfaces so the reverse proxy
+      # can reach it via any of this container's Docker networks (default + web).
+      # Without this, Next.js binds to the container's primary hostname only
+      # and requests coming in on the "web" network are refused.
+      HOSTNAME: "0.0.0.0"
       # Internal URL used by the Next.js server-side proxy (app/api/[...path]/route.ts).
       # Never exposed to the browser.
       BACKEND_URL: http://backend:8000
@@ -138,4 +143,3 @@ volumes:
 networks:
   web:
     external: true
-
