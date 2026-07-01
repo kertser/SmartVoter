@@ -173,6 +173,29 @@ docker compose -f docker-compose.prod.yml --profile init up data-init
 
 > The backend **will refuse to start in production** if `SECRET_KEY` or `ADMIN_PASSWORD` are still set to their default values.
 
+### Sharing Caddy with other apps (e.g. TDG)
+
+This Caddy instance acts as a single shared reverse proxy for all apps on the server.
+The external Docker network `web` is used to connect Caddy to containers from other stacks.
+
+1. **Create the `web` network once on the host** (already handled automatically by `run-prod.sh`):
+   ```bash
+   # On the Linux server (via SSH):
+   docker network create web
+   ```
+
+2. **Any other stack** that wants to be fronted by this Caddy must:
+   - Attach its target container to the `web` external network.
+   - Add its own site block to `Caddyfile` and reload Caddy:
+     ```bash
+     # On the Linux server (via SSH):
+     docker compose -f docker-compose.prod.yml exec caddy caddy reload --config /etc/caddy/Caddyfile
+     ```
+
+3. **Currently used by:**
+   - `smartvoter.alpha-numerical.com` — this repo.
+   - `tdg.alpha-numerical.com` — [`kertser/TDG`](https://github.com/kertser/TDG).
+
 ---
 
 ## Importing real Knesset data

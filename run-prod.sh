@@ -19,6 +19,12 @@ if ! docker compose version &>/dev/null; then
     exit 1
 fi
 
+# ── Ensure shared reverse-proxy network exists ────────────────────────────
+if ! docker network inspect web &>/dev/null; then
+    echo "[INFO] Creating shared 'web' Docker network for cross-stack reverse proxy..."
+    docker network create web
+fi
+
 # ── Copy .env if missing ──────────────────────────────────────────────────
 if [ ! -f ".env" ]; then
     if [ -f ".env.example" ]; then
@@ -117,6 +123,7 @@ echo " [OK] All services are running:"
 echo
 echo "       Site      -->  https://${DOMAIN}"
 echo "       API docs  -->  https://${DOMAIN}/docs"
+echo "       TDG (if deployed)  -->  https://tdg.alpha-numerical.com"
 echo
 echo " To view live logs:"
 echo "       $COMPOSE logs -f caddy"
