@@ -173,28 +173,29 @@ docker compose -f docker-compose.prod.yml --profile init up data-init
 
 > The backend **will refuse to start in production** if `SECRET_KEY` or `ADMIN_PASSWORD` are still set to their default values.
 
-### Sharing Caddy with other apps (e.g. TDG)
+### Reverse proxy (external)
 
-This Caddy instance acts as a single shared reverse proxy for all apps on the server.
-The external Docker network `web` is used to connect Caddy to containers from other stacks.
+HTTPS termination is handled by the standalone stack at [`kertser/proxy`](https://github.com/kertser/proxy),
+which owns ports 80/443 on the host and reverse-proxies to `smartvoter-frontend:3000` /
+`smartvoter-backend:8000` over the shared `web` Docker network.
 
-1. **Create the `web` network once on the host** (already handled automatically by `run-prod.sh`):
-   ```bash
-   # On the Linux server (via SSH):
-   docker network create web
-   ```
+Deploy order on a fresh host:
+```bash
+# 1. Shared proxy (once)
+git clone https://github.com/kertser/proxy.git ~/proxy
+cd ~/proxy
+docker network create web
+docker compose up -d
 
-2. **Any other stack** that wants to be fronted by this Caddy must:
-   - Attach its target container to the `web` external network.
-   - Add its own site block to `Caddyfile` and reload Caddy:
-     ```bash
-     # On the Linux server (via SSH):
-     docker compose -f docker-compose.prod.yml exec caddy caddy reload --config /etc/caddy/Caddyfile
-     ```
+# 2. This app
+cd ~/SmartVoter
+./run-prod.sh
 
-3. **Currently used by:**
-   - `smartvoter.alpha-numerical.com` — this repo.
-   - `tdg.alpha-numerical.com` — [`kertser/TDG`](https://github.com/kertser/TDG).
+# 3. Hot-reload the proxy config if you edit ~/proxy/Caddyfile
+cd ~/proxy && docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+```
+
+Do not add a Caddy service to this repo's compose files — the app stack must not compete for ports 80/443.
 
 ---
 

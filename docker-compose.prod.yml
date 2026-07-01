@@ -2,35 +2,20 @@
 # Usage:
 #   docker compose -f docker-compose.prod.yml up -d
 #
+# HTTPS termination is handled by the external proxy stack at kertser/proxy.
+# This stack does NOT publish host ports 80/443 — the shared Caddy container
+# on the external 'web' Docker network fronts backend and frontend.
+#
 # Required environment variables (set in .env or via CI secrets):
 #   DATABASE_URL           — postgres connection string
 #   REDIS_URL              — redis connection string
 #   SECRET_KEY             — strong random hex (python -c "import secrets; print(secrets.token_hex(32))")
 #   ADMIN_PASSWORD         — strong admin password (NOT "admin")
 #   APP_ENV                — must be "production"
-#   NEXT_PUBLIC_API_URL    — public backend URL seen by the browser (e.g. https://api.yourdomain.com)
 #   OPENAI_API_KEY         — optional; required for LLM features
 #   CORS_ORIGINS           — comma-separated allowed origins (e.g. https://yourdomain.com)
 
 services:
-  caddy:
-    image: caddy:2-alpine
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"   # HTTP/3
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      - default
-      - web
-
   postgres:
     image: postgres:16
     restart: always
@@ -63,10 +48,11 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+    container_name: smartvoter-backend
     restart: always
     # Production: no --reload, multiple workers
     command: uv run uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --workers 2 --no-access-log
-    # No host port exposure — traffic comes only through Caddy
+    # No host port exposure — traffic comes only through the external proxy
     env_file:
       - .env
     environment:
@@ -85,6 +71,9 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    networks:
+      - default
+      - web
 
   frontend:
     build:
@@ -94,8 +83,9 @@ services:
         # Empty string → relative /api/* URLs → Next.js proxy → backend internally.
         # Do NOT set this to the backend port — it must not be exposed to browsers.
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+    container_name: smartvoter-frontend
     restart: always
-    # No host port exposure — traffic comes only through Caddy
+    # No host port exposure — traffic comes only through the external proxy
     environment:
       NODE_ENV: production
       # Internal URL used by the Next.js server-side proxy (app/api/[...path]/route.ts).
@@ -104,6 +94,9 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    networks:
+      - default
+      - web
 
   # ── One-off data init (run once after first deploy or after elections) ──────
   # docker compose -f docker-compose.prod.yml --profile init up data-init
@@ -141,8 +134,6 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  caddy_data:
-  caddy_config:
 
 networks:
   web:

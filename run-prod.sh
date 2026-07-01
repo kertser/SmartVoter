@@ -94,39 +94,24 @@ $COMPOSE run --rm --no-deps \
     uv run python -m backend.app.seed.run_seed || true
 echo "      Done."
 
-# ── Start all services (backend + frontend + caddy) ───────────────────────
-echo "[4/4] Starting backend, frontend and Caddy (HTTPS)..."
-$COMPOSE up -d backend frontend caddy
+# ── Start backend and frontend ────────────────────────────────────────────
+echo "[4/4] Starting backend and frontend..."
+$COMPOSE up -d backend frontend
 echo "      All services started."
-
-# ── Wait for Caddy to be ready ────────────────────────────────────────────
-echo
-echo " Waiting for Caddy to obtain TLS certificate (may take ~30 seconds)..."
-cw=0
-while true; do
-    cw=$((cw + 1))
-    if [ "$cw" -gt 60 ]; then
-        echo " [WARN] Caddy did not respond in 60 seconds. Check: $COMPOSE logs caddy"
-        break
-    fi
-    http_code=$(curl -sk -o /dev/null -w "%{http_code}" "https://localhost" 2>/dev/null || true)
-    if [ "$http_code" = "200" ] || [ "$http_code" = "308" ]; then
-        break
-    fi
-    sleep 1
-done
 
 # ── Done ──────────────────────────────────────────────────────────────────
 DOMAIN=$(_get_env DOMAIN "smartvoter.alpha-numerical.com")
 echo
-echo " [OK] All services are running:"
+echo " [OK] SmartVoter application containers are running."
 echo
-echo "       Site      -->  https://${DOMAIN}"
-echo "       API docs  -->  https://${DOMAIN}/docs"
-echo "       TDG (if deployed)  -->  https://tdg.alpha-numerical.com"
+echo "       If the shared proxy (kertser/proxy) is up, the site is at:"
+echo "         https://${DOMAIN}"
+echo "         https://${DOMAIN}/docs"
+echo
+echo "       If not, start it with:"
+echo "         cd ~/proxy && docker compose up -d"
 echo
 echo " To view live logs:"
-echo "       $COMPOSE logs -f caddy"
 echo "       $COMPOSE logs -f backend"
 echo "       $COMPOSE logs -f frontend"
 echo
