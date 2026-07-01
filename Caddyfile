@@ -31,3 +31,24 @@ smartvoter.alpha-numerical.com {
     }
 }
 
+tdg.alpha-numerical.com {
+    # Automatic HTTPS via Let's Encrypt
+
+    # WebSocket upgrade — must be matched explicitly.
+    @ws path /ws/*
+    reverse_proxy @ws tdg-nginx:80
+
+    # Everything else: TDG's internal nginx already splits /api/* -> backend:8000
+    # and everything else -> static frontend.
+    reverse_proxy tdg-nginx:80
+
+    encode gzip
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+}
